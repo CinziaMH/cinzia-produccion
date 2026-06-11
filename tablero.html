@@ -38,7 +38,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 
 /* ===== PANELS ===== */
 .stage{flex:1 1 auto;position:relative;overflow:hidden}
-.panel{position:absolute;inset:0;padding:14px 22px;display:none;flex-direction:column;gap:10px;overflow:hidden}
+.panel{position:absolute;inset:0;padding:14px 22px;display:none;flex-direction:column;gap:10px;overflow-y:auto;overflow-x:hidden}
 .panel.act{display:flex}
 
 /* --- montajes --- */
@@ -86,7 +86,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .efcell.final{background:var(--nar);border-color:var(--naro);color:#fff}
 .efcell.final .k,.efcell.final .s{color:#ffd9c2}
 .efcell.final .v{font-size:34px}
-.bot{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;flex:1;min-height:0}
+.bot{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;flex:1;min-height:210px}
 .botcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 15px;overflow:hidden;display:flex;flex-direction:column}
 .botcard h4{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin-bottom:8px}
 .tend{display:flex;align-items:flex-end;gap:14px;flex:1;padding-bottom:4px;position:relative}
