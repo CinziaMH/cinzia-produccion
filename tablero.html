@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinzia · Pie de Línea</title>
+<style>
+:root{
+  --nar:#EA580C; --naro:#c2410c; --gris:#575756; --grism:#717171;
+  --ok:#16a34a; --warn:#ca8a04; --bad:#dc2626;
+  --bg:#f4f4f5; --card:#fff; --line:#e4e4e7; --txt:#1f2937; --muted:#71717a;
+  --dark:#0f172a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;overflow:hidden;display:flex;flex-direction:column}
+
+/* ===== HEADER ===== */
+.hdr{background:var(--nar);color:#fff;padding:10px 22px;display:flex;align-items:center;gap:18px;flex:0 0 auto}
+.logo{width:44px;height:44px;flex:0 0 auto}
+.hdr .tit{font-size:22px;font-weight:800;letter-spacing:.5px;line-height:1.1}
+.hdr .tit .a{color:#ffd9c2}
+.hdr .sub{font-size:12px;opacity:.92}
+.supchip{margin-left:auto;background:rgba(255,255,255,.14);border:1.5px solid rgba(255,255,255,.55);border-radius:12px;padding:7px 14px;text-align:center}
+.supchip .lbl{font-size:10px;font-weight:800;letter-spacing:1px;opacity:.9}
+.supchip .val{font-size:15px;font-weight:800;margin-top:2px}
+.dots{display:flex;gap:8px;align-items:center}
+.dot{width:34px;height:8px;border-radius:99px;background:rgba(255,255,255,.35);cursor:pointer;overflow:hidden;position:relative}
+.dot.act{background:rgba(255,255,255,.45)}
+.dot.act i{position:absolute;left:0;top:0;bottom:0;background:#fff;display:block;width:0%}
+.pausebtn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:9px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer}
+.clockbox{text-align:right}
+.clock{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.nextref{font-size:11px;opacity:.85}
+
+/* ===== ALERT BANNER ===== */
+.alertbar{background:var(--bad);color:#fff;padding:7px 22px;font-weight:700;font-size:14px;display:none;flex:0 0 auto}
+
+/* ===== PANELS ===== */
+.stage{flex:1 1 auto;position:relative;overflow:hidden}
+.panel{position:absolute;inset:0;padding:14px 22px;display:none;flex-direction:column;gap:10px;overflow:hidden}
+.panel.act{display:flex}
+
+/* --- montajes --- */
+.mon-row{display:flex;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;flex:1 1 0;min-height:0}
+.mon-left{flex:0 0 200px;display:flex;flex-direction:column;gap:6px}
+.mon-pill{align-self:flex-start;color:#fff;font-weight:800;font-size:18px;padding:4px 14px;border-radius:10px}
+.mon-name{font-weight:800;font-size:16px}
+.mon-cnt{font-size:13px;color:var(--muted)}
+.pagetag{font-size:11px;font-weight:800;color:var(--nar);border:1px solid var(--nar);border-radius:99px;padding:1px 9px;align-self:flex-start}
+.mon-mos{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;justify-content:center}
+.mo-item{background:#fafafa;border:1px solid var(--line);border-radius:11px;padding:9px 14px}
+.mo-l1{display:flex;align-items:center;gap:10px}
+.mo-num{font-weight:800;font-size:17px}
+.mo-meta{color:var(--muted);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1}
+.st{font-size:11px;font-weight:800;padding:3px 11px;border-radius:99px}
+.st-RITMO{background:#dcfce7;color:#166534}.st-RIESGO{background:#fef9c3;color:#854d0e}.st-OK{background:#f4f4f5;color:#52525b}.st-SINACT{background:#e4e4e7;color:#71717a}
+.mo-l2{display:flex;gap:16px;margin-top:5px;font-size:13px;color:var(--gris);align-items:center;flex-wrap:wrap}
+.diasbadge{font-weight:800;color:var(--nar)}
+.diasbadge.alert{background:var(--bad);color:#fff;padding:1px 9px;border-radius:99px}
+.cuello{color:var(--bad);font-weight:600;font-size:12px}
+
+/* --- indicadores --- */
+.reunion{background:#0b1626;color:#fff;border-radius:14px;padding:14px 18px}
+.reunion .rtag{background:var(--nar);color:#fff;font-size:11px;font-weight:800;padding:3px 11px;border-radius:99px;letter-spacing:1px}
+.reunion h3{font-size:16px;margin:7px 0 10px;font-weight:700}
+.rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.rcell{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 12px}
+.rcell .k{font-size:11px;color:#94a3b8;font-weight:700;letter-spacing:.5px}
+.rcell .v{font-size:23px;font-weight:800;margin-top:2px}
+.rcell .d{font-size:11px;margin-top:1px;color:#94a3b8}
+.rrow2{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-top:10px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 16px}
+.kpi .k{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:1px}
+.kpi .v{font-size:42px;font-weight:800;line-height:1.05;margin-top:3px}
+.kpi .s{font-size:12px;color:var(--muted);margin-top:2px}
+.kpi.bad{background:#fef2f2;border-color:#fecaca}.kpi.bad .v{color:var(--bad)}
+.kpi.warn{background:#fefce8;border-color:#fde68a}.kpi.warn .v{color:var(--warn)}
+.kpi.good .v{color:var(--ok)}
+.efgrid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr 1.2fr;gap:12px}
+.efcell{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px}
+.efcell .k{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.5px}
+.efcell .v{font-size:26px;font-weight:800;margin-top:2px}
+.efcell .s{font-size:11px;color:var(--muted)}
+.efcell.final{background:var(--nar);border-color:var(--naro);color:#fff}
+.efcell.final .k,.efcell.final .s{color:#ffd9c2}
+.efcell.final .v{font-size:34px}
+.bot{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;flex:1;min-height:0}
+.botcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 15px;overflow:hidden;display:flex;flex-direction:column}
+.botcard h4{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin-bottom:8px}
+.tend{display:flex;align-items:flex-end;gap:14px;flex:1;padding-bottom:4px;position:relative}
+.tcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
+.tbar{width:70%;background:#fdba74;border-radius:6px 6px 0 0;min-height:3px;position:relative}
+.tbar.hoy{background:var(--nar)}
+.tbar .tv{position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:800}
+.tlab{font-size:12px;color:var(--muted);font-weight:700}
+.lista{overflow:hidden;flex:1}
+.lista .li{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)}
+.lista .li b{font-weight:700}
+.nctotal{font-size:30px;font-weight:800;color:var(--warn)}
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:var(--bg);z-index:30}
+.spin{width:46px;height:46px;border:5px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite}
+@keyframes r{to{transform:rotate(360deg)}}
+.staleband{position:fixed;bottom:0;left:0;right:0;background:var(--bad);color:#fff;text-align:center;font-weight:700;font-size:13px;padding:4px;display:none;z-index:40}
+
+/* TV grande */
+@media (min-width:1600px){
+  body{font-size:18px}
+  .clock{font-size:30px}
+  .kpi .v{font-size:56px}
+  .efcell.final .v{font-size:44px}
+  .mo-num{font-size:22px}
+  .mo-meta{font-size:16px}
+  .mon-pill{font-size:21px}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <svg class="logo" viewBox="0 0 48 48"><polygon points="14,4 34,4 44,14 44,34 34,44 14,44 4,34 4,14" fill="#fff" opacity=".95"/><polygon points="24,10 30,30 24,25 18,30" fill="#EA580C"/></svg>
+  <div>
+    <div class="tit">CINZIA · Pie de Líne<span class="a">a</span></div>
+    <div class="sub">DYFSA · estado de la línea en vivo</div>
+  </div>
+  <div class="supchip">
+    <div class="lbl">SUPERVISORES HOY</div>
+    <div class="val" id="supVal">— · —</div>
+  </div>
+  <div class="dots" id="dots"></div>
+  <button class="pausebtn" id="pauseBtn">⏸ Pausar</button>
+  <div class="clockbox">
+    <div class="clock" id="clock">--:--</div>
+    <div class="nextref" id="nextref"></div>
+  </div>
+</div>
+
+<div class="alertbar" id="alertbar"></div>
+<div class="stage" id="stage">
+  <div class="loading" id="loading"><div class="spin"></div><div style="font-weight:700;color:var(--muted)">Cargando datos de planta…</div></div>
+</div>
+<div class="staleband" id="staleband">⚠ SIN CONEXIÓN — mostrando últimos datos recibidos</div>
+
+<script>
+/* ====== CONFIG ====== */
+const DASHBOARD_URL = "https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec?view=dashboard";
+const ROTATION_MS = 30000;
+const REFRESH_MIN = 5;
+const MAX_MOS_PER_PANEL = 4;
+
+let D = null, panels = [], cur = 0, paused = false, rotT0 = Date.now();
+
+const $ = id => document.getElementById(id);
+const esc = s => { const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML; };
+const efClass = p => p >= 50 ? 'good' : (p >= 25 ? 'warn' : 'bad');
+
+/* ====== FETCH ====== */
+async function fetchData() {
+  try {
+    const r = await fetch(DASHBOARD_URL + "&t=" + Date.now(), { cache: "no-store", redirect: "follow" });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'respuesta no ok');
+    D = j;
+    localStorage.setItem('pdl_cache', JSON.stringify(j));
+    $('staleband').style.display = 'none';
+    build();
+  } catch (e) {
+    console.warn('fetch falló:', e);
+    if (!D) {
+      const c = localStorage.getItem('pdl_cache');
+      if (c) { D = JSON.parse(c); build(); }
+    }
+    if (D) $('staleband').style.display = 'block';
+    else $('loading').innerHTML = '<div style="font-weight:700;color:var(--bad)">No se pudo conectar al backend.<br>' + esc(String(e)) + '</div>';
+  }
+}
+
+/* ====== BUILD PANELS ====== */
+function build() {
+  $('loading').style.display = 'none';
+
+  // header chip
+  const ry = D.rondas_hoy_rodrigo || {}, yy = D.rondas_hoy_yance || {};
+  $('supVal').textContent = 'R ' + (ry.validadas||0) + '/' + (ry.total||0) + ' · Y ' + (yy.validadas||0) + '/' + (yy.total||0);
+
+  // alertas
+  const ab = $('alertbar');
+  if (D.alertas && D.alertas.length) { ab.style.display = 'block'; ab.textContent = D.alertas.map(a => '• ' + (a.msg || a)).join('   '); }
+  else ab.style.display = 'none';
+
+  // armar paneles de montajes (sin scroll)
+  const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
+  panels = monPanels.map(rows => () => renderMonPanel(rows));
+  panels.push(() => renderIndicadores());
+
+  renderDots();
+  if (cur >= panels.length) cur = 0;
+  showPanel(cur);
+}
+
+function buildLinePanels(montajes) {
+  // dividir montajes grandes en páginas
+  const units = [];
+  montajes.forEach(m => {
+    if (m.mos.length <= MAX_MOS_PER_PANEL) units.push({ ...m, page: null });
+    else {
+      const npages = Math.ceil(m.mos.length / MAX_MOS_PER_PANEL);
+      for (let p = 0; p < npages; p++)
+        units.push({ ...m, mos: m.mos.slice(p * MAX_MOS_PER_PANEL, (p + 1) * MAX_MOS_PER_PANEL), page: (p + 1) + '/' + npages });
+    }
+  });
+  // agrupar: budget de filas-mo por panel
+  const out = []; let curP = [], curRows = 0;
+  units.forEach(u => {
+    const w = Math.max(1, u.mos.length);
+    if (curP.length && (curRows + w > 7 || curP.length >= 3)) { out.push(curP); curP = []; curRows = 0; }
+    curP.push(u); curRows += w;
+  });
+  if (curP.length) out.push(curP);
+  return out;
+}
+
+function renderMonPanel(rows) {
+  let h = '';
+  rows.forEach(m => {
+    h += '<div class="mon-row"><div class="mon-left">'
+      + '<span class="mon-pill" style="background:' + (m.color || '#666') + '">' + esc(m.code) + '</span>'
+      + '<div class="mon-name">' + esc(m.name) + '</div>'
+      + '<div class="mon-cnt">' + m.activas + ' act · ' + (m.cola || 0) + ' cola</div>'
+      + (m.sigue ? '<div class="mon-cnt" style="color:var(--nar);font-weight:700">sigue: ' + esc((String(m.sigue.mo).match(/(\d{3,6})/) || [])[1] || m.sigue.mo) + (m.sigue.cliente ? ' · ' + esc(String(m.sigue.cliente).slice(0, 18)) : '') + '</div>' : '')
+      + (m.page ? '<span class="pagetag">' + m.page + '</span>' : '')
+      + '</div><div class="mon-mos">';
+    if (!m.mos.length) h += '<div class="mo-item" style="color:var(--muted)">Sin MOs en este montaje' + (m.cola ? ' · ' + m.cola + ' en cola' : '') + '</div>';
+    m.mos.forEach(mo => {
+      const num = (String(mo.mo).match(/(\d{4,6})/) || [])[1] || mo.mo;
+      const dias = mo.dias_en_produccion;
+      h += '<div class="mo-item"><div class="mo-l1">'
+        + '<span class="mo-num">' + esc(num) + '</span>'
+        + '<span class="mo-meta">' + esc(mo.operario || '—') + (mo.producto ? ' · ' + esc(mo.producto) : '') + '</span>'
+        + '<span class="st st-' + mo.estado.replace(/\s/g, '') + '">' + mo.estado + '</span></div>'
+        + '<div class="mo-l2">'
+        + (mo.actividad_hoy === false ? '<span>sin actividad hoy</span>' : '<span>avance día <b>' + mo.avance_dia_pct + '%</b></span>')
+        + '<span>WOs hechas <b>' + mo.terminadas + '/' + mo.total + '</b></span>'
+        + (dias != null ? '<span class="diasbadge' + (dias > 5 ? ' alert' : '') + '">📅 ' + dias + 'd en producción</span>' : '')
+        + (mo.cuello ? '<span class="cuello">cuello: "' + esc(mo.cuello.wo) + '" +' + mo.cuello.delta_min + 'min (' + esc(mo.cuello.operario) + ')</span>' : '')
+        + '</div></div>';
+    });
+    h += '</div></div>';
+  });
+  return h;
+}
+
+function renderIndicadores() {
+  const ef = D.eficiencia || {};
+  const ay = D.ayer || {};
+  const cs = D.cinco_s_hoy || {};
+  const ray = ay.rondas_rodrigo || {}, yay = ay.rondas_yance || {};
+
+  const delta = (a, h, unit, invertido) => {
+    if (a == null || h == null) return '';
+    const d = h - a;
+    const good = invertido ? d < 0 : d > 0;
+    const sign = d > 0 ? '+' : '';
+    return '<span style="color:' + (d === 0 ? '#94a3b8' : good ? '#4ade80' : '#f87171') + '">' + sign + d + unit + ' hoy</span>';
+  };
+
+  let h = '<div class="reunion">'
+    + '<span class="rtag">REUNIÓN 11 AM</span>'
+    + '<h3>Cierre de ayer (' + esc(ay.fecha || '—') + ') + 5S de hoy</h3>'
+    + '<div class="rgrid">'
+    + '<div class="rcell"><div class="k">EFICIENCIA AYER</div><div class="v">' + (ay.eficiencia_pct ?? '—') + '%</div><div class="d">' + delta(ay.eficiencia_pct, D.eficiencia_hoy_pct, '%') + '</div></div>'
+    + '<div class="rcell"><div class="k">HOSPITAL AYER</div><div class="v">' + (ay.hospital_count ?? '—') + ' p</div><div class="d">' + esc((ay.hospital_personas || []).slice(0, 3).join(' · ') || ('hoy: ' + D.hospital_count + ' p')) + '</div></div>'
+    + '<div class="rcell"><div class="k">AUSENTES AYER</div><div class="v">' + (ay.ausentes_count ?? '—') + ' p</div><div class="d">' + delta(ay.ausentes_count, (D.ausentes || []).length, 'p', true) + '</div></div>'
+    + (function () {
+        const dowA = ay.fecha ? new Date(ay.fecha + 'T12:00:00').getDay() : 0;
+        const dispAyerH = Math.round((ay.operarios || 0) * (dowA === 6 ? 300 : 470) / 60 * 10) / 10;
+        const pctA = dispAyerH > 0 ? Math.round((ay.nc_horas || 0) * 1000 / dispAyerH) / 10 : null;
+        return '<div class="rcell"><div class="k">NC HORAS AYER</div><div class="v">' + (ay.nc_horas ?? '—') + ' h' + (pctA != null ? ' <span style="font-size:14px;color:' + (pctA > 10 ? '#f87171' : '#94a3b8') + '">· ' + pctA + '% del día (' + dispAyerH + 'h)</span>' : '') + '</div><div class="d">' + delta(ay.nc_horas, D.nc_horas_hoy, 'h', true) + '</div></div>';
+      })()
+    + '</div><div class="rrow2">'
+    + '<div class="rcell"><div class="k">5S HOY TEMPRANO</div><div class="v" style="font-size:17px">' + (cs.hora ? cs.hora + ' · ' : '') + (cs.sectores_ok || 0) + '/' + (cs.sectores_total || 9) + ' OK · <span style="color:#4ade80">🟢 ' + (cs.verdes || 0) + '</span> <span style="color:#facc15">🟡 ' + (cs.amarillos || 0) + '</span> <span style="color:#f87171">🔴 ' + (cs.rojos || 0) + '</span></div>'
+    + '<div class="d">' + ((cs.pendientes || []).length ? 'Pendientes: ' + cs.pendientes.join(' · ') : 'Todos relevados ✓') + '</div></div>'
+    + '<div class="rcell"><div class="k">RONDAS YANCE AYER</div><div class="v" style="font-size:17px">' + (yay.validadas||0) + '/' + (yay.total||0) + '</div><div class="d">' + (yay.flagged||0) + ' a revisar</div></div>'
+    + '<div class="rcell"><div class="k">RONDAS RODRIGO AYER</div><div class="v" style="font-size:17px">' + (ray.validadas||0) + '/' + (ray.total||0) + '</div><div class="d">' + (ray.flagged||0) + ' a revisar</div></div>'
+    + '</div></div>';
+
+  // KPIs
+  const hospBad = D.hospital_count > D.hospital_target;
+  h += '<div class="kpis">'
+    + '<div class="kpi"><div class="k">TAKT OBJETIVO</div><div class="v">' + D.takt_dias + ' días</div><div class="s">Pegasso 4d · CONFIG</div></div>'
+    + '<div class="kpi"><div class="k">EN FABRICACIÓN</div><div class="v">' + D.en_fabricacion + ' MOs</div><div class="s">con actividad hoy</div></div>'
+    + '<div class="kpi' + (hospBad ? ' bad' : ' good') + '"><div class="k">HOSPITAL / QC</div><div class="v">' + D.hospital_count + '</div><div class="s">' + esc((D.hospital_mos || []).map(h => (String(h.mo).match(/(\d{3,6})/) || [])[1] || h.mo).join(' · ') || 'sin unidades') + ' · target ≤ ' + D.hospital_target + '</div></div>'
+    + '<div class="kpi ' + efClass(D.eficiencia_hoy_pct) + '"><div class="k">EFICIENCIA HOY (PARCIAL)</div><div class="v">' + D.eficiencia_hoy_pct + '%</div><div class="s">prom. mes ' + D.eficiencia_mes_pct + '% (' + (D.eficiencia_mes_dias || 0) + ' días) · ayer ' + (ay.eficiencia_pct ?? '—') + '%</div></div>'
+    + '</div>';
+
+  // eficiencia detalle
+  h += '<div class="efgrid">'
+    + '<div class="efcell"><div class="k">EFICIENCIA HOY</div><div class="v">' + D.eficiencia_hoy_pct + '%</div><div class="s">Earned ÷ jornada transcurrida (' + (ef.jornada_min ?? 0) + ' min/op)</div></div>'
+    + '<div class="efcell"><div class="k">REAL</div><div class="v">' + (ef.real_h ?? 0) + 'h</div><div class="s">cronómetro Odoo</div></div>'
+    + '<div class="efcell"><div class="k">EARNED</div><div class="v">' + (ef.earned_h ?? 0) + 'h</div><div class="s">tiempo objetivo</div></div>'
+    + '<div class="efcell"><div class="k">DISPONIBLE</div><div class="v">' + (ef.disponible_h ?? 0) + 'h</div><div class="s">' + (ef.operarios ?? 0) + ' ops × transcurrido</div></div>'
+    + '<div class="efcell"><div class="k">PRODUCTIVIDAD</div><div class="v">' + (ef.productividad_pct ?? 0) + '%</div><div class="s">Earned/Real</div></div>'
+    + '<div class="efcell final"><div class="k">EFICIENCIA</div><div class="v">' + (ef.eficiencia_pct ?? 0) + '%</div><div class="s">parcial del día</div></div>'
+    + '</div>';
+
+  // bottom: tendencia + ausentes + NC
+  const tmax = Math.max(20, ...(D.tendencia || []).map(t => t.pct));
+  let tend = '';
+  (D.tendencia || []).forEach(t => {
+    const hpct = Math.round(t.pct / tmax * 100);
+    tend += '<div class="tcol"><div class="tbar' + (t.hoy ? ' hoy' : '') + '" style="height:' + Math.max(3, hpct) + '%"><span class="tv">' + t.pct + '</span></div><div class="tlab">' + t.day + '</div></div>';
+  });
+  let aus = '';
+  (D.ausentes || []).slice(0, 8).forEach(a => { aus += '<div class="li"><b>' + esc(a.nombre) + '</b><span>' + esc(a.sector) + '</span></div>'; });
+  if (!(D.ausentes || []).length) aus = '<div class="li">Sin ausentes hoy ✓</div>';
+  // % de NC contra las horas TOTALES del día (jornada completa × operarios): Lu-Vi 470 min · Sáb 300 min
+  const dowJ = new Date(D.fecha_hoy + 'T12:00:00').getDay();
+  const dispFullH = Math.round((ef.operarios || 0) * (dowJ === 6 ? 300 : 470) / 60 * 10) / 10;
+  const ncPct = dispFullH > 0 ? Math.round(D.nc_horas_hoy * 1000 / dispFullH) / 10 : 0;
+  let nc = '<div class="nctotal">' + D.nc_horas_hoy + ' h <span style="font-size:16px;color:' + (ncPct > 10 ? 'var(--bad)' : 'var(--muted)') + ';font-weight:800">· ' + ncPct + '% del total del día (' + dispFullH + 'h)</span></div>';
+  (D.nc_personas || []).slice(0, 6).forEach(p => { nc += '<div class="li"><b>' + esc(p.operario) + '</b><span>' + p.horas + ' h</span></div>'; });
+
+  h += '<div class="bot">'
+    + '<div class="botcard"><h4>TENDENCIA SEMANAL · EFICIENCIA DIARIA</h4><div class="tend">' + tend + '</div></div>'
+    + '<div class="botcard"><h4>AUSENTES HOY · ' + (D.ausentes || []).length + '</h4><div class="lista">' + aus + '</div></div>'
+    + '<div class="botcard"><h4>NO CONFORMIDAD HOY</h4><div class="lista">' + nc + '</div></div>'
+    + '</div>';
+  return h;
+}
+
+/* ====== ROTATION ====== */
+function renderDots() {
+  let h = '';
+  for (let i = 0; i < panels.length; i++)
+    h += '<div class="dot' + (i === cur ? ' act' : '') + '" data-i="' + i + '"><i></i></div>';
+  $('dots').innerHTML = h;
+  document.querySelectorAll('.dot').forEach(d => d.onclick = () => { cur = Number(d.dataset.i); showPanel(cur); });
+}
+
+function showPanel(i) {
+  const stage = $('stage');
+  stage.querySelectorAll('.panel').forEach(p => p.remove());
+  const div = document.createElement('div');
+  div.className = 'panel act';
+  div.innerHTML = panels[i] ? panels[i]() : '';
+  stage.appendChild(div);
+  rotT0 = Date.now();
+  renderDots();
+}
+
+setInterval(() => {
+  if (paused || !panels.length) return;
+  const el = Math.min(100, (Date.now() - rotT0) / ROTATION_MS * 100);
+  const act = document.querySelector('.dot.act i');
+  if (act) act.style.width = el + '%';
+  if (Date.now() - rotT0 >= ROTATION_MS) { cur = (cur + 1) % panels.length; showPanel(cur); }
+}, 250);
+
+$('pauseBtn').onclick = () => {
+  paused = !paused;
+  $('pauseBtn').textContent = paused ? '▶ Reanudar' : '⏸ Pausar';
+  if (!paused) rotT0 = Date.now();
+};
+
+/* ====== CLOCK + REFRESH ====== */
+function tick() {
+  const n = new Date();
+  $('clock').textContent = n.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  const next = new Date(n);
+  next.setMinutes(Math.ceil((n.getMinutes() + 0.01) / REFRESH_MIN) * REFRESH_MIN, 0, 0);
+  const s = Math.max(0, Math.round((next - n) / 1000));
+  $('nextref').textContent = 'refresh en ' + Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+}
+setInterval(tick, 1000); tick();
+
+// refresh alineado al reloj cada REFRESH_MIN
+setInterval(() => {
+  const n = new Date();
+  if (n.getMinutes() % REFRESH_MIN === 0 && n.getSeconds() < 2) fetchData();
+}, 1500);
+
+fetchData();
+</script>
+</body>
+</html>
