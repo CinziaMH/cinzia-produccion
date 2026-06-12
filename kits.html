@@ -96,13 +96,22 @@ function cargar(){
     var h='';
     (D.carros||[]).forEach(function(c){
       h+='<div class="carro arm"><div><div class="tt">🛒 CARRO ARMADO <span style="color:#22c55e">✓</span></div>'
+        +(c.mo?'<div class="ff" style="color:#86efac;font-weight:700">ref: '+esc(c.mo)+(c.cliente?' · '+esc(c.cliente):'')+'</div>':'')
         +'<div class="ff">armado el '+esc(c.fecha||'')+(c.por?' · '+esc(c.por):'')+'</div></div>'
         +'<button class="b-ent" onclick="entregar(this)">→ ENTREGAR al montaje</button></div>';
     });
+    // sugerencia: proximos sin kit entregado, salteando los ya cubiertos por carros en stock
+    var entSet={}; (D.entregados||[]).forEach(function(k){if(k.mo)entSet[k.mo]=1});
+    var demanda=(D.proximos||[]).filter(function(x){return !entSet[x.mo]});
+    window.__sug=[];
     for(var i=0;i<D.por_armar;i++){
+      var sug=demanda[(D.carros||[]).length+i]||null;
+      window.__sug[i]=sug;
       h+='<div class="carro falta"><div><div class="tt">⚠ POR ARMAR</div>'
-        +'<div class="ff">reponer para volver al stock de '+D.objetivo+'</div></div>'
-        +'<button class="b-arm" onclick="armar(this)">✓ CARRO ARMADO</button></div>';
+        +(sug?'<div class="ff" style="color:#fca5a5;font-weight:700">para '+esc(sug.mo)+' · '+esc(sug.cliente||'')+'</div>'
+             +'<div class="ff">'+esc(sug.producto||'')+(sug.dias===0?' · ¡ya está en '+esc(D.montaje)+'!':' · llega ~'+esc(sug.fecha_est))+'</div>'
+             :'<div class="ff">reponer para volver al stock de '+D.objetivo+'</div>')
+        +'</div><button class="b-arm" onclick="armar(this,'+i+')">✓ CARRO ARMADO</button></div>';
     }
     if(!h) h='<div class="vacio">Sin datos</div>';
     document.getElementById('carros').innerHTML=h;
@@ -129,10 +138,11 @@ function cargar(){
     document.getElementById('carros').innerHTML='<div class="vacio">No se pudo cargar: '+esc(String(e))+'</div>';
   });
 }
-function armar(btn){
-  if(!confirm('¿Confirmás que hay un nuevo carro de '+DATA.montaje+' ARMADO en pañol?')) return;
+function armar(btn,i){
+  var sug=(window.__sug||[])[i]||null;
+  if(!confirm('¿Confirmás que hay un nuevo carro de '+DATA.montaje+' ARMADO en pañol?'+(sug?'\n(sugerido para '+sug.mo+' · '+(sug.producto||'')+')':''))) return;
   btn.disabled=true; btn.textContent='guardando…';
-  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',accion:'armar',montaje:DATA.montaje,por:'pañol'}),redirect:'follow'})
+  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',accion:'armar',montaje:DATA.montaje,mo:sug?sug.mo:'',cliente:sug?sug.cliente:'',por:'pañol'}),redirect:'follow'})
     .then(function(r){return r.text()}).then(function(){setTimeout(cargar,600)})
     .catch(function(e){btn.disabled=false;btn.textContent='✓ CARRO ARMADO';alert('Error: '+e)});
 }
