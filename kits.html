@@ -14,41 +14,42 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:9px;padding:4px 11px;font-weight:800;font-size:12px;white-space:nowrap;color:#fff;text-decoration:none}
 .chip b{font-size:15px}
 select.msel{background:rgba(255,255,255,.92);border:none;border-radius:9px;padding:5px 10px;font-weight:800;font-size:14px;color:#1f2937}
-.wrap{max-width:1100px;margin:0 auto;padding:14px;display:grid;grid-template-columns:1.4fr 1fr;gap:14px}
-@media(max-width:760px){.wrap{grid-template-columns:1fr}
+.maxw{max-width:1100px;margin:0 auto;padding:14px}
+h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:10px 0 10px}
+/* kanban de carros */
+.carros{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.carro{border-radius:15px;padding:16px;display:flex;flex-direction:column;gap:8px;min-height:130px;justify-content:space-between}
+.carro.arm{background:#13251a;border:2px solid #16a34a}
+.carro.falta{background:#2a1620;border:2px dashed #ef4444}
+.carro .tt{font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px}
+.carro .ff{font-size:12px;color:var(--muted)}
+.carro button{border:none;border-radius:10px;color:#fff;font-weight:800;font-size:14px;padding:12px;cursor:pointer;width:100%}
+.b-ent{background:#0ea5e9}
+.b-arm{background:#16a34a}
+.carro button:disabled{opacity:.6}
+/* dos columnas abajo */
+.wrap2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-top:16px}
+@media(max-width:760px){.wrap2{grid-template-columns:1fr}
  .hdr{gap:6px;padding:5px 10px}.hdr h1{font-size:13px}.hdr .lg{display:none}.chip{padding:2px 7px;font-size:10px}.chip b{font-size:11px}}
-.col h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:4px 0 10px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:11px 13px;margin-bottom:9px;display:flex;align-items:center;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 12px;margin-bottom:8px;display:flex;align-items:center;gap:11px}
 .card.ya{border-color:#ef4444;background:#2a1620}
-.badge{flex:0 0 64px;text-align:center;border-radius:10px;padding:7px 4px;font-weight:800}
-.badge .d{font-size:17px;line-height:1.1}
+.badge{flex:0 0 60px;text-align:center;border-radius:9px;padding:6px 4px;font-weight:800}
+.badge .d{font-size:15px;line-height:1.1}
 .badge .f{font-size:10px;opacity:.85}
-.b-ya{background:#dc2626;color:#fff}
-.b-prox{background:#d97706;color:#fff}
-.b-med{background:#0e7490;color:#fff}
-.b-lejos{background:#334155;color:#cbd5e1}
+.b-ya{background:#dc2626;color:#fff}.b-prox{background:#d97706;color:#fff}.b-med{background:#0e7490;color:#fff}.b-lejos{background:#334155;color:#cbd5e1}
 .inf{flex:1;min-width:0}
-.inf .mo{font-weight:800;font-size:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.inf .mo{font-weight:800;font-size:15px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .et{font-size:10px;font-weight:800;background:#334155;color:#cbd5e1;border-radius:6px;padding:1px 8px}
 .et.aca{background:#dc2626;color:#fff}
-.inf .cl{font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.inf .pr{font-size:11px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bk{flex:0 0 auto;border:none;border-radius:10px;background:#16a34a;color:#fff;font-weight:800;font-size:13px;padding:11px 13px;cursor:pointer}
-.bk:disabled{background:#14532d;opacity:.7}
-.done{flex:0 0 auto;color:var(--ok);font-weight:800;font-size:13px}
-.acard{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:9px 13px;margin-bottom:7px;display:flex;align-items:center;gap:10px}
-.acard .f{flex:0 0 52px;font-size:11px;font-weight:800;color:var(--ok)}
-.acard .mo{font-weight:800}
-.acard .cl{font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.st{font-size:10px;font-weight:800;border-radius:99px;padding:2px 9px}
-.st-arm{background:rgba(34,197,94,.18);color:#22c55e}
-.st-ent{background:rgba(56,189,248,.18);color:#38bdf8}
-.bent{border:none;border-radius:8px;background:#0ea5e9;color:#fff;font-weight:800;font-size:11px;padding:7px 9px;cursor:pointer}
-.vacio{color:var(--muted);font-size:13px;padding:18px;text-align:center;background:var(--panel);border-radius:11px}
+.inf .cl{font-size:12px;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acard{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:8px 12px;margin-bottom:7px;display:flex;align-items:center;gap:10px;font-size:13px}
+.acard .f{flex:0 0 50px;font-size:11px;font-weight:800;color:#38bdf8}
+.acard .cl{color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vacio{color:var(--muted);font-size:13px;padding:16px;text-align:center;background:var(--panel);border-radius:11px}
 .spin{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite;margin:60px auto}
 @keyframes r{to{transform:rotate(360deg)}}
 .off{background:var(--bad);color:#fff;padding:6px 14px;font-weight:800;font-size:13px;display:none;text-align:center}
-.nota{max-width:1100px;margin:0 auto;padding:0 14px 20px;font-size:11px;color:#64748b}
+.nota{max-width:1100px;margin:0 auto;padding:6px 14px 20px;font-size:11px;color:#64748b}
 </style>
 </head>
 <body>
@@ -61,18 +62,22 @@ select.msel{background:rgba(255,255,255,.92);border:none;border-radius:9px;paddi
     <option value="M1">M1 · Rev. Interior</option>
     <option value="S5">S5 · Aberturas/Toldos</option>
   </select>
-  <div><div class="sub" id="gen">cargando…</div><div class="sub">takt 3 días hábiles por montaje</div></div>
-  <div class="chip">PARA HOY <b id="cYa">—</b></div>
-  <div class="chip">PRÓX. 60 DÍAS <b id="cProx">—</b></div>
+  <div><div class="sub" id="gen">cargando…</div><div class="sub">stock objetivo: 2 carros armados</div></div>
+  <div class="chip">ARMADOS <b id="cArm">—</b></div>
+  <div class="chip" id="chPa">POR ARMAR <b id="cPa">—</b></div>
   <a class="chip" href="./" style="margin-left:auto;background:rgba(255,255,255,.1)">🏠 Inicio</a>
   <div class="chip" style="background:rgba(255,255,255,.1);cursor:pointer" onclick="cargar()">↻</div>
 </div>
 <div class="off" id="off">⚠ SIN CONEXIÓN</div>
-<div class="wrap">
-  <div class="col"><h2>PRÓXIMOS A ARMAR · ESTIMADO POR ETAPA ACTUAL</h2><div id="prox"><div class="spin"></div></div></div>
-  <div class="col"><h2>✓ KITS ARMADOS</h2><div id="arm"></div></div>
+<div class="maxw">
+  <h2>🛒 CARROS · STOCK DEL SUPERMERCADO</h2>
+  <div class="carros" id="carros"><div class="spin"></div></div>
+  <div class="wrap2">
+    <div><h2>DEMANDA · PRÓXIMOS VEHÍCULOS QUE CONSUMEN KIT</h2><div id="prox"></div></div>
+    <div><h2>↗ ENTREGADOS</h2><div id="ent"></div></div>
+  </div>
 </div>
-<div class="nota">Estimación: cada vehículo avanza un montaje cada 3 días hábiles desde su etapa actual en Odoo (M0→S1→M1→M2→S2→M3→M4…). "¡YA!" = el vehículo ya está en el montaje y el kit se necesita ahora.</div>
+<div class="nota">Sistema pull contra stock: siempre 2 carros armados. Al ENTREGAR uno al montaje (FIFO), el stock baja y aparece un carro POR ARMAR para reponer. La demanda estimada usa la etapa real de cada vehículo en Odoo × takt 3 días hábiles.</div>
 <script>
 var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
 function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML}
@@ -84,52 +89,69 @@ function cargar(){
     DATA=D;
     document.getElementById('off').style.display='none';
     document.getElementById('gen').textContent=D.hoy+' · '+(D.hora||'')+' · refresca cada 5 min';
-    var pend=(D.proximos||[]).filter(function(p){return !p.armado});
-    document.getElementById('cYa').textContent=pend.filter(function(p){return p.dias===0}).length;
-    document.getElementById('cProx').textContent=pend.length;
+    document.getElementById('cArm').textContent=D.armados+'/'+D.objetivo;
+    document.getElementById('cPa').textContent=D.por_armar;
+    document.getElementById('chPa').style.background=D.por_armar>0?'rgba(239,68,68,.45)':'rgba(255,255,255,.15)';
+    // carros
     var h='';
-    if(!pend.length) h='<div class="vacio">Sin kits pendientes en los próximos 60 días ✓</div>';
-    pend.forEach(function(p,i){
-      var b=p.dias===0?['b-ya','¡YA!']:(p.dias<=3?['b-prox',p.dias+' días']:(p.dias<=9?['b-med',p.dias+' días']:['b-lejos',p.dias+' días']));
-      h+='<div class="card'+(p.dias===0?' ya':'')+'">'
-        +'<div class="badge '+b[0]+'"><div class="d">'+b[1]+'</div><div class="f">'+(p.dias===0?'en '+esc(D.montaje):'~'+esc(p.fecha_est))+'</div></div>'
-        +'<div class="inf"><div class="mo">'+esc(p.mo)+' <span class="et'+(p.dias===0?' aca':'')+'">'+(p.en_cola?'EN COLA · ':'')+'hoy en '+esc(p.etapa)+'</span></div>'
-        +'<div class="cl">'+esc(p.cliente||'—')+'</div><div class="pr">'+esc(p.producto||'')+'</div></div>'
-        +'<button class="bk" onclick="armar(this,'+i+')">✓ Kit<br>armado</button></div>';
+    (D.carros||[]).forEach(function(c){
+      h+='<div class="carro arm"><div><div class="tt">🛒 CARRO ARMADO <span style="color:#22c55e">✓</span></div>'
+        +'<div class="ff">armado el '+esc(c.fecha||'')+(c.por?' · '+esc(c.por):'')+'</div></div>'
+        +'<button class="b-ent" onclick="entregar(this)">→ ENTREGAR al montaje</button></div>';
     });
-    document.getElementById('prox').innerHTML=h;
-    window.__pend=pend;
+    for(var i=0;i<D.por_armar;i++){
+      h+='<div class="carro falta"><div><div class="tt">⚠ POR ARMAR</div>'
+        +'<div class="ff">reponer para volver al stock de '+D.objetivo+'</div></div>'
+        +'<button class="b-arm" onclick="armar(this)">✓ CARRO ARMADO</button></div>';
+    }
+    if(!h) h='<div class="vacio">Sin datos</div>';
+    document.getElementById('carros').innerHTML=h;
+    // demanda
+    var p='';
+    (D.proximos||[]).slice(0,15).forEach(function(x){
+      var b=x.dias===0?['b-ya','¡YA!']:(x.dias<=3?['b-prox',x.dias+' d']:(x.dias<=9?['b-med',x.dias+' d']:['b-lejos',x.dias+' d']));
+      p+='<div class="card'+(x.dias===0?' ya':'')+'"><div class="badge '+b[0]+'"><div class="d">'+b[1]+'</div><div class="f">'+(x.dias===0?'en '+esc(D.montaje):'~'+esc(x.fecha_est))+'</div></div>'
+        +'<div class="inf"><div class="mo">'+esc(x.mo)+' <span class="et'+(x.dias===0?' aca':'')+'">'+(x.en_cola?'EN COLA · ':'')+'hoy en '+esc(x.etapa)+'</span></div>'
+        +'<div class="cl">'+esc(x.cliente||'—')+'</div></div></div>';
+    });
+    if((D.proximos||[]).length>15) p+='<div class="vacio">… y '+((D.proximos||[]).length-15)+' más en los próximos 60 días</div>';
+    if(!p) p='<div class="vacio">Sin demanda estimada en 60 días</div>';
+    document.getElementById('prox').innerHTML=p;
+    // entregados
     var a='';
-    if(!(D.armados||[]).length) a='<div class="vacio">Todavía no hay kits registrados para '+esc(D.montaje)+'</div>';
-    window.__arm=D.armados||[];
-    (D.armados||[]).forEach(function(k,i){
-      var ent=(k.estado||'ARMADO')==='ENTREGADO';
-      a+='<div class="acard"><div class="f">'+esc((k.fecha||'').slice(5))+'</div><div class="mo">'+esc(k.mo)+'</div><div class="cl">'+esc(k.cliente||'')+'</div>'
-        +(ent?'<span class="st st-ent">ENTREGADO '+esc((k.fecha_ent||'').slice(5))+'</span>'
-             :'<span class="st st-arm">ARMADO</span><button class="bent" onclick="entregar(this,'+i+')">→ Entregado</button>')
-        +'</div>';
+    (D.entregados||[]).forEach(function(k){
+      a+='<div class="acard"><div class="f">'+esc((k.fecha_ent||'').slice(5))+'</div><div style="font-weight:800">'+(k.mo?esc(k.mo):'—')+'</div><div class="cl">'+esc(k.cliente||'')+'</div><div style="color:#38bdf8;font-weight:800">↗</div></div>';
     });
-    document.getElementById('arm').innerHTML=a;
+    if(!a) a='<div class="vacio">Todavía no hay entregas registradas</div>';
+    document.getElementById('ent').innerHTML=a;
   }).catch(function(e){
     document.getElementById('off').style.display='block';
-    document.getElementById('prox').innerHTML='<div class="vacio">No se pudo cargar: '+esc(String(e))+'</div>';
+    document.getElementById('carros').innerHTML='<div class="vacio">No se pudo cargar: '+esc(String(e))+'</div>';
   });
 }
-function armar(btn,i){
-  var p=window.__pend[i]; if(!p) return;
-  if(!confirm('¿Confirmás que el kit de '+DATA.montaje+' para la orden '+p.mo+' ('+(p.cliente||'')+') está armado?')) return;
-  btn.disabled=true; btn.innerHTML='guardando…';
-  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',montaje:DATA.montaje,mo:p.mo,cliente:p.cliente,por:'pañol'}),redirect:'follow'})
-    .then(function(r){return r.text()}).then(function(){btn.innerHTML='✓ listo';setTimeout(cargar,700)})
-    .catch(function(e){btn.disabled=false;btn.innerHTML='✓ Kit<br>armado';alert('Error: '+e)});
-}
-function entregar(btn,i){
-  var k=window.__arm[i]; if(!k) return;
-  if(!confirm('¿Confirmás la ENTREGA del kit '+DATA.montaje+' de la orden '+k.mo+' al sector?')) return;
+function armar(btn){
+  if(!confirm('¿Confirmás que hay un nuevo carro de '+DATA.montaje+' ARMADO en pañol?')) return;
   btn.disabled=true; btn.textContent='guardando…';
-  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',accion:'entregar',montaje:DATA.montaje,mo:k.mo}),redirect:'follow'})
+  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',accion:'armar',montaje:DATA.montaje,por:'pañol'}),redirect:'follow'})
     .then(function(r){return r.text()}).then(function(){setTimeout(cargar,600)})
-    .catch(function(e){btn.disabled=false;btn.textContent='→ Entregado';alert('Error: '+e)});
+    .catch(function(e){btn.disabled=false;btn.textContent='✓ CARRO ARMADO';alert('Error: '+e)});
+}
+function entregar(btn){
+  var ya=(DATA.proximos||[]).filter(function(x){return x.dias===0});
+  var dest='';
+  if(ya.length){
+    var ops=ya.map(function(x,i){return (i+1)+') '+x.mo+' '+(x.cliente||'')}).join('\n');
+    var sel=prompt('¿A qué orden se entrega el carro? (número de la lista o vacío si no se sabe)\n'+ops);
+    if(sel===null) return;
+    var n=parseInt(sel,10);
+    if(n>=1&&n<=ya.length) dest=ya[n-1];
+  }else{
+    if(!confirm('¿Confirmás la ENTREGA de un carro de '+DATA.montaje+' al montaje?')) return;
+  }
+  btn.disabled=true; btn.textContent='guardando…';
+  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',accion:'entregar',montaje:DATA.montaje,mo:dest?dest.mo:'',cliente:dest?dest.cliente:''}),redirect:'follow'})
+    .then(function(r){return r.text()}).then(function(){setTimeout(cargar,600)})
+    .catch(function(e){btn.disabled=false;btn.textContent='→ ENTREGAR al montaje';alert('Error: '+e)});
 }
 cargar();
 setInterval(cargar,300000);
