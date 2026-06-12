@@ -27,6 +27,7 @@ h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:
 .b-ent{background:#0ea5e9}
 .b-arm{background:#16a34a}
 .carro button:disabled{opacity:.6}
+.carro select{width:100%;border-radius:9px;border:1px solid #475569;background:#0f172a;color:#f1f5f9;padding:9px;font-size:13px;font-weight:700;margin-bottom:4px}
 /* dos columnas abajo */
 .wrap2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;margin-top:16px}
 @media(max-width:760px){.wrap2{grid-template-columns:1fr}
@@ -94,23 +95,27 @@ function cargar(){
     document.getElementById('chPa').style.background=D.por_armar>0?'rgba(239,68,68,.45)':'rgba(255,255,255,.15)';
     // carros
     var h='';
-    (D.carros||[]).forEach(function(c){
+    window.__carros=D.carros||[];
+    (D.carros||[]).forEach(function(c,i){
       h+='<div class="carro arm"><div><div class="tt">🛒 CARRO ARMADO <span style="color:#22c55e">✓</span></div>'
-        +(c.mo?'<div class="ff" style="color:#86efac;font-weight:700">ref: '+esc(c.mo)+(c.cliente?' · '+esc(c.cliente):'')+'</div>':'')
+        +(c.mo?'<div class="ff" style="color:#86efac;font-weight:700">asignado a '+esc(c.mo)+(c.cliente?' · '+esc(c.cliente):'')+'</div>':'<div class="ff">sin orden asignada</div>')
         +'<div class="ff">armado el '+esc(c.fecha||'')+(c.por?' · '+esc(c.por):'')+'</div></div>'
-        +'<button class="b-ent" onclick="entregar(this)">→ ENTREGAR al montaje</button></div>';
+        +'<button class="b-ent" onclick="entregar(this,'+i+')">→ ENTREGAR'+(c.mo?' ('+esc(c.mo)+')':'')+'</button></div>';
     });
-    // sugerencia: proximos sin kit entregado, salteando los ya cubiertos por carros en stock
-    var entSet={}; (D.entregados||[]).forEach(function(k){if(k.mo)entSet[k.mo]=1});
-    var demanda=(D.proximos||[]).filter(function(x){return !entSet[x.mo]});
-    window.__sug=[];
+    // cola de prioridad: proximos sin kit (ni armado ni entregado)
+    var usados={};
+    (D.entregados||[]).forEach(function(k){if(k.mo)usados[k.mo]=1});
+    (D.carros||[]).forEach(function(c){if(c.mo)usados[c.mo]=1});
+    var demanda=(D.proximos||[]).filter(function(x){return !usados[x.mo]});
+    window.__dem=demanda;
     for(var i=0;i<D.por_armar;i++){
-      var sug=demanda[(D.carros||[]).length+i]||null;
-      window.__sug[i]=sug;
+      var opts='';
+      demanda.forEach(function(x,j){
+        opts+='<option value="'+j+'"'+(j===i?' selected':'')+'>'+esc(x.mo)+' · '+esc((x.cliente||'').slice(0,24))+(x.dias===0?' · ¡YA!':' · ~'+esc(x.fecha_est))+'</option>';
+      });
       h+='<div class="carro falta"><div><div class="tt">⚠ POR ARMAR</div>'
-        +(sug?'<div class="ff" style="color:#fca5a5;font-weight:700">para '+esc(sug.mo)+' · '+esc(sug.cliente||'')+'</div>'
-             +'<div class="ff">'+esc(sug.producto||'')+(sug.dias===0?' · ¡ya está en '+esc(D.montaje)+'!':' · llega ~'+esc(sug.fecha_est))+'</div>'
-             :'<div class="ff">reponer para volver al stock de '+D.objetivo+'</div>')
+        +'<div class="ff">elegí por prioridad cuál armar:</div>'
+        +(demanda.length?'<select id="sel'+i+'">'+opts+'</select>':'<div class="ff">sin demanda pendiente</div>')
         +'</div><button class="b-arm" onclick="armar(this,'+i+')">✓ CARRO ARMADO</button></div>';
     }
     if(!h) h='<div class="vacio">Sin datos</div>';
@@ -139,29 +144,22 @@ function cargar(){
   });
 }
 function armar(btn,i){
-  var sug=(window.__sug||[])[i]||null;
-  if(!confirm('¿Confirmás que hay un nuevo carro de '+DATA.montaje+' ARMADO en pañol?'+(sug?'\n(sugerido para '+sug.mo+' · '+(sug.producto||'')+')':''))) return;
+  var sel=document.getElementById('sel'+i);
+  var sug=sel?(window.__dem||[])[parseInt(sel.value,10)]:null;
+  if(!sug){alert('Elegí para qué orden es el carro');return}
+  if(!confirm('¿Confirmás el carro de '+DATA.montaje+' ARMADO para '+sug.mo+' · '+(sug.cliente||'')+'\n('+(sug.producto||'')+')?')) return;
   btn.disabled=true; btn.textContent='guardando…';
-  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',accion:'armar',montaje:DATA.montaje,mo:sug?sug.mo:'',cliente:sug?sug.cliente:'',por:'pañol'}),redirect:'follow'})
+  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',accion:'armar',montaje:DATA.montaje,mo:sug.mo,cliente:sug.cliente,por:'pañol'}),redirect:'follow'})
     .then(function(r){return r.text()}).then(function(){setTimeout(cargar,600)})
     .catch(function(e){btn.disabled=false;btn.textContent='✓ CARRO ARMADO';alert('Error: '+e)});
 }
-function entregar(btn){
-  var ya=(DATA.proximos||[]).filter(function(x){return x.dias===0});
-  var dest='';
-  if(ya.length){
-    var ops=ya.map(function(x,i){return (i+1)+') '+x.mo+' '+(x.cliente||'')}).join('\n');
-    var sel=prompt('¿A qué orden se entrega el carro? (número de la lista o vacío si no se sabe)\n'+ops);
-    if(sel===null) return;
-    var n=parseInt(sel,10);
-    if(n>=1&&n<=ya.length) dest=ya[n-1];
-  }else{
-    if(!confirm('¿Confirmás la ENTREGA de un carro de '+DATA.montaje+' al montaje?')) return;
-  }
+function entregar(btn,i){
+  var c=(window.__carros||[])[i]||{};
+  if(!confirm('¿Confirmás la ENTREGA del carro de '+DATA.montaje+(c.mo?' asignado a '+c.mo+' · '+(c.cliente||''):'')+' al montaje?')) return;
   btn.disabled=true; btn.textContent='guardando…';
-  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',accion:'entregar',montaje:DATA.montaje,mo:dest?dest.mo:'',cliente:dest?dest.cliente:''}),redirect:'follow'})
+  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',accion:'entregar',montaje:DATA.montaje,mo:c.mo||''}),redirect:'follow'})
     .then(function(r){return r.text()}).then(function(){setTimeout(cargar,600)})
-    .catch(function(e){btn.disabled=false;btn.textContent='→ ENTREGAR al montaje';alert('Error: '+e)});
+    .catch(function(e){btn.disabled=false;btn.textContent='→ ENTREGAR';alert('Error: '+e)});
 }
 cargar();
 setInterval(cargar,300000);
