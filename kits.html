@@ -40,6 +40,10 @@ select.msel{background:rgba(255,255,255,.92);border:none;border-radius:9px;paddi
 .acard .f{flex:0 0 52px;font-size:11px;font-weight:800;color:var(--ok)}
 .acard .mo{font-weight:800}
 .acard .cl{font-size:12px;color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.st{font-size:10px;font-weight:800;border-radius:99px;padding:2px 9px}
+.st-arm{background:rgba(34,197,94,.18);color:#22c55e}
+.st-ent{background:rgba(56,189,248,.18);color:#38bdf8}
+.bent{border:none;border-radius:8px;background:#0ea5e9;color:#fff;font-weight:800;font-size:11px;padding:7px 9px;cursor:pointer}
 .vacio{color:var(--muted);font-size:13px;padding:18px;text-align:center;background:var(--panel);border-radius:11px}
 .spin{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite;margin:60px auto}
 @keyframes r{to{transform:rotate(360deg)}}
@@ -97,8 +101,13 @@ function cargar(){
     window.__pend=pend;
     var a='';
     if(!(D.armados||[]).length) a='<div class="vacio">Todavía no hay kits registrados para '+esc(D.montaje)+'</div>';
-    (D.armados||[]).forEach(function(k){
-      a+='<div class="acard"><div class="f">'+esc((k.fecha||'').slice(5))+'</div><div class="mo">'+esc(k.mo)+'</div><div class="cl">'+esc(k.cliente||'')+'</div><div style="color:var(--ok);font-weight:800">✓</div></div>';
+    window.__arm=D.armados||[];
+    (D.armados||[]).forEach(function(k,i){
+      var ent=(k.estado||'ARMADO')==='ENTREGADO';
+      a+='<div class="acard"><div class="f">'+esc((k.fecha||'').slice(5))+'</div><div class="mo">'+esc(k.mo)+'</div><div class="cl">'+esc(k.cliente||'')+'</div>'
+        +(ent?'<span class="st st-ent">ENTREGADO '+esc((k.fecha_ent||'').slice(5))+'</span>'
+             :'<span class="st st-arm">ARMADO</span><button class="bent" onclick="entregar(this,'+i+')">→ Entregado</button>')
+        +'</div>';
     });
     document.getElementById('arm').innerHTML=a;
   }).catch(function(e){
@@ -113,6 +122,14 @@ function armar(btn,i){
   fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',montaje:DATA.montaje,mo:p.mo,cliente:p.cliente,por:'pañol'}),redirect:'follow'})
     .then(function(r){return r.text()}).then(function(){btn.innerHTML='✓ listo';setTimeout(cargar,700)})
     .catch(function(e){btn.disabled=false;btn.innerHTML='✓ Kit<br>armado';alert('Error: '+e)});
+}
+function entregar(btn,i){
+  var k=window.__arm[i]; if(!k) return;
+  if(!confirm('¿Confirmás la ENTREGA del kit '+DATA.montaje+' de la orden '+k.mo+' al sector?')) return;
+  btn.disabled=true; btn.textContent='guardando…';
+  fetch(URL_EXEC,{method:'POST',body:JSON.stringify({tipo:'kit',accion:'entregar',montaje:DATA.montaje,mo:k.mo}),redirect:'follow'})
+    .then(function(r){return r.text()}).then(function(){setTimeout(cargar,600)})
+    .catch(function(e){btn.disabled=false;btn.textContent='→ Entregado';alert('Error: '+e)});
 }
 cargar();
 setInterval(cargar,300000);
