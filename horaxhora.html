@@ -7,8 +7,8 @@
 <style>
 :root{
   --nar:#EA580C; --bg:#0f172a; --panel:#1e293b; --line:#334155; --txt:#f1f5f9; --muted:#94a3b8;
-  --ok:#22c55e; --bad:#ef4444; --curso:#38bdf8; --nc:#a855f7; --plan:#475569;
-  --rowh:46px; --hcol:104px;
+  --ok:#22c55e; --bad:#ef4444; --curso:#38bdf8; --nc:#a855f7; --plan:#64748b;
+  --rowh:64px; --hcol:104px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
@@ -22,10 +22,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .wrap{overflow-x:auto}
 .grid{min-width:1240px}
 /* fila de horas */
-.horas{display:flex;position:sticky;top:54px;z-index:20;background:var(--bg);border-bottom:2px solid var(--line)}
+.horas{display:flex;position:sticky;top:54px;z-index:20;background:var(--bg);border-bottom:1px solid var(--line)}
 .horas .lbl{flex:0 0 240px;padding:6px 10px;font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.5px}
 .horas .h{flex:0 0 var(--hcol);text-align:left;padding:6px 0 6px 4px;font-weight:800;color:var(--muted);font-size:12px;border-left:1px solid var(--line)}
 .horas .h.alm{color:#64748b}
+.horas .mlb{flex:0 0 130px;padding:6px 10px;font-size:11px;color:var(--muted);font-weight:800;border-left:2px solid var(--line)}
+/* banda global plan vs real acumulado */
+.acum{display:flex;position:sticky;top:84px;z-index:19;background:#152036;border-bottom:2px solid var(--line)}
+.acum .lbl{flex:0 0 240px;padding:4px 10px;font-size:10px;font-weight:800;color:var(--muted);display:flex;flex-direction:column;justify-content:center;line-height:1.5}
+.acum .lbl .p{color:#cbd5e1}.acum .lbl .r{color:var(--curso)}
+.acum .c{flex:0 0 var(--hcol);border-left:1px solid #1e2c47;padding:4px 6px;font-size:11px;font-weight:800;line-height:1.5}
+.acum .c .p{color:#cbd5e1}
+.acum .c .r.g{color:var(--ok)} .acum .c .r.r{color:var(--bad)} .acum .c .r.f{color:#475569;font-weight:600}
+.acum .fin{flex:0 0 130px;border-left:2px solid var(--line);padding:4px 10px;font-size:11px;font-weight:800;line-height:1.5}
 /* grupo montaje */
 .gm{display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--panel);border-top:2px solid var(--line)}
 .gm .pill{color:#fff;font-weight:800;font-size:13px;padding:2px 12px;border-radius:8px}
@@ -33,17 +42,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .gm .res{font-size:12px;color:var(--muted);margin-left:auto}
 .gm .ef{font-size:13px;font-weight:800;padding:2px 10px;border-radius:8px}
 .ef.g{background:rgba(34,197,94,.15);color:var(--ok)} .ef.r{background:rgba(239,68,68,.15);color:var(--bad)}
-/* fila MO */
+/* fila MO: carril PLAN arriba + carril REAL abajo */
 .fila{display:flex;height:var(--rowh);border-bottom:1px solid #1c2940;position:relative}
 .fila:nth-child(odd){background:rgba(255,255,255,.015)}
 .fila .info{flex:0 0 240px;padding:5px 10px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--line)}
-.fila .info .mo{font-weight:800;font-size:15px;display:flex;gap:8px;align-items:center}
+.fila .info .mo{font-weight:800;font-size:15px}
 .fila .info .det{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tl{position:relative;flex:1;display:flex}
 .cell{flex:0 0 var(--hcol);border-left:1px solid #1e2c47;height:100%}
 .cell.alm{background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(100,116,139,.12) 6px,rgba(100,116,139,.12) 12px)}
-/* bloques de operaciones */
-.blk{position:absolute;top:7px;height:32px;border-radius:6px;font-size:11px;font-weight:700;color:#fff;
+.lane-tag{position:absolute;left:2px;font-size:8px;font-weight:800;color:#475569;letter-spacing:.5px}
+/* bloques PLAN (carril superior, finitos) */
+.pb{position:absolute;top:8px;height:13px;border-radius:4px;background:#33415588;border:1px solid var(--plan);
+  font-size:9px;font-weight:700;color:#cbd5e1;display:flex;align-items:center;padding:0 5px;overflow:hidden;white-space:nowrap}
+/* bloques REAL (carril inferior) */
+.blk{position:absolute;top:26px;height:30px;border-radius:6px;font-size:11px;font-weight:700;color:#fff;
   display:flex;align-items:center;padding:0 7px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:default;
   box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .blk.ok{background:linear-gradient(180deg,#16a34a,#15803d)}
@@ -52,18 +65,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .blk.curso::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:sweep 2.2s infinite}
 @keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
 .blk.nc{background:repeating-linear-gradient(45deg,#7c3aed,#7c3aed 8px,#6d28d9 8px,#6d28d9 16px)}
-.blk.plan{background:transparent;border:2px dashed var(--plan);color:var(--muted);box-shadow:none}
+/* desvío plan vs real */
+.dlt{position:absolute;top:26px;height:30px;border-radius:6px;background:rgba(239,68,68,.12);border:1px dashed #ef444488}
 /* linea AHORA */
 .ahora{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);z-index:10}
 .ahora::before{content:'AHORA';position:absolute;top:-1px;left:4px;background:var(--bad);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px}
 /* objetivo del dia por fila */
 .meta{flex:0 0 130px;border-left:2px solid var(--line);display:flex;flex-direction:column;justify-content:center;padding:4px 10px;gap:3px}
 .meta .t{font-size:10px;color:var(--muted);font-weight:800;letter-spacing:.4px}
-.meta .bar{height:8px;background:#27354f;border-radius:5px;overflow:hidden}
+.meta .bar{height:9px;background:#27354f;border-radius:5px;overflow:hidden;position:relative}
 .meta .bar i{display:block;height:100%;border-radius:5px}
+.meta .bar em{position:absolute;top:-2px;bottom:-2px;width:2px;background:#e2e8f0}
 .meta .v{font-size:11px;font-weight:800}
 .v.g{color:var(--ok)}.v.r{color:var(--bad)}
-.horas .mlb{flex:0 0 130px;padding:6px 10px;font-size:11px;color:var(--muted);font-weight:800;border-left:2px solid var(--line)}
 /* leyenda */
 .leg{display:flex;gap:18px;align-items:center;padding:10px 18px;color:var(--muted);font-size:12px;flex-wrap:wrap}
 .leg span{display:flex;align-items:center;gap:6px}
@@ -73,10 +87,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <body>
 <div class="hdr">
   <h1>⏱ HORA A HORA · POR MONTAJE</h1>
-  <div><div class="reloj" id="reloj">10:42</div><div class="sub">jueves 12/06 · jornada 8:10–12 / 13–17</div></div>
-  <div class="chip">PLAN HOY <b>38</b> ops</div>
-  <div class="chip">HECHAS <b>21</b> · 55%</div>
-  <div class="chip" style="background:rgba(34,197,94,.25)">PROYECCIÓN <b>✓ LLEGAMOS</b></div>
+  <div><div class="reloj">10:42</div><div class="sub">jueves 12/06 · jornada 8:10–12 / 13–17</div></div>
+  <div class="chip">OBJETIVO HOY <b>176 h</b> · 38 ops</div>
+  <div class="chip">A ESTA HORA: plan <b>52 h</b> · real <b>46 h</b></div>
+  <div class="chip" style="background:rgba(239,68,68,.3)">DESVÍO <b>−6 h</b> (−12%)</div>
+  <div class="chip" style="background:rgba(34,197,94,.25)">PROYECCIÓN CIERRE <b>91%</b></div>
   <div class="demo">⚠ MAQUETA · datos de ejemplo</div>
 </div>
 
@@ -87,82 +102,105 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
     <div class="h alm">12 · alm</div><div class="h">13</div><div class="h">14</div><div class="h">15</div><div class="h">16</div>
     <div class="mlb">OBJETIVO DÍA</div>
   </div>
+  <div class="acum">
+    <div class="lbl"><span class="p">▭ PLAN acumulado (h)</span><span class="r">▮ REAL acumulado (h)</span></div>
+    <div class="c"><span class="p">18</span><br><span class="r g">17</span></div>
+    <div class="c"><span class="p">37</span><br><span class="r g">36</span></div>
+    <div class="c"><span class="p">52</span><br><span class="r r">46 ▼</span></div>
+    <div class="c"><span class="p">66</span><br><span class="r f">—</span></div>
+    <div class="c"><span class="p">70</span><br><span class="r f">—</span></div>
+    <div class="c"><span class="p">96</span><br><span class="r f">—</span></div>
+    <div class="c"><span class="p">122</span><br><span class="r f">—</span></div>
+    <div class="c"><span class="p">148</span><br><span class="r f">—</span></div>
+    <div class="c"><span class="p">176</span><br><span class="r f">—</span></div>
+    <div class="fin"><span style="color:#cbd5e1">cierre 176 h</span><br><span style="color:#ef4444">proy. 160 h</span></div>
+  </div>
   <div id="board"></div>
 </div></div>
 
 <div class="leg">
-  <span><i style="background:#16a34a"></i> Terminada en tiempo</span>
-  <span><i style="background:#dc2626"></i> Terminada ineficiente</span>
+  <span><i style="background:#33415588;border:1px solid #64748b;height:8px"></i> Carril superior: PLAN del día (fijado 7:45)</span>
+  <span><i style="background:#16a34a"></i> Real en tiempo</span>
+  <span><i style="background:#dc2626"></i> Real ineficiente</span>
   <span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso</span>
   <span><i style="background:repeating-linear-gradient(45deg,#7c3aed,#7c3aed 4px,#6d28d9 4px,#6d28d9 8px)"></i> NC / Retrabajo</span>
-  <span><i style="border:2px dashed #475569"></i> Planificada (lo que falta para el objetivo)</span>
+  <span><i style="background:rgba(239,68,68,.12);border:1px dashed #ef4444"></i> Atraso vs plan</span>
   <span style="color:#ef4444;font-weight:800">│ AHORA</span>
 </div>
 
 <script>
-// ====== MAQUETA: datos de ejemplo con la estructura real del DET ======
-// horario: eje 8:00 -> 17:00 (9 horas). t en minutos desde las 8:00.
-var H0 = 8*60, H1 = 17*60, COLP = 104, INFOW = 240;
-function x(hhmm){ var p=hhmm.split(':'); return ((+p[0]*60 + +p[1]) - H0) / 60 * COLP; }
-function w(m){ return m/60*COLP; }
+// ====== MAQUETA: plan (objetivo 7:45) vs real, por orden ======
+var H0 = 8*60, COLP = 104;
+function toMin(s){ var p=s.split(':'); return +p[0]*60 + +p[1]; }
+function x(s){ return (toMin(s) - H0) / 60 * COLP; }
+function w(m0,m1){ return Math.max((toMin(m1)-toMin(m0))/60*COLP, 24); }
 
+// plan: [ini,fin,nombre] — real: [ini,fin,estado,nombre]
 var DATA = [
  {code:'M0', name:'Soldadura', color:'#dc2626', resp:'Yance', ef:96, mos:[
-   {mo:'01128', det:'Pegasso · González · 8d', meta:62, ops:[
-     ['08:10','09:35','ok','Refuerzo piso'], ['09:35','10:20','ok','Soporte tanques'],
-     ['10:20','11:55','curso','Estructura techo'], ['13:00','15:30','plan','Marcos aberturas']]},
-   {mo:'01118', det:'Chasis · Ríos · 3d', meta:45, ops:[
-     ['08:15','10:05','ok','Largueros'], ['10:05','11:50','curso','Travesaños'], ['13:00','16:00','plan','Piso estructural']]},
+   {mo:'01128', det:'Pegasso · González · 8d',
+    plan:[['08:10','09:30','Refuerzo piso'],['09:30','10:10','Soporte tanques'],['10:10','11:40','Estructura techo'],['13:00','15:30','Marcos aberturas'],['15:30','16:50','Refuerzos laterales']],
+    real:[['08:10','09:35','ok','Refuerzo piso'],['09:35','10:20','ok','Soporte tanques'],['10:20','11:55','curso','Estructura techo']]},
+   {mo:'01118', det:'Chasis · Ríos · 3d',
+    plan:[['08:10','10:00','Largueros'],['10:00','11:30','Travesaños'],['13:00','16:00','Piso estructural']],
+    real:[['08:15','10:05','ok','Largueros'],['10:05','11:50','curso','Travesaños']]},
  ]},
  {code:'M2', name:'Inst. Eléctricas', color:'#f59e0b', resp:'Rodrigo', ef:78, mos:[
-   {mo:'01116', det:'Pegasso · Molina · 5d', meta:70, ops:[
-     ['08:10','09:10','ok','Cableado 12V'], ['09:10','10:35','ko','Tablero principal +25m'],
-     ['10:35','11:55','curso','Iluminación LED'], ['13:00','14:30','plan','Tomas 220V'], ['14:30','16:30','plan','Prueba circuitos']]},
-   {mo:'01115', det:'Furgón · Vega · 2d', meta:55, ops:[
-     ['08:20','09:40','ok','Pasacables'], ['09:40','11:00','ok','Batería aux'], ['13:00','15:00','plan','Panel solar']]},
-   {mo:'01113', det:'Xplorer · Torres · 4d', meta:30, ops:[
-     ['08:10','09:00','ko','Conexión heladera +18m'], ['09:00','10:10','nc','RETRAB conector roto'], ['10:10','11:55','curso','Centralita']]},
+   {mo:'01116', det:'Pegasso · Molina · 5d',
+    plan:[['08:10','09:10','Cableado 12V'],['09:10','10:10','Tablero principal'],['10:10','11:30','Iluminación LED'],['13:00','14:30','Tomas 220V'],['14:30','16:30','Prueba circuitos']],
+    real:[['08:10','09:10','ok','Cableado 12V'],['09:10','10:35','ko','Tablero principal +25m'],['10:35','11:55','curso','Iluminación LED']]},
+   {mo:'01115', det:'Furgón · Vega · 2d',
+    plan:[['08:10','09:30','Pasacables'],['09:30','11:00','Batería aux'],['13:00','15:00','Panel solar']],
+    real:[['08:20','09:40','ok','Pasacables'],['09:40','11:00','ok','Batería aux']]},
+   {mo:'01113', det:'Xplorer · Torres · 4d',
+    plan:[['08:10','09:00','Conexión heladera'],['09:00','10:30','Centralita'],['10:30','11:55','Sensores'],['13:00','15:00','Prueba consumos']],
+    real:[['08:10','09:00','ko','Conexión heladera +18m'],['09:00','10:10','nc','RETRAB conector roto'],['10:10','11:55','curso','Centralita']]},
  ]},
  {code:'M4', name:'Agua / Gas', color:'#0891b2', resp:'Rodrigo', ef:91, mos:[
-   {mo:'01124', det:'Pegasso · Campos · 6d', meta:80, ops:[
-     ['08:10','09:30','ok','Cañería agua dulce'], ['09:30','11:10','ok','Bomba presurizada'],
-     ['11:10','11:55','curso','Caldera'], ['13:00','15:00','plan','Circuito gas'], ['15:00','16:40','plan','Prueba estanqueidad']]},
-   {mo:'01110', det:'Camper · Juárez · 1d', meta:50, ops:[
-     ['08:30','10:00','ok','Tanque grises'], ['10:00','11:55','curso','Dispenser'], ['13:00','15:30','plan','Griferías']]},
+   {mo:'01124', det:'Pegasso · Campos · 6d',
+    plan:[['08:10','09:30','Cañería agua dulce'],['09:30','11:00','Bomba presurizada'],['11:00','11:55','Caldera'],['13:00','15:00','Circuito gas'],['15:00','16:40','Prueba estanqueidad']],
+    real:[['08:10','09:30','ok','Cañería agua dulce'],['09:30','11:10','ok','Bomba presurizada'],['11:10','11:55','curso','Caldera']]},
+   {mo:'01110', det:'Camper · Juárez · 1d',
+    plan:[['08:10','09:45','Tanque grises'],['09:45','11:30','Dispenser'],['13:00','15:30','Griferías']],
+    real:[['08:30','10:00','ok','Tanque grises'],['10:00','11:55','curso','Dispenser']]},
  ]},
  {code:'QC', name:'Control Final', color:'#16a34a', resp:'Rodrigo', ef:64, mos:[
-   {mo:'01121', det:'Pegasso · L. Agustín · 12d ⚠', meta:35, ops:[
-     ['08:10','09:50','nc','RETRAB bomba dispenser'], ['09:50','11:30','ko','Prueba funcionalidad +40m'],
-     ['11:30','11:55','curso','Checklist QC'], ['13:00','16:00','plan','Prueba ruta']]},
-   {mo:'01125', det:'Furgón · T. Lucas · 9d ⚠', meta:20, ops:[
-     ['08:10','11:55','nc','RETRAB detalles carpintería'], ['13:00','16:30','plan','Sellado perfiles']]},
+   {mo:'01121', det:'Pegasso · L. Agustín · 12d ⚠',
+    plan:[['08:10','09:30','Prueba funcionalidad'],['09:30','10:30','Checklist QC'],['10:30','11:55','Prueba ruta'],['13:00','15:00','Detalles entrega']],
+    real:[['08:10','09:50','nc','RETRAB bomba dispenser'],['09:50','11:30','ko','Prueba funcionalidad +40m'],['11:30','11:55','curso','Checklist QC']]},
+   {mo:'01125', det:'Furgón · T. Lucas · 9d ⚠',
+    plan:[['08:10','10:30','Sellado perfiles'],['10:30','11:55','Checklist QC'],['13:00','16:00','Prueba ruta']],
+    real:[['08:10','11:55','nc','RETRAB detalles carpintería']]},
  ]},
 ];
 
+var AHORA='10:42';
 var hb='';
 DATA.forEach(function(g){
   hb+='<div class="gm"><span class="pill" style="background:'+g.color+'">'+g.code+'</span><span class="nom">'+g.name+'</span>'
     +'<span class="ef '+(g.ef>=75?'g':'r')+'">EF '+g.ef+'%</span><span class="res">supervisa '+g.resp+'</span></div>';
   g.mos.forEach(function(m){
-    var done=0, tot=0;
-    m.ops.forEach(function(o){ tot++; if(o[2]==='ok'||o[2]==='ko') done++; });
-    var pct=Math.round(done*100/tot);
-    var llega = pct >= m.meta;
+    // plan esperado a esta hora vs real hecho (minutos)
+    var planAhora=0, planDia=0, realHecho=0;
+    m.plan.forEach(function(p){ var a=toMin(p[0]), b=toMin(p[1]), n=toMin(AHORA);
+      planDia += b-a; planAhora += Math.max(0, Math.min(b,n)-a); });
+    m.real.forEach(function(r){ var a=toMin(r[0]), b=Math.min(toMin(r[1]),toMin(AHORA));
+      if(r[2]!=='nc' && b>a) realHecho += b-a; });
+    var pctPlanAhora = Math.round(planAhora*100/planDia);
+    var pctReal = Math.round(realHecho*100/planDia);
+    var alDia = pctReal >= pctPlanAhora - 5;
     hb+='<div class="fila"><div class="info"><div class="mo">'+m.mo+'</div><div class="det">'+m.det+'</div></div><div class="tl">';
     for(var c=0;c<9;c++) hb+='<div class="cell'+(c===4?' alm':'')+'"></div>';
-    m.ops.forEach(function(o){
-      var l=x(o[0]), wd=Math.max(w((toMin(o[1])-toMin(o[0]))),26);
-      hb+='<div class="blk '+o[2]+'" style="left:'+l+'px;width:'+wd+'px" title="'+o[3]+'">'+o[3]+'</div>';
-    });
-    hb+='<div class="ahora" style="left:'+x('10:42')+'px"></div>';
-    hb+='</div><div class="meta"><div class="t">AVANCE vs META '+m.meta+'%</div>'
-      +'<div class="bar"><i style="width:'+Math.min(pct,100)+'%;background:'+(llega?'#22c55e':'#ef4444')+'"></i></div>'
-      +'<div class="v '+(llega?'g':'r')+'">'+pct+'% · '+(llega?'✓ llega':'✗ no llega')+'</div></div></div>';
+    hb+='<span class="lane-tag" style="top:10px">PLAN</span><span class="lane-tag" style="top:36px">REAL</span>';
+    m.plan.forEach(function(p){ hb+='<div class="pb" style="left:'+x(p[0])+'px;width:'+w(p[0],p[1])+'px" title="PLAN: '+p[2]+'">'+p[2]+'</div>'; });
+    m.real.forEach(function(r){ hb+='<div class="blk '+r[2]+'" style="left:'+x(r[0])+'px;width:'+w(r[0],r[1])+'px" title="'+r[3]+'">'+r[3]+'</div>'; });
+    hb+='<div class="ahora" style="left:'+x(AHORA)+'px"></div>';
+    hb+='</div><div class="meta"><div class="t">REAL '+pctReal+'% vs PLAN '+pctPlanAhora+'%</div>'
+      +'<div class="bar"><i style="width:'+Math.min(pctReal,100)+'%;background:'+(alDia?'#22c55e':'#ef4444')+'"></i><em style="left:'+Math.min(pctPlanAhora,100)+'%"></em></div>'
+      +'<div class="v '+(alDia?'g':'r')+'">'+(alDia?'✓ al día':'✗ atrasada '+(pctPlanAhora-pctReal)+'pts')+'</div></div></div>';
   });
 });
-function toMin(hhmm){ var p=hhmm.split(':'); return +p[0]*60 + +p[1]; }
 document.getElementById('board').innerHTML=hb;
-// reloj de la maqueta congelado en 10:42 a proposito
 </script>
 </body>
 </html>
