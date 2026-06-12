@@ -86,6 +86,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   .fila .info .det{font-size:10px}
 }
 .blk,.pb{cursor:pointer}
+.blk.valdone{outline:2px solid #f1f5f9}
+#sheet .btns{display:flex;gap:10px;margin:12px 0 8px}
+#sheet .btns button{flex:1;border:none;border-radius:10px;padding:13px 0;font-size:16px;font-weight:800;color:#fff}
+#sheet .bok{background:#16a34a}#sheet .bng{background:#dc2626}
+#sheet select,#sheet input[type=text]{width:100%;border-radius:9px;border:1px solid #475569;background:#0f172a;color:#f1f5f9;padding:10px;font-size:14px;margin-bottom:8px}
+#sheet select.warn{border:2px solid #ef4444;color:#fca5a5;font-weight:700}
+#sheet .stx{font-size:13px;font-weight:800;min-height:18px}
 #sheet{position:fixed;left:0;right:0;bottom:-100%;background:#1e293b;border-top:3px solid var(--nar);border-radius:18px 18px 0 0;padding:18px 20px 26px;z-index:50;transition:bottom .2s;box-shadow:0 -8px 30px rgba(0,0,0,.6)}
 #sheet.on{bottom:0}
 #sheet .k{display:inline-block;font-size:11px;font-weight:800;padding:2px 10px;border-radius:99px;margin-bottom:8px}
@@ -109,7 +116,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   <div class="chip" style="background:rgba(255,255,255,.1)" onclick="cargar()">↻ Actualizar</div>
 </div>
 <div id="shade" onclick="cerrarDet()"></div>
-<div id="sheet"><button class="x" onclick="cerrarDet()">✕</button><span class="k" id="shK"></span><h2 id="shT"></h2><div class="m" id="shM"></div></div>
+<div id="sheet"><button class="x" onclick="cerrarDet()">✕</button><span class="k" id="shK"></span><h2 id="shT"></h2><div class="m" id="shM"></div><div id="shCtl"></div></div>
 <div class="off" id="off">⚠ SIN CONEXIÓN — mostrando últimos datos</div>
 <div class="alertbar" id="alertbar"></div>
 <div class="wrap"><div class="grid" id="grid"><div class="spin"></div></div></div>
@@ -133,6 +140,8 @@ function hN(v){return Math.round(v*10)/10}
 function fmtM(m){var h=Math.floor(m/60),mi=m%60;return (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi}
 var KLAB={ok:['Terminada en tiempo','#16a34a'],ko:['Terminada ineficiente','#dc2626'],curso:['En curso','#0ea5e9'],nc:['NC / Retrabajo','#7c3aed'],plan:['Tarea planificada (teórico)','#475569']};
 function cerrarDet(){document.getElementById('sheet').classList.remove('on');document.getElementById('shade').classList.remove('on')}
+var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
+var CUR=null;
 document.addEventListener('click',function(ev){
   var b=ev.target.closest('.blk,.pb'); if(!b) return;
   var k=b.getAttribute('data-k')||'plan', lab=KLAB[k]||KLAB.plan;
@@ -140,10 +149,46 @@ document.addEventListener('click',function(ev){
   document.getElementById('shK').style.background=lab[1];
   document.getElementById('shT').textContent=(b.getAttribute('title')||b.textContent).replace(/^PLAN: /,'');
   var fila=b.closest('.fila'); var who=fila?fila.querySelector('.info .mo').textContent.trim():'';
-  document.getElementById('shM').textContent=(who?who+' · ':'')+(b.getAttribute('data-h')||'');
+  var obj=+(b.getAttribute('data-obj')||0), rmin=+(b.getAttribute('data-rmin')||0);
+  var inef=obj>0&&rmin>obj, ef=(obj>0&&rmin>0)?Math.round(obj*100/rmin):null;
+  var meta=(who?who+' · ':'')+(b.getAttribute('data-h')||'');
+  if(rmin>0) meta+=' · real '+rmin+'m'+(obj>0?' / obj '+obj+'m':'');
+  if(ef!=null) meta+=' · ef '+ef+'%'+(inef?' · INEFICIENTE':'');
+  document.getElementById('shM').innerHTML=esc(meta)+(inef?' <b style="color:#ef4444">INEFICIENTE</b>':'');
+  var ctl=document.getElementById('shCtl');
+  if(k!=='plan'&&b.getAttribute('data-mof')){
+    CUR=b;
+    var val=b.getAttribute('data-val');
+    if(val){
+      ctl.innerHTML='<div class="stx" style="color:#22c55e">✓ Ya validada: '+esc(val)+' (desde la app o este tablero)</div>';
+    }else{
+      ctl.innerHTML='<div class="btns"><button class="bok" onclick="valHxH(\'OK\')">✔ OK</button><button class="bng" onclick="valHxH(\'NG\')">✘ NG</button></div>'
+        +(inef?'<select id="shCz" class="warn"><option value="">⚠ Causal de ineficiencia (obligatorio)…</option><option>Operario</option><option>Material</option><option>Diseño</option><option>Montaje anterior</option><option>Herramienta</option></select>':'')
+        +'<input type="text" id="shNota" placeholder="Nota (opcional)"><div class="stx" id="shSt"></div>';
+    }
+  }else{CUR=null;ctl.innerHTML='';}
   document.getElementById('sheet').classList.add('on');
   document.getElementById('shade').classList.add('on');
 });
+function valHxH(tipo){
+  if(!CUR) return;
+  var b=CUR, st=document.getElementById('shSt');
+  var obj=+(b.getAttribute('data-obj')||0), rmin=+(b.getAttribute('data-rmin')||0);
+  var inef=obj>0&&rmin>obj;
+  var cz=document.getElementById('shCz'); var causal=cz?cz.value:'';
+  if(inef&&!causal){st.textContent='⚠ Elegí el causal de la ineficiencia';st.style.color='#ef4444';return}
+  var sec=b.getAttribute('data-sec')||'';
+  var payload={user:(sec==='M0'?'yance':'rodrigo'), mo:b.getAttribute('data-mof'), operario:b.getAttribute('data-opn'),
+    wo:b.getAttribute('data-wof'), montaje:(b.getAttribute('data-mwc')||sec), obj_min:obj, real_min:rmin,
+    validacion:tipo, nota:(document.getElementById('shNota')||{}).value||'', causal:causal};
+  st.textContent='guardando…';st.style.color='#94a3b8';
+  fetch(URL_EXEC,{method:'POST',body:JSON.stringify(payload),redirect:'follow'}).then(function(r){return r.text()}).then(function(){
+    st.textContent='✓ Guardado como '+payload.user.toUpperCase();st.style.color='#22c55e';
+    b.setAttribute('data-val',tipo);b.classList.add('valdone');
+    if(!/^✓/.test(b.textContent)) b.textContent='✓ '+b.textContent;
+    setTimeout(function(){cerrarDet();cargar()},900);
+  }).catch(function(e){st.textContent='Error: '+e;st.style.color='#ef4444'});
+}
 
 function render(D){
   var rs=D.rondas_sup;
@@ -223,7 +268,7 @@ function render(D){
         }else{
           SEGS.forEach(function(sg){h+='<div class="pb" style="left:'+((sg[0]-480)/60*COLP)+'px;width:'+((sg[1]-sg[0])/60*COLP)+'px" title="sin plan pendiente — jornada esperada">sin plan pendiente · jornada</div>'});
         }
-        (o.real||[]).forEach(function(r){h+='<div class="blk '+r.e+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+'" style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo)+' · '+esc(r.wo)+'">'+esc(r.mo?r.mo+' · ':'')+esc(r.wo)+'</div>'});
+        (o.real||[]).forEach(function(r){h+='<div class="blk '+r.e+(r.val?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||o.nom)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(code)+'" style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo)+' · '+esc(r.wo)+'">'+(r.val?'✓ ':'')+esc(r.mo?r.mo+' · ':'')+esc(r.wo)+'</div>'});
         h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
         if(planDia>0){
           h+='</div><div class="meta"><div class="t">REAL '+pR+'% vs PLAN '+pPA+'%</div>'
@@ -256,7 +301,7 @@ function render(D){
       for(var c=0;c<NHC;c++) h+='<div class="cell'+(c===almIdx?' alm':'')+'"></div>';
       h+='<span class="lane-tag" style="top:10px">PLAN</span><span class="lane-tag" style="top:36px">REAL</span>';
       (m.plan||[]).forEach(function(p){h+='<div class="pb" data-k="plan" data-h="'+esc(p.ini)+'–'+esc(p.fin)+'" style="left:'+x(p.ini)+'px;width:'+w(p.ini,p.fin)+'px" title="PLAN: '+esc(p.wo)+'">'+esc(p.wo)+'</div>'});
-      (m.real||[]).forEach(function(r){h+='<div class="blk '+r.e+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+' · '+esc(r.op)+'" style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.wo)+' · '+esc(r.op)+'">'+esc(r.wo)+'</div>'});
+      (m.real||[]).forEach(function(r){h+='<div class="blk '+r.e+(r.val?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+' · '+esc(r.op)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||r.op)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(g.code)+'" style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.wo)+' · '+esc(r.op)+'">'+(r.val?'✓ ':'')+esc(r.wo)+'</div>'});
       h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
       if(sinPlan){
         h+='</div><div class="meta"><div class="t">SIN PLAN PENDIENTE</div><div class="v m">'+((m.real||[]).length?'solo real':'—')+'</div></div></div>';
