@@ -20,6 +20,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .chip b{font-size:15px}
 .reloj{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
 .off{background:var(--bad);color:#fff;padding:6px 14px;font-weight:800;font-size:13px;display:none;text-align:center}
+.alertbar{background:var(--bad);color:#fff;padding:6px 14px;font-weight:800;font-size:13px;display:none;flex:0 0 auto;line-height:1.5}
 .wrap{flex:1;overflow:auto;-webkit-overflow-scrolling:touch}
 .grid{min-width:1240px}
 .sticky-top{position:sticky;top:0;z-index:20}
@@ -109,6 +110,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div id="shade" onclick="cerrarDet()"></div>
 <div id="sheet"><button class="x" onclick="cerrarDet()">✕</button><span class="k" id="shK"></span><h2 id="shT"></h2><div class="m" id="shM"></div></div>
 <div class="off" id="off">⚠ SIN CONEXIÓN — mostrando últimos datos</div>
+<div class="alertbar" id="alertbar"></div>
 <div class="wrap"><div class="grid" id="grid"><div class="spin"></div></div></div>
 <div class="leg">
   <span><i style="background:#33415588;border:1px solid #64748b;height:8px"></i> Carril superior: tareas teóricas del día (plan 7:45 de sus órdenes)</span>
@@ -143,6 +145,8 @@ document.addEventListener('click',function(ev){
 });
 
 function render(D){
+  var ab=document.getElementById('alertbar');
+  if(D.alertas&&D.alertas.length){ab.style.display='block';ab.innerHTML=D.alertas.map(function(a){return '• '+esc(a.msg||a)}).join('   ')}else ab.style.display='none';
   document.getElementById('reloj').textContent=D.hora;
   document.getElementById('sub').textContent=D.fecha+' · jornada '+(D.sab?'8–13':'8:10–12 / 13–17')+(D.congelado?' · plan congelado 7:45':' · plan recién armado')+' · refresca cada 5 min';
   var planH=hN(D.plan_total_min/60), paH=hN(D.plan_ahora_min/60), raH=hN(D.real_ahora_min/60);
