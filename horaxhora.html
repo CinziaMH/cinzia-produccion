@@ -88,7 +88,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div class="off" id="off">⚠ SIN CONEXIÓN — mostrando últimos datos</div>
 <div class="wrap"><div class="grid" id="grid"><div class="spin"></div></div></div>
 <div class="leg">
-  <span><i style="background:#33415588;border:1px solid #64748b;height:8px"></i> Carril superior: jornada esperada (vista operario) / PLAN del día (vista por orden)</span>
+  <span><i style="background:#33415588;border:1px solid #64748b;height:8px"></i> Carril superior: tareas teóricas del día (plan 7:45 de sus órdenes)</span>
   <span><i style="background:#16a34a"></i> Real en tiempo</span>
   <span><i style="background:#dc2626"></i> Real ineficiente</span>
   <span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso</span>
@@ -138,6 +138,19 @@ function render(D){
   var elapsed=0; SEGS.forEach(function(sg){var v=Math.min(nowM,sg[1])-sg[0]; if(v>0)elapsed+=v});
   var porMO=/[?&]por=mo/.test(location.search);
   if(!porMO && D.operarios && D.operarios.length){
+    var moPlan={}; (D.grupos||[]).forEach(function(g){(g.mos||[]).forEach(function(m){moPlan[m.mo]=m.plan||[]})});
+    function packCliente(durs){
+      var out=[],si=0,cur=SEGS[0][0];
+      for(var i=0;i<durs.length&&si<SEGS.length;i++){
+        var rem=durs[i].d>0?durs[i].d:30;
+        while(rem>0&&si<SEGS.length){
+          var fin=Math.min(cur+rem,SEGS[si][1]);
+          if(fin>cur){out.push({wo:durs[i].n,a:cur,b:fin});rem-=(fin-cur);cur=fin}
+          if(cur>=SEGS[si][1]){si++;if(si<SEGS.length)cur=SEGS[si][0]}
+        }
+      }
+      return out;
+    }
     var NOMS={M0:'Soldadura',S1:'Armado Muebles',M1:'Revest. Interior',M2:'Inst. Eléctricas',S2:'Fibra',M3:'Revest. Exterior',M4:'Agua / Gas',M5:'Montaje 5',S5:'Aberturas / Toldos',S6:'Slide Out',S7:'Tapicería',QC:'Control Final',HOSP:'Hospital'};
     var ORDEN=['M0','S1','M1','M2','S2','M3','M4','M5','S5','S6','S7','QC','HOSP'];
     var bySec={}; D.operarios.forEach(function(o){(bySec[o.sector]=bySec[o.sector]||[]).push(o)});
@@ -146,19 +159,36 @@ function render(D){
       var lst=bySec[code]; lst.sort(function(a,b){return a.nom<b.nom?-1:1});
       h+='<div class="gm"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span><span class="cnt">'+lst.length+' operarios</span></div>';
       lst.forEach(function(o){
-        var reg=0, mos={};
-        (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)reg+=b-a; if(r.mo)mos[r.mo]=1});
+        var reg=0, mos={}, ordenMos=[];
+        (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)reg+=b-a; if(r.mo&&!mos[r.mo]){mos[r.mo]=1;ordenMos.push(r.mo)}});
+        var durs=[]; ordenMos.forEach(function(mo){(moPlan[mo]||[]).forEach(function(p){durs.push({n:mo+' · '+p.wo,d:toMin(p.fin)-toMin(p.ini)})})});
+        var planOps=packCliente(durs);
+        var planDia=0, planAhora=0, realHecho=0;
+        planOps.forEach(function(p){planDia+=p.b-p.a; var v=Math.min(p.b,nowM)-p.a; if(v>0)planAhora+=v});
+        (o.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)realHecho+=b-a});
         var pReg=elapsed>0?Math.round(reg*100/elapsed):0;
-        var ok=pReg>=75;
+        var pPA=planDia>0?Math.round(planAhora*100/planDia):0;
+        var pR=planDia>0?Math.round(realHecho*100/planDia):0;
+        var ok=planDia>0?(pR>=pPA-5):(pReg>=75);
         h+='<div class="fila"><div class="info"><div class="mo">'+esc(o.nom)+'</div><div class="det">'+esc(Object.keys(mos).join(' · ')||'sin órdenes')+'</div></div><div class="tl">';
         for(var c=0;c<NHC;c++) h+='<div class="cell'+(c===almIdx?' alm':'')+'"></div>';
         h+='<span class="lane-tag" style="top:10px">ESP</span><span class="lane-tag" style="top:36px">REAL</span>';
-        SEGS.forEach(function(sg){h+='<div class="pb" style="left:'+((sg[0]-480)/60*COLP)+'px;width:'+((sg[1]-sg[0])/60*COLP)+'px" title="jornada esperada">jornada</div>'});
+        if(planOps.length){
+          planOps.forEach(function(p){h+='<div class="pb" style="left:'+((p.a-H0)/60*COLP)+'px;width:'+Math.max((p.b-p.a)/60*COLP,22)+'px" title="PLAN: '+esc(p.wo)+'">'+esc(p.wo)+'</div>'});
+        }else{
+          SEGS.forEach(function(sg){h+='<div class="pb" style="left:'+((sg[0]-480)/60*COLP)+'px;width:'+((sg[1]-sg[0])/60*COLP)+'px" title="sin plan pendiente — jornada esperada">sin plan pendiente · jornada</div>'});
+        }
         (o.real||[]).forEach(function(r){h+='<div class="blk '+r.e+'" style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo)+' · '+esc(r.wo)+'">'+esc(r.mo?r.mo+' · ':'')+esc(r.wo)+'</div>'});
         h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
-        h+='</div><div class="meta"><div class="t">REGISTRADO vs JORNADA</div>'
-          +'<div class="bar"><i style="width:'+Math.min(pReg,100)+'%;background:'+(ok?'#22c55e':'#ef4444')+'"></i><em style="left:99%"></em></div>'
-          +'<div class="v '+(ok?'g':'r')+'">'+pReg+'% del tiempo'+(reg===0?' · ⚠ sin registro':'')+'</div></div></div>';
+        if(planDia>0){
+          h+='</div><div class="meta"><div class="t">REAL '+pR+'% vs PLAN '+pPA+'%</div>'
+            +'<div class="bar"><i style="width:'+Math.min(pR,100)+'%;background:'+(ok?'#22c55e':'#ef4444')+'"></i><em style="left:'+Math.min(pPA,100)+'%"></em></div>'
+            +'<div class="v '+(ok?'g':'r')+'">'+(ok?'✓ al día':'✗ atrasado '+(pPA-pR)+'pts')+'</div></div></div>';
+        }else{
+          h+='</div><div class="meta"><div class="t">REGISTRADO vs JORNADA</div>'
+            +'<div class="bar"><i style="width:'+Math.min(pReg,100)+'%;background:'+(ok?'#22c55e':'#ef4444')+'"></i><em style="left:99%"></em></div>'
+            +'<div class="v '+(ok?'g':'r')+'">'+pReg+'% del tiempo'+(reg===0?' · ⚠ sin registro':'')+'</div></div></div>';
+        }
       });
     });
     document.getElementById('grid').innerHTML=h;
