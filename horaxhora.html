@@ -88,7 +88,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div class="off" id="off">⚠ SIN CONEXIÓN — mostrando últimos datos</div>
 <div class="wrap"><div class="grid" id="grid"><div class="spin"></div></div></div>
 <div class="leg">
-  <span><i style="background:#33415588;border:1px solid #64748b;height:8px"></i> Carril superior: PLAN del día (WOs pendientes, congelado 7:45)</span>
+  <span><i style="background:#33415588;border:1px solid #64748b;height:8px"></i> Carril superior: jornada esperada (vista operario) / PLAN del día (vista por orden)</span>
   <span><i style="background:#16a34a"></i> Real en tiempo</span>
   <span><i style="background:#dc2626"></i> Real ineficiente</span>
   <span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso</span>
@@ -134,6 +134,36 @@ function render(D){
   h+='<div class="fin"><span style="color:#cbd5e1">cierre plan '+planH+' h</span><br><span style="color:'+(proy!=null&&proy>=planH*0.9?'#22c55e':'#ef4444')+'">proy. '+(proy!=null?proy+' h':'—')+'</span></div></div>';
 
   var nowM=toMin(D.hora);
+  var SEGS=D.sab?[[480,780]]:[[490,720],[780,1020]];
+  var elapsed=0; SEGS.forEach(function(sg){var v=Math.min(nowM,sg[1])-sg[0]; if(v>0)elapsed+=v});
+  var porMO=/[?&]por=mo/.test(location.search);
+  if(!porMO && D.operarios && D.operarios.length){
+    var NOMS={M0:'Soldadura',S1:'Armado Muebles',M1:'Revest. Interior',M2:'Inst. Eléctricas',S2:'Fibra',M3:'Revest. Exterior',M4:'Agua / Gas',M5:'Montaje 5',S5:'Aberturas / Toldos',S6:'Slide Out',S7:'Tapicería',QC:'Control Final',HOSP:'Hospital'};
+    var ORDEN=['M0','S1','M1','M2','S2','M3','M4','M5','S5','S6','S7','QC','HOSP'];
+    var bySec={}; D.operarios.forEach(function(o){(bySec[o.sector]=bySec[o.sector]||[]).push(o)});
+    var secs=ORDEN.filter(function(c){return bySec[c]}).concat(Object.keys(bySec).filter(function(c){return ORDEN.indexOf(c)<0}));
+    secs.forEach(function(code){
+      var lst=bySec[code]; lst.sort(function(a,b){return a.nom<b.nom?-1:1});
+      h+='<div class="gm"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span><span class="cnt">'+lst.length+' operarios</span></div>';
+      lst.forEach(function(o){
+        var reg=0, mos={};
+        (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)reg+=b-a; if(r.mo)mos[r.mo]=1});
+        var pReg=elapsed>0?Math.round(reg*100/elapsed):0;
+        var ok=pReg>=75;
+        h+='<div class="fila"><div class="info"><div class="mo">'+esc(o.nom)+'</div><div class="det">'+esc(Object.keys(mos).join(' · ')||'sin órdenes')+'</div></div><div class="tl">';
+        for(var c=0;c<NHC;c++) h+='<div class="cell'+(c===almIdx?' alm':'')+'"></div>';
+        h+='<span class="lane-tag" style="top:10px">ESP</span><span class="lane-tag" style="top:36px">REAL</span>';
+        SEGS.forEach(function(sg){h+='<div class="pb" style="left:'+((sg[0]-480)/60*COLP)+'px;width:'+((sg[1]-sg[0])/60*COLP)+'px" title="jornada esperada">jornada</div>'});
+        (o.real||[]).forEach(function(r){h+='<div class="blk '+r.e+'" style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo)+' · '+esc(r.wo)+'">'+esc(r.mo?r.mo+' · ':'')+esc(r.wo)+'</div>'});
+        h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
+        h+='</div><div class="meta"><div class="t">REGISTRADO vs JORNADA</div>'
+          +'<div class="bar"><i style="width:'+Math.min(pReg,100)+'%;background:'+(ok?'#22c55e':'#ef4444')+'"></i><em style="left:99%"></em></div>'
+          +'<div class="v '+(ok?'g':'r')+'">'+pReg+'% del tiempo'+(reg===0?' · ⚠ sin registro':'')+'</div></div></div>';
+      });
+    });
+    document.getElementById('grid').innerHTML=h;
+    return;
+  }
   (D.grupos||[]).forEach(function(g){
     h+='<div class="gm"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span><span class="cnt">'+g.mos.length+' órdenes</span></div>';
     g.mos.forEach(function(m){
