@@ -70,6 +70,20 @@ function cargar(){
     h+='<div class="sec"><h3>5S HOY · '+(cs.sectores_ok||0)+'/'+(cs.sectores_total||12)+' OK · 🟢'+(cs.verdes||0)+' 🔵'+(cs.amarillos||0)+' 🔴'+(cs.rojos||0)+'</h3>'
       +((cs.pendientes||[]).length?'<div class="li">Pendientes: '+cs.pendientes.join(' · ')+'</div>':'<div class="li">Todos relevados ✓</div>')
       +'<div class="li"><b>Rondas</b><span>R '+(D.rondas_hoy_rodrigo||{}).validadas+'/'+(D.rondas_hoy_rodrigo||{}).total+' · Y '+(D.rondas_hoy_yance||{}).validadas+'/'+(D.rondas_hoy_yance||{}).total+'</span></div></div>';
+    var dAyer=(ay.fecha||'').slice(8,10)+'/'+(ay.fecha||'').slice(5,7);
+    var diaA=new Date((ay.fecha||'2026-01-01')+'T12:00:00');
+    var jorA=diaA.getDay()===6?5:7.83;
+    var dispA=ay.operarios?Math.round(jorA*ay.operarios*10)/10:0;
+    var pctA=(dispA>0&&ay.nc_horas!=null)?Math.round(ay.nc_horas*1000/dispA)/10:null;
+    h+='<div class="sec" style="border-left:4px solid var(--nar)"><h3>REUNIÓN 11AM · DATOS DE AYER '+dAyer+'</h3>'
+      +'<div class="li"><b>Eficiencia cierre</b><span>'+(ay.eficiencia_pct!=null?ay.eficiencia_pct+'%':'—')+'</span></div>'
+      +'<div class="li"><b>Hospital</b><span>'+(ay.hospital_count!=null?ay.hospital_count+' operarios':'—')+'</span></div>'
+      +((ay.hospital_personas||[]).length?'<div class="li" style="font-size:12px;color:var(--muted)">'+esc(ay.hospital_personas.join(' · '))+'</div>':'')
+      +'<div class="li"><b>NC horas</b><span>'+(ay.nc_horas!=null?ay.nc_horas+' h':'—')+(pctA!=null?' · '+pctA+'% del día ('+dispA+'h)':'')+'</span></div>'
+      +((ay.nc_por_montaje||[]).length?'<div class="li" style="font-size:12px;color:var(--bad)">'+ay.nc_por_montaje.map(function(m){return esc(m.montaje)+' '+m.pct+'%'}).join(' · ')+'</div>':'')
+      +'<div class="li"><b>Ausentes</b><span>'+(ay.ausentes_count!=null?ay.ausentes_count:'—')+'</span></div>'
+      +'<div class="li"><b>Rondas</b><span>R '+((ay.rondas_rodrigo||{}).validadas||0)+'/'+((ay.rondas_rodrigo||{}).total||0)+' · Y '+((ay.rondas_yance||{}).validadas||0)+'/'+((ay.rondas_yance||{}).total||0)+'</span></div>'
+      +'</div>';
     (D.montajes||[]).forEach(function(m){
       if(!m.mos.length && !m.cola) return;
       h+='<div class="monhead"><span class="pill" style="background:'+(m.color||'#666')+'">'+esc(m.code)+'</span><span class="monname">'+esc(m.name)+'</span><span class="moncnt">'+m.activas+' act · '+(m.cola||0)+' cola</span></div>';
@@ -85,7 +99,9 @@ function cargar(){
     });
     var aus=(D.ausentes||[]);
     h+='<div class="sec"><h3>AUSENTES · '+aus.length+'</h3>'+(aus.length?aus.map(function(a){return '<div class="li"><b>'+esc(a.nombre)+'</b><span>'+esc(a.sector)+'</span></div>'}).join(''):'<div class="li">Sin ausentes ✓</div>')+'</div>';
-    h+='<div class="sec"><h3>NO CONFORMIDAD · '+D.nc_horas_hoy+'h</h3>'+(D.nc_personas||[]).slice(0,8).map(function(p){return '<div class="li"><b>'+esc(p.operario)+'</b><span>'+p.horas+'h</span></div>'}).join('')+'</div>';
+    h+='<div class="sec"><h3>NO CONFORMIDAD · '+D.nc_horas_hoy+'h</h3>'
+      +(D.nc_por_montaje||[]).map(function(m){return '<div class="li" style="background:rgba(220,38,38,.06)"><b style="color:var(--bad)">'+esc(m.montaje)+'</b><span><b>'+m.pct+'%</b> · '+m.horas+'h</span></div>'}).join('')
+      +(D.nc_personas||[]).slice(0,8).map(function(p){return '<div class="li"><b>'+esc(p.operario)+'</b><span>'+p.horas+'h</span></div>'}).join('')+'</div>';
     document.getElementById('main').innerHTML=h;
   }).catch(function(e){
     document.getElementById('main').innerHTML='<div class="sec">No se pudo cargar: '+esc(String(e))+'</div>';

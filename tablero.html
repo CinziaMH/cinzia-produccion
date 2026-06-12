@@ -319,7 +319,8 @@ function renderIndicadores() {
   const dispFullH = Math.round((ef.operarios || 0) * (dowJ === 6 ? 300 : 470) / 60 * 10) / 10;
   const ncPct = dispFullH > 0 ? Math.round(D.nc_horas_hoy * 1000 / dispFullH) / 10 : 0;
   let nc = '<div class="nctotal">' + D.nc_horas_hoy + ' h <span style="font-size:16px;color:' + (ncPct > 10 ? 'var(--bad)' : 'var(--muted)') + ';font-weight:800">· ' + ncPct + '% del total del día (' + dispFullH + 'h)</span></div>';
-  (D.nc_personas || []).slice(0, 6).forEach(p => { nc += '<div class="li"><b>' + esc(p.operario) + '</b><span>' + p.horas + ' h</span></div>'; });
+  (D.nc_por_montaje || []).forEach(m => { nc += '<div class="li" style="background:rgba(248,113,113,.10);border-radius:6px"><b style="color:var(--bad)">' + esc(m.montaje) + '</b><span><b>' + m.pct + '%</b> · ' + m.horas + ' h</span></div>'; });
+  (D.nc_personas || []).slice(0, 4).forEach(p => { nc += '<div class="li"><b>' + esc(p.operario) + '</b><span>' + p.horas + ' h</span></div>'; });
 
   h += '<div class="bot">'
     + '<div class="botcard"><h4>TENDENCIA SEMANAL · EFICIENCIA DIARIA</h4><div class="tend">' + tend + '</div></div>'
