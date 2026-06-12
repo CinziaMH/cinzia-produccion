@@ -104,6 +104,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   <div class="chip">PLAN HOY <b id="cPlan">—</b></div>
   <div class="chip">A ESTA HORA: plan <b id="cPa">—</b> · real <b id="cRa">—</b></div>
   <div class="chip" id="cDesv">DESVÍO <b>—</b></div>
+  <div class="chip" id="cSup" style="background:rgba(255,255,255,.22)">SUPERVISORES <b>—</b></div>
   <a class="chip" href="./" style="margin-left:auto;background:rgba(255,255,255,.1);text-decoration:none;color:#fff">🏠 Inicio</a>
   <div class="chip" style="background:rgba(255,255,255,.1)" onclick="cargar()">↻ Actualizar</div>
 </div>
@@ -145,6 +146,8 @@ document.addEventListener('click',function(ev){
 });
 
 function render(D){
+  var rs=D.rondas_sup;
+  if(rs&&rs.rodrigo){document.getElementById('cSup').innerHTML='SUPERVISORES <b>R '+(rs.rodrigo.validadas||0)+'/'+(rs.rodrigo.total||0)+' · Y '+(rs.yance.validadas||0)+'/'+(rs.yance.total||0)+'</b>'}
   var ab=document.getElementById('alertbar');
   if(D.alertas&&D.alertas.length){ab.style.display='block';ab.innerHTML=D.alertas.map(function(a){return '• '+esc(a.msg||a)}).join('   ')}else ab.style.display='none';
   document.getElementById('reloj').textContent=D.hora;
