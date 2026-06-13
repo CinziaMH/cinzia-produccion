@@ -63,8 +63,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .blk.ko{background:linear-gradient(180deg,#dc2626,#b91c1c)}
 .blk.curso{background:linear-gradient(180deg,#0ea5e9,#0369a1);outline:2px solid #7dd3fc}
 .blk.curso::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:sweep 2.2s infinite}
+/* EN CURSO pero ya pasada del tiempo estándar. Dos niveles según eficiencia (obj/transcurrido):
+   - leve  (ef >= 90%): rojo MENOS intenso, recién cruzó el estándar
+   - grave (ef <  90%): rojo intenso y palpitando fuerte */
+.blk.curso.over{background:linear-gradient(180deg,#dc2626,#991b1b);outline:2px solid #fff;animation:overpulse 1s infinite}
+.blk.curso.over.soft{background:linear-gradient(180deg,#fb7185,#ef4444);outline:2px solid #fecaca;animation:overpulse-soft 1.8s infinite}
+.blk.curso.over::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent)}
+@keyframes overpulse{0%,100%{outline-color:#fecaca;box-shadow:0 1px 4px rgba(0,0,0,.45)}50%{outline-color:#fff;box-shadow:0 0 14px rgba(239,68,68,.95)}}
+@keyframes overpulse-soft{0%,100%{outline-color:#fecaca;box-shadow:0 1px 4px rgba(0,0,0,.45)}50%{outline-color:#fda4af;box-shadow:0 0 8px rgba(239,68,68,.5)}}
 @keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
-.blk.nc{background:repeating-linear-gradient(45deg,#7c3aed,#7c3aed 8px,#6d28d9 8px,#6d28d9 16px)}
+/* No conformidad / retrabajo: MISMO color que el resto según su estado (verde en tiempo / rojo ineficiente),
+   distinguido sólo por la textura rayada (zebra). */
+.blk.nc{background:repeating-linear-gradient(45deg,#16a34a,#16a34a 8px,#15803d 8px,#15803d 16px)}
+.blk.nc.inef{background:repeating-linear-gradient(45deg,#dc2626,#dc2626 8px,#b91c1c 8px,#b91c1c 16px)}
 .ahora{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);z-index:10}
 .ahora::before{content:'AHORA';position:absolute;top:-1px;left:4px;background:var(--bad);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px}
 .meta{flex:0 0 130px;border-left:2px solid var(--line);display:flex;flex-direction:column;justify-content:center;padding:4px 10px;gap:3px}
@@ -135,36 +146,56 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   <span><i style="background:#16a34a"></i> Real en tiempo</span>
   <span><i style="background:#dc2626"></i> Real ineficiente</span>
   <span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso</span>
-  <span><i style="background:repeating-linear-gradient(45deg,#7c3aed,#7c3aed 4px,#6d28d9 4px,#6d28d9 8px)"></i> NC / Retrabajo</span>
+  <span><i style="background:linear-gradient(180deg,#fb7185,#ef4444);outline:2px solid #fecaca"></i> En curso · recién pasada (ef ≥ 90%)</span>
+  <span><i style="background:linear-gradient(180deg,#dc2626,#991b1b);outline:2px solid #fff"></i> En curso · muy pasada (ef &lt; 90%)</span>
+  <span><i style="background:repeating-linear-gradient(45deg,#64748b,#64748b 4px,#475569 4px,#475569 8px)"></i> Retrabajo / NC (zebra · color = estado)</span>
   <span style="color:#ef4444;font-weight:800">│ AHORA</span>
 </div>
 <script>
 var URL_API='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec?view=horaxhora';
 var COLORS={M0:'#dc2626',S1:'#b45309',M1:'#d97706',M2:'#f59e0b',S2:'#65a30d',M3:'#16a34a',M4:'#0891b2',M5:'#2563eb',S5:'#7c3aed',S6:'#9333ea',S7:'#c026d3',QC:'#16a34a',HOSP:'#ef4444'};
 var H0=8*60, COLP=104;
+var NOWG=0; // minutos del día "ahora" (se setea en render) — usado para detectar en-curso pasada de tiempo
 function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML}
 function toMin(s){var p=String(s).split(':');return (+p[0])*60+(+p[1])}
 function x(s){return (toMin(s)-H0)/60*COLP}
 function w(a,b){return Math.max((toMin(b)-toMin(a))/60*COLP,22)}
 function hN(v){return Math.round(v*10)/10}
 function fmtM(m){var h=Math.floor(m/60),mi=m%60;return (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi}
-var KLAB={ok:['Terminada en tiempo','#16a34a'],ko:['Terminada ineficiente','#dc2626'],curso:['En curso','#0ea5e9'],nc:['NC / Retrabajo','#7c3aed'],plan:['Tarea planificada (teórico)','#475569']};
+// Clasifica una tarea EN CURSO según su tiempo transcurrido vs el estándar (obj).
+// ef = obj/transcurrido*100. over si transcurrido>obj. soft si ef>=90 (recién cruzó), hard si ef<90.
+function overInfo(r){
+  if(r.e!=='curso') return {over:false,soft:false,ef:null,elap:0};
+  var obj=+(r.obj||0), ini=toMin(r.ini);
+  if(!(NOWG>0)) return {over:false,soft:false,ef:null,elap:0};
+  var elap=Math.max(NOWG-ini,0);
+  if(obj<=0||elap<=obj) return {over:false,soft:false,ef:(obj>0&&elap>0?Math.round(obj*100/elap):null),elap:elap};
+  var ef=Math.round(obj*100/elap);
+  return {over:true,soft:ef>=90,ef:ef,elap:elap};
+}
+var KLAB={ok:['Terminada en tiempo','#16a34a'],ko:['Terminada ineficiente','#dc2626'],curso:['En curso','#0ea5e9'],over:['En curso · pasada de tiempo','#ef4444'],overHard:['En curso · MUY pasada de tiempo','#dc2626'],nc:['NC / Retrabajo','#dc2626'],plan:['Tarea planificada (teórico)','#475569']};
 function cerrarDet(){document.getElementById('sheet').classList.remove('on');document.getElementById('shade').classList.remove('on')}
 var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
 var CUR=null;
 document.addEventListener('click',function(ev){
   var b=ev.target.closest('.blk,.pb'); if(!b) return;
-  var k=b.getAttribute('data-k')||'plan', lab=KLAB[k]||KLAB.plan;
+  var over=b.getAttribute('data-over')==='1';
+  var soft=b.getAttribute('data-soft')==='1';
+  var k=b.getAttribute('data-k')||'plan', lab=(over?(soft?KLAB.over:KLAB.overHard):(KLAB[k]||KLAB.plan));
   document.getElementById('shK').textContent=lab[0];
   document.getElementById('shK').style.background=lab[1];
   document.getElementById('shT').textContent=(b.getAttribute('title')||b.textContent).replace(/^PLAN: /,'');
   var fila=b.closest('.fila'); var who=fila?fila.querySelector('.info .mo').textContent.trim():'';
   var obj=+(b.getAttribute('data-obj')||0), rmin=+(b.getAttribute('data-rmin')||0);
-  var inef=obj>0&&rmin>obj, ef=(obj>0&&rmin>0)?Math.round(obj*100/rmin):null;
+  var elap=+(b.getAttribute('data-elap')||0);
+  var inef=(obj>0&&rmin>obj)||over, ef=(obj>0&&rmin>0)?Math.round(obj*100/rmin):null;
   var meta=(who?who+' · ':'')+(b.getAttribute('data-h')||'');
-  if(rmin>0) meta+=' · real '+rmin+'m'+(obj>0?' / obj '+obj+'m':'');
-  if(ef!=null) meta+=' · ef '+ef+'%'+(inef?' · INEFICIENTE':'');
-  document.getElementById('shM').innerHTML=esc(meta)+(inef?' <b style="color:#ef4444">INEFICIENTE</b>':'');
+  if(over&&obj>0){ var efc=elap>0?Math.round(obj*100/elap):0; meta+=' · lleva '+elap+'m / estándar '+obj+'m (+'+(elap-obj)+'m · ef '+efc+'%'+(soft?'':' · MUY pasada')+')'; }
+  else{
+    if(rmin>0) meta+=' · real '+rmin+'m'+(obj>0?' / obj '+obj+'m':'');
+    if(ef!=null) meta+=' · ef '+ef+'%'+((obj>0&&rmin>obj)?' · INEFICIENTE':'');
+  }
+  document.getElementById('shM').innerHTML=esc(meta)+(over?' <b style="color:#ef4444">INEFICIENTE · AÚN EN CURSO — revisar ahora</b>':((obj>0&&rmin>obj)?' <b style="color:#ef4444">INEFICIENTE</b>':''));
   var ctl=document.getElementById('shCtl');
   if(k!=='plan'&&b.getAttribute('data-mof')){
     CUR=b;
@@ -184,7 +215,7 @@ function valHxH(tipo){
   if(!CUR) return;
   var b=CUR, st=document.getElementById('shSt');
   var obj=+(b.getAttribute('data-obj')||0), rmin=+(b.getAttribute('data-rmin')||0);
-  var inef=obj>0&&rmin>obj;
+  var inef=(obj>0&&rmin>obj)||b.getAttribute('data-over')==='1';
   var cz=document.getElementById('shCz'); var causal=cz?cz.value:'';
   if(inef&&!causal){st.textContent='⚠ Elegí el causal de la ineficiencia';st.style.color='#ef4444';return}
   var sec=b.getAttribute('data-sec')||'';
@@ -198,6 +229,15 @@ function valHxH(tipo){
     if(!/^✓/.test(b.textContent)) b.textContent='✓ '+b.textContent;
     setTimeout(function(){cerrarDet();cargar()},900);
   }).catch(function(e){st.textContent='Error: '+e;st.style.color='#ef4444'});
+}
+
+// arma clase + atributos extra (over / soft / elapsed) para un bloque real EN CURSO pasado de tiempo
+function ovAttrs(r){
+  var info=overInfo(r);
+  var cls=info.over?(info.soft?' over soft':' over'):'';
+  // retrabajo/NC: mismo color que el resto según eficiencia (rojo si rmin>obj), la zebra ya la da la clase .nc
+  if(r.e==='nc'){ var o=+(r.obj||0), rm=+(r.rmin||0); if(o>0&&rm>o) cls+=' inef'; }
+  return {cls:cls, attr:' data-over="'+(info.over?1:0)+'" data-soft="'+(info.soft?1:0)+'" data-elap="'+info.elap+'"'};
 }
 
 function render(D){
@@ -233,7 +273,7 @@ function render(D){
   var proy = D.plan_ahora_min>0 ? hN(D.real_ahora_min/D.plan_ahora_min*D.plan_total_min/60) : null;
   h+='<div class="fin"><span style="color:#cbd5e1">cierre plan '+planH+' h</span><br><span style="color:'+(proy!=null&&proy>=planH*0.9?'#22c55e':'#ef4444')+'">proy. '+(proy!=null?proy+' h':'—')+'</span></div></div></div>';
 
-  var nowM=toMin(D.hora);
+  var nowM=toMin(D.hora); NOWG=nowM;
   var SEGS=D.sab?[[480,780]]:[[490,720],[780,1020]];
   var elapsed=0; SEGS.forEach(function(sg){var v=Math.min(nowM,sg[1])-sg[0]; if(v>0)elapsed+=v});
   var porMO=/[?&]por=mo/.test(location.search);
@@ -278,7 +318,7 @@ function render(D){
         }else{
           SEGS.forEach(function(sg){h+='<div class="pb" style="left:'+((sg[0]-480)/60*COLP)+'px;width:'+((sg[1]-sg[0])/60*COLP)+'px" title="sin plan pendiente — jornada esperada">sin plan pendiente · jornada</div>'});
         }
-        (o.real||[]).forEach(function(r){h+='<div class="blk '+r.e+(r.val?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||o.nom)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(code)+'" style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo)+' · '+esc(r.wo)+'">'+(r.val?'✓ ':'')+esc(r.mo?r.mo+' · ':'')+esc(r.wo)+'</div>'});
+        (o.real||[]).forEach(function(r){var ov=ovAttrs(r);h+='<div class="blk '+r.e+ov.cls+(r.val?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||o.nom)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(code)+'"'+ov.attr+' style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo)+' · '+esc(r.wo)+'">'+(r.val?'✓ ':'')+esc(r.mo?r.mo+' · ':'')+esc(r.wo)+'</div>'});
         h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
         if(planDia>0){
           h+='</div><div class="meta"><div class="t">REAL '+pR+'% vs PLAN '+pPA+'%</div>'
@@ -311,7 +351,7 @@ function render(D){
       for(var c=0;c<NHC;c++) h+='<div class="cell'+(c===almIdx?' alm':'')+'"></div>';
       h+='<span class="lane-tag" style="top:10px">PLAN</span><span class="lane-tag" style="top:36px">REAL</span>';
       (m.plan||[]).forEach(function(p){h+='<div class="pb" data-k="plan" data-h="'+esc(p.ini)+'–'+esc(p.fin)+'" style="left:'+x(p.ini)+'px;width:'+w(p.ini,p.fin)+'px" title="PLAN: '+esc(p.wo)+'">'+esc(p.wo)+'</div>'});
-      (m.real||[]).forEach(function(r){h+='<div class="blk '+r.e+(r.val?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+' · '+esc(r.op)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||r.op)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(g.code)+'" style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.wo)+' · '+esc(r.op)+'">'+(r.val?'✓ ':'')+esc(r.wo)+'</div>'});
+      (m.real||[]).forEach(function(r){var ov=ovAttrs(r);h+='<div class="blk '+r.e+ov.cls+(r.val?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+' · '+esc(r.op)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||r.op)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(g.code)+'"'+ov.attr+' style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.wo)+' · '+esc(r.op)+'">'+(r.val?'✓ ':'')+esc(r.wo)+'</div>'});
       h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
       if(sinPlan){
         h+='</div><div class="meta"><div class="t">SIN PLAN PENDIENTE</div><div class="v m">'+((m.real||[]).length?'solo real':'—')+'</div></div></div>';
@@ -337,6 +377,23 @@ function cargar(){
 }
 cargar();
 setInterval(cargar,300000);
+// recolorea las tareas en curso que cruzan su estándar entre refrescos (sin esperar 5 min)
+setInterval(function(){
+  var now=document.getElementById('reloj').textContent;
+  if(now&&/^\d/.test(now)) NOWG=toMin(now);
+  document.querySelectorAll('.blk.curso').forEach(function(b){
+    var obj=+(b.getAttribute('data-obj')||0);
+    var ini=b.getAttribute('data-h'); ini=ini?toMin(ini.split('–')[0]):0;
+    if(obj>0&&NOWG>0){
+      var elap=Math.max(NOWG-ini,0);
+      if(elap>obj){
+        var ef=Math.round(obj*100/elap);
+        b.classList.add('over'); b.classList.toggle('soft',ef>=90);
+        b.setAttribute('data-over','1'); b.setAttribute('data-soft',ef>=90?'1':'0'); b.setAttribute('data-elap',elap);
+      }
+    }
+  });
+},60000);
 </script>
 </body>
 </html>
