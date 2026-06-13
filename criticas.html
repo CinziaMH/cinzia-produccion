@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinzia · Operaciones Críticas (+200%)</title>
+<style>
+:root{
+  --nar:#EA580C; --bg:#0f172a; --panel:#1e293b; --line:#334155; --txt:#f1f5f9; --muted:#94a3b8;
+  --ok:#22c55e; --bad:#ef4444; --warn:#f59e0b; --crit:#7f1d1d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;display:flex;flex-direction:column;min-height:100vh}
+.hdr{display:flex;align-items:center;gap:14px;padding:10px 18px;background:linear-gradient(90deg,var(--nar),#9a3412);position:sticky;top:0;z-index:30;flex-wrap:wrap}
+.hdr .lg{background:#fff;border-radius:10px;padding:5px 10px;display:inline-flex;align-items:center}
+.hdr h1{font-size:17px;font-weight:800;letter-spacing:.3px;white-space:nowrap}
+.hdr .sub{font-size:11px;opacity:.9}
+.chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:9px;padding:4px 11px;font-weight:800;font-size:12px;white-space:nowrap}
+.chip b{font-size:14px}
+a.btn,.btn{background:rgba(255,255,255,.12);text-decoration:none;color:#fff;border-radius:9px;padding:5px 12px;font-weight:800;font-size:12px;border:none;cursor:pointer}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:12px 18px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:54px;z-index:20}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fg label{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+.fg select,.fg input{background:#0f172a;color:#f1f5f9;border:1px solid #475569;border-radius:8px;padding:7px 9px;font-size:13px;min-width:130px}
+.fg input[type=date]{min-width:140px}
+.cnt{margin-left:auto;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.wrap{flex:1;overflow:auto;padding:0 0 40px}
+table{border-collapse:collapse;width:100%;min-width:1000px;font-size:13px}
+thead th{position:sticky;top:0;background:#152036;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.4px;text-align:left;padding:9px 10px;border-bottom:2px solid var(--line);white-space:nowrap;z-index:5}
+tbody td{padding:8px 10px;border-bottom:1px solid #1c2940;vertical-align:middle}
+tbody tr:nth-child(odd){background:rgba(255,255,255,.015)}
+tbody tr:hover{background:rgba(255,255,255,.05)}
+.mo{font-weight:800}
+.wo{max-width:300px}
+.ef{font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+.ef.c1{color:#f59e0b}   /* 80-100 (no debería aparecer acá) */
+.ef.c2{color:#ef4444}   /* 50-80 */
+.ef.c3{color:#fca5a5}   /* <50 crítico */
+.real{text-align:right;font-variant-numeric:tabular-nums;color:#fca5a5;font-weight:700}
+.obj{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.pct{font-size:10px;color:var(--muted)}
+.badge{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:99px}
+.b-causal{background:#334155;color:#e2e8f0}
+.b-pend{background:#3f3f46;color:#fcd34d;border:1px dashed #a16207}
+.b-sup{font-size:10px;color:var(--muted)}
+.b-val-ok{color:#22c55e} .b-val-ng{color:#ef4444} .b-val-flag{color:#f59e0b}
+.acc{border-radius:8px;border:2px solid #475569;background:#0f172a;color:#f1f5f9;padding:6px 8px;font-weight:800;font-size:12px;cursor:pointer}
+.acc.si{border-color:#22c55e;color:#86efac}
+.acc.no{border-color:#ef4444;color:#fca5a5}
+.acc.pend{border-color:#a16207;color:#fcd34d}
+.saved{font-size:10px;color:#22c55e;font-weight:800;margin-left:4px;opacity:0;transition:opacity .2s}
+.saved.on{opacity:1}
+.zebra::before{content:'▦ ';color:#94a3b8}
+.spin{width:34px;height:34px;border:4px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:rot 1s linear infinite;margin:60px auto}
+@keyframes rot{to{transform:rotate(360deg)}}
+.empty{text-align:center;color:var(--muted);padding:50px;font-weight:700}
+.fecha{white-space:nowrap;font-variant-numeric:tabular-nums}
+@media(max-width:680px){
+  .hdr h1{font-size:13px}.hdr .sub{display:none}
+  .filters{top:50px;padding:10px}
+  .fg select,.fg input{min-width:108px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="lg"><img src="cinzia%20logo.png" onerror="this.parentNode.style.display='none'" alt="CINZIA" style="height:24px;display:block"></span>
+  <div><h1>OPERACIONES CRÍTICAS · +200% del estándar</h1><div class="sub" id="sub">cargando…</div></div>
+  <a class="btn" href="./" style="margin-left:auto">🏠 Inicio</a>
+  <button class="btn" onclick="cargar()">↻ Actualizar</button>
+</div>
+
+<div class="filters">
+  <div class="fg"><label>Causa</label><select id="fCausa" onchange="aplicar()"><option value="">Todas</option></select></div>
+  <div class="fg"><label>Operario</label><select id="fOp" onchange="aplicar()"><option value="">Todos</option></select></div>
+  <div class="fg"><label>Montaje</label><select id="fMon" onchange="aplicar()"><option value="">Todos</option></select></div>
+  <div class="fg"><label>Acción correctiva</label><select id="fAcc" onchange="aplicar()"><option value="">Todas</option><option>Pendiente</option><option>Sí</option><option>No</option></select></div>
+  <div class="fg"><label>Desde</label><input type="date" id="fDesde" onchange="aplicar()"></div>
+  <div class="fg"><label>Hasta</label><input type="date" id="fHasta" onchange="aplicar()"></div>
+  <div class="fg"><label>Buscar</label><input type="text" id="fTxt" placeholder="orden, operación…" oninput="aplicar()"></div>
+  <div class="cnt">
+    <div class="chip" id="cTot">— críticas</div>
+    <div class="chip" id="cPend" style="background:rgba(252,211,77,.18)">— sin acción</div>
+    <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+  </div>
+</div>
+
+<div class="wrap"><div id="cont"><div class="spin"></div></div></div>
+
+<script>
+var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
+var ALL=[], VIEW=[];
+function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML}
+function efCls(ef){ if(ef<50) return 'c3'; if(ef<80) return 'c2'; return 'c1'; }
+function fmtFecha(f){ var p=String(f).split('-'); return p.length===3? p[2]+'/'+p[1] : f; }
+
+function fillSelect(id, vals, current){
+  var s=document.getElementById(id); var keep=current||s.value;
+  var base=s.querySelector('option').outerHTML;
+  s.innerHTML=base+vals.map(function(v){return '<option'+(v===keep?' selected':'')+'>'+esc(v)+'</option>';}).join('');
+}
+
+function cargar(){
+  document.getElementById('cont').innerHTML='<div class="spin"></div>';
+  fetch(URL_EXEC+'?view=criticas&t='+Date.now(),{cache:'no-store',redirect:'follow'})
+   .then(function(r){return r.json()})
+   .then(function(D){
+      if(!D.ok) throw new Error(D.error||'error');
+      ALL=D.rows||[];
+      document.getElementById('sub').textContent='desde '+D.desde+' · '+ALL.length+' operaciones · se actualiza al recargar';
+      // poblar filtros con valores distintos
+      var causas={},ops={},mons={};
+      ALL.forEach(function(r){ causas[r.causal||'Pendiente']=1; ops[r.operario]=1; mons[r.montaje||'—']=1; });
+      fillSelect('fCausa', Object.keys(causas).sort());
+      fillSelect('fOp', Object.keys(ops).sort());
+      fillSelect('fMon', Object.keys(mons).sort());
+      aplicar();
+   })
+   .catch(function(e){ document.getElementById('cont').innerHTML='<div class="empty">No se pudo cargar: '+esc(e.message)+'</div>'; });
+}
+
+function aplicar(){
+  var fc=document.getElementById('fCausa').value, fo=document.getElementById('fOp').value,
+      fm=document.getElementById('fMon').value, fa=document.getElementById('fAcc').value,
+      fd=document.getElementById('fDesde').value, fh=document.getElementById('fHasta').value,
+      ft=document.getElementById('fTxt').value.toLowerCase().trim();
+  VIEW=ALL.filter(function(r){
+    if(fc && (r.causal||'Pendiente')!==fc) return false;
+    if(fo && r.operario!==fo) return false;
+    if(fm && (r.montaje||'—')!==fm) return false;
+    if(fa && r.accion!==fa) return false;
+    if(fd && r.fecha<fd) return false;
+    if(fh && r.fecha>fh) return false;
+    if(ft){ var hay=(r.mo+' '+r.wo+' '+r.operario).toLowerCase(); if(hay.indexOf(ft)<0) return false; }
+    return true;
+  });
+  render();
+}
+
+function render(){
+  var pend=VIEW.filter(function(r){return r.accion==='Pendiente'}).length;
+  document.getElementById('cTot').textContent=VIEW.length+' críticas';
+  document.getElementById('cPend').innerHTML='<b>'+pend+'</b> sin acción';
+  if(!VIEW.length){ document.getElementById('cont').innerHTML='<div class="empty">Sin operaciones críticas para los filtros elegidos.</div>'; return; }
+  var h='<table><thead><tr>'
+    +'<th>Fecha</th><th>Montaje</th><th>Orden</th><th>Operación</th><th>Operario</th>'
+    +'<th style="text-align:right">Estánd.</th><th style="text-align:right">Real</th><th style="text-align:right">Ef%</th>'
+    +'<th>Causa (supervisor)</th><th>Acción correctiva</th></tr></thead><tbody>';
+  VIEW.forEach(function(r,i){
+    var esZebra = (r.montaje==='RETRAB'||r.montaje==='NC');
+    var causalBadge = (r.causal && r.causal!=='Pendiente')
+        ? '<span class="badge b-causal">'+esc(r.causal)+'</span>'
+        : '<span class="badge b-pend">Pendiente</span>';
+    var sup = r.supervisor ? ' <span class="b-sup">'+esc(r.supervisor)+(r.validacion?(' · <span class="b-val-'+esc(r.validacion)+'">'+esc(r.validacion.toUpperCase())+'</span>'):'')+'</span>' : ' <span class="b-sup">sin validar</span>';
+    var accCls = r.accion==='Sí'?'si':(r.accion==='No'?'no':'pend');
+    var idx = ALL.indexOf(r);
+    var pctReal = Math.round(r.real*100/r.obj);
+    h+='<tr>'
+      +'<td class="fecha">'+esc(fmtFecha(r.fecha))+'</td>'
+      +'<td>'+(esZebra?'<span class="zebra"></span>':'')+esc(r.montaje||'—')+'</td>'
+      +'<td class="mo">'+esc(r.mo)+'</td>'
+      +'<td class="wo">'+esc(r.wo)+'</td>'
+      +'<td>'+esc(r.operario)+'</td>'
+      +'<td class="obj">'+r.obj+'m</td>'
+      +'<td class="real">'+r.real+'m <span class="pct">('+pctReal+'%)</span></td>'
+      +'<td class="ef '+efCls(r.ef)+'">'+r.ef+'%</td>'
+      +'<td>'+causalBadge+sup+(r.nota?'<div class="pct">📝 '+esc(r.nota)+'</div>':'')+'</td>'
+      +'<td><select class="acc '+accCls+'" data-idx="'+idx+'" onchange="guardar(this)">'
+         +['Pendiente','Sí','No'].map(function(o){return '<option'+(o===r.accion?' selected':'')+'>'+o+'</option>';}).join('')
+         +'</select><span class="saved" id="sv'+idx+'">✓</span></td>'
+      +'</tr>';
+  });
+  h+='</tbody></table>';
+  document.getElementById('cont').innerHTML=h;
+}
+
+function guardar(sel){
+  var idx=+sel.getAttribute('data-idx'); var r=ALL[idx]; if(!r) return;
+  var accion=sel.value; r.accion=accion;
+  sel.className='acc '+(accion==='Sí'?'si':(accion==='No'?'no':'pend'));
+  fetch(URL_EXEC,{method:'POST',redirect:'follow',body:JSON.stringify({tipo:'accion_critica',key:r.key,accion:accion,user:'web'})})
+    .then(function(x){return x.text()})
+    .then(function(){ var sv=document.getElementById('sv'+idx); if(sv){sv.classList.add('on');setTimeout(function(){sv.classList.remove('on')},1200);}
+       // refrescar contador de pendientes
+       var pend=VIEW.filter(function(z){return z.accion==='Pendiente'}).length;
+       document.getElementById('cPend').innerHTML='<b>'+pend+'</b> sin acción';
+    })
+    .catch(function(e){ sel.className='acc'; alert('No se pudo guardar: '+e); });
+}
+
+function exportCSV(){
+  var cols=['fecha','montaje','mo','wo','operario','obj','real','ef','causal','supervisor','validacion','nota','accion'];
+  var head=['Fecha','Montaje','Orden','Operacion','Operario','Estandar_min','Real_min','Ef_%','Causa','Supervisor','Validacion','Nota','Accion_correctiva'];
+  var lines=[head.join(';')];
+  VIEW.forEach(function(r){ lines.push(cols.map(function(c){var v=(r[c]==null?'':String(r[c])).replace(/;/g,',').replace(/\n/g,' ');return '"'+v.replace(/"/g,'""')+'"';}).join(';')); });
+  var blob=new Blob(["﻿"+lines.join("\n")],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='criticas_dyfsa.csv'; a.click();
+}
+
+cargar();
+</script>
+</body>
+</html>
