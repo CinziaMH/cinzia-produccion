@@ -78,6 +78,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .blk.nc{background:repeating-linear-gradient(45deg,#16a34a,#16a34a 8px,#15803d 8px,#15803d 16px)}
 .blk.nc.warn{background:repeating-linear-gradient(45deg,#f97316,#f97316 8px,#ea580c 8px,#ea580c 16px)}
 .blk.nc.inef{background:repeating-linear-gradient(45deg,#dc2626,#dc2626 8px,#b91c1c 8px,#b91c1c 16px)}
+/* CRÍTICO: la tarea demandó +200% del tiempo estándar (ef < 50%). Relleno bordó + borde amarillo palpitante + ⚠ */
+.blk.crit{outline:3px solid #fde047 !important;animation:critpulse .8s infinite !important;z-index:5}
+.blk.crit::before{content:'⚠';font-weight:900;color:#fde047;margin-right:4px}
+.blk.ko.crit{background:linear-gradient(180deg,#7f1d1d,#450a0a)}
+.blk.curso.over.crit{background:linear-gradient(180deg,#7f1d1d,#450a0a)}
+.blk.nc.crit{background:repeating-linear-gradient(45deg,#7f1d1d,#7f1d1d 8px,#450a0a 8px,#450a0a 16px)}
+@keyframes critpulse{0%,100%{outline-color:#fde047;box-shadow:0 0 4px rgba(0,0,0,.5)}50%{outline-color:#fff;box-shadow:0 0 18px rgba(253,224,71,1)}}
 .ahora{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);z-index:10}
 .ahora::before{content:'AHORA';position:absolute;top:-1px;left:4px;background:var(--bad);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px}
 .meta{flex:0 0 130px;border-left:2px solid var(--line);display:flex;flex-direction:column;justify-content:center;padding:4px 10px;gap:3px}
@@ -147,7 +154,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   <span><i style="background:#33415588;border:1px solid #64748b;height:8px"></i> Carril superior: tareas teóricas del día (plan 7:45 de sus órdenes)</span>
   <span><i style="background:#16a34a"></i> En tiempo (ef ≥ 100%)</span>
   <span><i style="background:linear-gradient(180deg,#f97316,#ea580c)"></i> Ineficiente leve (ef 80–100%)</span>
-  <span><i style="background:linear-gradient(180deg,#dc2626,#b91c1c)"></i> Ineficiente grave (ef &lt; 80%)</span>
+  <span><i style="background:linear-gradient(180deg,#dc2626,#b91c1c)"></i> Ineficiente grave (ef 50–80%)</span>
+  <span><i style="background:linear-gradient(180deg,#7f1d1d,#450a0a);outline:2px solid #fde047"></i> ⚠ Crítico · +200% del estándar (ef &lt; 50%)</span>
   <span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso (las ineficientes palpitan)</span>
   <span><i style="background:repeating-linear-gradient(45deg,#64748b,#64748b 4px,#475569 4px,#475569 8px)"></i> Retrabajo / NC (zebra · color = estado)</span>
   <span style="color:#ef4444;font-weight:800">│ AHORA</span>
@@ -172,9 +180,9 @@ function overInfo(r){
   var elap=Math.max(NOWG-ini,0);
   if(obj<=0||elap<=obj) return {over:false,warn:false,ef:(obj>0&&elap>0?Math.round(obj*100/elap):null),elap:elap};
   var ef=Math.round(obj*100/elap);
-  return {over:true,warn:ef>=80,ef:ef,elap:elap};   // warn = NARANJA (ef 80–100%); si ef<80 queda rojo
+  return {over:true,warn:ef>=80,crit:ef<50,ef:ef,elap:elap};   // warn=NARANJA 80–100% · crit=+200% estándar (ef<50%) · si no, rojo
 }
-var KLAB={ok:['Terminada en tiempo','#16a34a'],ko:['Terminada ineficiente grave (ef < 80%)','#dc2626'],koWarn:['Terminada ineficiente leve (ef 80–100%)','#f97316'],curso:['En curso','#0ea5e9'],over:['En curso · ineficiente leve (ef 80–100%)','#f97316'],overHard:['En curso · ineficiente grave (ef < 80%)','#dc2626'],nc:['NC / Retrabajo','#dc2626'],plan:['Tarea planificada (teórico)','#475569']};
+var KLAB={ok:['Terminada en tiempo','#16a34a'],ko:['Terminada ineficiente grave (ef 50–80%)','#dc2626'],koWarn:['Terminada ineficiente leve (ef 80–100%)','#f97316'],koCrit:['Terminada CRÍTICA · +200% del estándar (ef < 50%)','#7f1d1d'],curso:['En curso','#0ea5e9'],over:['En curso · ineficiente leve (ef 80–100%)','#f97316'],overHard:['En curso · ineficiente grave (ef 50–80%)','#dc2626'],overCrit:['En curso · CRÍTICO · +200% del estándar (ef < 50%)','#7f1d1d'],nc:['NC / Retrabajo','#dc2626'],ncCrit:['NC / Retrabajo CRÍTICO · +200% del estándar','#7f1d1d'],plan:['Tarea planificada (teórico)','#475569']};
 function cerrarDet(){document.getElementById('sheet').classList.remove('on');document.getElementById('shade').classList.remove('on')}
 var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
 var CUR=null;
@@ -182,9 +190,11 @@ document.addEventListener('click',function(ev){
   var b=ev.target.closest('.blk,.pb'); if(!b) return;
   var over=b.getAttribute('data-over')==='1';
   var warn=b.getAttribute('data-warn')==='1';
+  var crit=b.getAttribute('data-crit')==='1';
   var k=b.getAttribute('data-k')||'plan', lab;
-  if(over) lab=warn?KLAB.over:KLAB.overHard;
-  else if(k==='ko') lab=warn?KLAB.koWarn:KLAB.ko;
+  if(over) lab=crit?KLAB.overCrit:(warn?KLAB.over:KLAB.overHard);
+  else if(k==='ko') lab=crit?KLAB.koCrit:(warn?KLAB.koWarn:KLAB.ko);
+  else if(k==='nc') lab=crit?KLAB.ncCrit:KLAB.nc;
   else lab=KLAB[k]||KLAB.plan;
   document.getElementById('shK').textContent=lab[0];
   document.getElementById('shK').style.background=lab[1];
@@ -194,12 +204,16 @@ document.addEventListener('click',function(ev){
   var elap=+(b.getAttribute('data-elap')||0);
   var inef=(obj>0&&rmin>obj)||over, ef=(obj>0&&rmin>0)?Math.round(obj*100/rmin):null;
   var meta=(who?who+' · ':'')+(b.getAttribute('data-h')||'');
-  if(over&&obj>0){ var efc=elap>0?Math.round(obj*100/elap):0; meta+=' · lleva '+elap+'m / estándar '+obj+'m (+'+(elap-obj)+'m · ef '+efc+'%'+(warn?'':' · GRAVE ef<80%')+')'; }
+  if(over&&obj>0){ var efc=elap>0?Math.round(obj*100/elap):0; meta+=' · lleva '+elap+'m / estándar '+obj+'m (+'+(elap-obj)+'m · ef '+efc+'%'+(crit?' · CRÍTICO +200%':(warn?'':' · GRAVE'))+')'; }
   else{
     if(rmin>0) meta+=' · real '+rmin+'m'+(obj>0?' / obj '+obj+'m':'');
     if(ef!=null) meta+=' · ef '+ef+'%'+((obj>0&&rmin>obj)?' · INEFICIENTE':'');
   }
-  document.getElementById('shM').innerHTML=esc(meta)+(over?' <b style="color:#ef4444">INEFICIENTE · AÚN EN CURSO — revisar ahora</b>':((obj>0&&rmin>obj)?' <b style="color:#ef4444">INEFICIENTE</b>':''));
+  var suf='';
+  if(crit) suf=' <b style="color:#fde047;background:#7f1d1d;padding:1px 7px;border-radius:5px">‼ CRÍTICO · +200% del estándar</b>';
+  else if(over) suf=' <b style="color:#ef4444">INEFICIENTE · AÚN EN CURSO — revisar ahora</b>';
+  else if(obj>0&&rmin>obj) suf=' <b style="color:#ef4444">INEFICIENTE</b>';
+  document.getElementById('shM').innerHTML=esc(meta)+suf;
   var ctl=document.getElementById('shCtl');
   if(k!=='plan'&&b.getAttribute('data-mof')){
     CUR=b;
@@ -237,21 +251,21 @@ function valHxH(tipo){
 
 // arma clase + atributos extra (over / soft / elapsed) para un bloque real EN CURSO pasado de tiempo
 function ovAttrs(r){
-  var cls='', over=0, warn=0, elap=0;
+  var cls='', over=0, warn=0, crit=0, elap=0;
   if(r.e==='curso'){
     var info=overInfo(r);
-    over=info.over?1:0; warn=info.warn?1:0; elap=info.elap;
-    cls=info.over?(info.warn?' over warn':' over'):'';
+    over=info.over?1:0; elap=info.elap;
+    if(info.over){ cls=' over'; if(info.crit){cls+=' crit';crit=1;} else if(info.warn){cls+=' warn';warn=1;} }
   } else if(r.e==='ko'){
-    // terminada ineficiente: naranja si ef 80–100%, rojo si <80%
+    // terminada ineficiente: crit si +200% (ef<50%), naranja si 80–100%, rojo si 50–80%
     var o=+(r.obj||0), rm=+(r.rmin||0), ef=(o>0&&rm>0)?Math.round(o*100/rm):0;
-    if(ef>=80){cls=' warn';warn=1;}
+    if(o>0&&rm>0){ if(ef<50){cls=' crit';crit=1;} else if(ef>=80){cls=' warn';warn=1;} }
   } else if(r.e==='nc'){
     // retrabajo/NC: mismo criterio, la zebra la da la clase .nc
     var o2=+(r.obj||0), rm2=+(r.rmin||0);
-    if(o2>0&&rm2>o2){ var ef2=Math.round(o2*100/rm2); if(ef2>=80){cls=' warn';warn=1;} else cls=' inef'; }
+    if(o2>0&&rm2>o2){ var ef2=Math.round(o2*100/rm2); if(ef2<50){cls=' inef crit';crit=1;} else if(ef2>=80){cls=' warn';warn=1;} else cls=' inef'; }
   }
-  return {cls:cls, attr:' data-over="'+over+'" data-warn="'+warn+'" data-elap="'+elap+'"'};
+  return {cls:cls, attr:' data-over="'+over+'" data-warn="'+warn+'" data-crit="'+crit+'" data-elap="'+elap+'"'};
 }
 
 function render(D){
@@ -402,8 +416,8 @@ setInterval(function(){
       var elap=Math.max(NOWG-ini,0);
       if(elap>obj){
         var ef=Math.round(obj*100/elap);
-        b.classList.add('over'); b.classList.toggle('warn',ef>=80);
-        b.setAttribute('data-over','1'); b.setAttribute('data-warn',ef>=80?'1':'0'); b.setAttribute('data-elap',elap);
+        b.classList.add('over'); b.classList.toggle('crit',ef<50); b.classList.toggle('warn',ef>=80);
+        b.setAttribute('data-over','1'); b.setAttribute('data-crit',ef<50?'1':'0'); b.setAttribute('data-warn',ef>=80?'1':'0'); b.setAttribute('data-elap',elap);
       }
     }
   });
