@@ -85,6 +85,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .blk.curso.over.crit{background:linear-gradient(180deg,#7f1d1d,#450a0a)}
 .blk.nc.crit{background:repeating-linear-gradient(45deg,#7f1d1d,#7f1d1d 8px,#450a0a 8px,#450a0a 16px)}
 @keyframes critpulse{0%,100%{outline-color:#fde047;box-shadow:0 0 4px rgba(0,0,0,.5)}50%{outline-color:#fff;box-shadow:0 0 18px rgba(253,224,71,1)}}
+/* HUECO de inactividad > 15 min en el carril REAL: blanco, parpadeante, pide acción */
+.gap{position:absolute;top:26px;height:30px;border-radius:6px;background:#ffffff;color:#0f172a;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 6px;overflow:hidden;white-space:nowrap;cursor:pointer;z-index:4;animation:gapflash 1s infinite}
+@keyframes gapflash{0%,100%{box-shadow:0 0 0 2px #ef4444,0 0 6px rgba(255,255,255,.6)}50%{box-shadow:0 0 0 3px #fde047,0 0 18px rgba(255,255,255,1)}}
+.gap.ack{background:#cbd5e1;color:#334155;animation:none;box-shadow:none;opacity:.85;cursor:default}
+#sheet .gapbtns{display:flex;flex-direction:column;gap:9px;margin-top:12px}
+#sheet .gapbtns button{border:none;border-radius:11px;padding:14px 0;font-size:15px;font-weight:800;color:#fff;background:#2563eb;cursor:pointer}
+#sndbar{display:none;background:#1d4ed8;color:#fff;padding:8px 14px;font-weight:800;font-size:13px;text-align:center;cursor:pointer;flex:0 0 auto}
 .ahora{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);z-index:10}
 .ahora::before{content:'AHORA';position:absolute;top:-1px;left:4px;background:var(--bad);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px}
 .meta{flex:0 0 130px;border-left:2px solid var(--line);display:flex;flex-direction:column;justify-content:center;padding:4px 10px;gap:3px}
@@ -142,12 +149,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   <div class="chip">A ESTA HORA: plan <b id="cPa">—</b> · real <b id="cRa">—</b></div>
   <div class="chip" id="cDesv">DESVÍO <b>—</b></div>
   <div class="chip" id="cSup" style="background:rgba(255,255,255,.22)">SUPERVISORES <b>—</b></div>
+  <div class="chip" id="cGap" style="display:none;background:#fff;color:#b91c1c;border-color:#fff">⚠ INACTIVIDAD <b>0</b></div>
   <a class="chip" href="./" style="margin-left:auto;background:rgba(255,255,255,.1);text-decoration:none;color:#fff">🏠 Inicio</a>
   <div class="chip" style="background:rgba(255,255,255,.1)" onclick="cargar()">↻ Actualizar</div>
 </div>
 <div id="shade" onclick="cerrarDet()"></div>
 <div id="sheet"><button class="x" onclick="cerrarDet()">✕</button><span class="k" id="shK"></span><h2 id="shT"></h2><div class="m" id="shM"></div><div id="shCtl"></div></div>
 <div class="off" id="off">⚠ SIN CONEXIÓN — mostrando últimos datos</div>
+<div id="sndbar" onclick="ensureAudio();updateAlarm()">🔔 Tocá la pantalla para activar el sonido de las alarmas de inactividad</div>
 <div class="alertbar" id="alertbar" onclick="this.classList.toggle('exp')"></div>
 <div class="wrap"><div class="grid" id="grid"><div class="spin"></div></div></div>
 <div class="leg">
@@ -187,6 +196,8 @@ function cerrarDet(){document.getElementById('sheet').classList.remove('on');doc
 var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
 var CUR=null;
 document.addEventListener('click',function(ev){
+  ensureAudio();
+  var gp=ev.target.closest('.gap'); if(gp){ if(!gp.classList.contains('ack')) openGap(gp); return; }
   var b=ev.target.closest('.blk,.pb'); if(!b) return;
   var over=b.getAttribute('data-over')==='1';
   var warn=b.getAttribute('data-warn')==='1';
@@ -268,7 +279,65 @@ function ovAttrs(r){
   return {cls:cls, attr:' data-over="'+over+'" data-warn="'+warn+'" data-crit="'+crit+'" data-elap="'+elap+'"'};
 }
 
+// ===== Huecos de inactividad (>15 min) + alarma sonora =====
+var GAPACK={};
+function loadGapAck(){ try{return JSON.parse(localStorage.getItem('hxh_gaps_ack')||'{}');}catch(e){return {};} }
+function gapsDe(o,nowM,SEGS){
+  var iv=[]; (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=toMin(r.fin);if(b>a)iv.push([a,b]);});
+  iv.sort(function(a,b){return a[0]-b[0]});
+  var gaps=[];
+  SEGS.forEach(function(sg){
+    var segEnd=Math.min(sg[1],nowM); if(segEnd<=sg[0]) return;
+    var cur=sg[0];
+    iv.forEach(function(p){
+      var a=Math.max(p[0],sg[0]), b=Math.min(p[1],segEnd); if(b<=a) return;
+      if(a-cur>15) gaps.push([cur,a]);
+      if(b>cur) cur=b;
+    });
+    if(segEnd-cur>15) gaps.push([cur,segEnd]);
+  });
+  return gaps;
+}
+var actx=null,alarmTimer=null,pendingGaps=0,CURGAP=null;
+var GAPLAB={sup:'Aviso a supervisor',tarea:'Cargué la tarea',operador:'Aviso a operador'};
+function ensureAudio(){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(e){} }
+function beep(){ if(!actx||actx.state!=='running') return; try{ var o=actx.createOscillator(),g=actx.createGain(); o.type='square'; o.frequency.value=880; o.connect(g); g.connect(actx.destination); var t=actx.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.3,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.45); o.start(t); o.stop(t+0.5);}catch(e){} }
+function updateAlarm(){
+  var chip=document.getElementById('cGap'), bar=document.getElementById('sndbar');
+  if(pendingGaps>0){
+    if(chip){chip.style.display='';chip.innerHTML='⚠ INACTIVIDAD <b>'+pendingGaps+'</b>';}
+    if(!alarmTimer){ alarmTimer=setInterval(function(){ensureAudio();beep();},2500); ensureAudio(); beep(); }
+    if(bar) bar.style.display=(actx&&actx.state==='running')?'none':'block';
+  } else {
+    if(chip) chip.style.display='none';
+    if(bar) bar.style.display='none';
+    if(alarmTimer){clearInterval(alarmTimer);alarmTimer=null;}
+  }
+}
+function recomputeAlarm(){ pendingGaps=document.querySelectorAll('.gap:not(.ack)').length; updateAlarm(); }
+function openGap(gp){
+  CURGAP=gp.getAttribute('data-gk');
+  var k=document.getElementById('shK'); k.textContent='⚠ INACTIVIDAD'; k.style.background='#ffffff'; k.style.color='#b91c1c';
+  document.getElementById('shT').textContent=(gp.getAttribute('data-op')||'')+' · sin actividad '+(gp.getAttribute('data-rng')||'');
+  document.getElementById('shM').innerHTML='<b style="color:#ef4444">'+gp.getAttribute('data-min')+' minutos sin tarea registrada.</b> Elegí qué acción tomaste para silenciar la alarma:';
+  document.getElementById('shCtl').innerHTML='<div class="gapbtns">'
+    +'<button onclick="ackGap(\'sup\')">📣 Aviso a supervisor</button>'
+    +'<button onclick="ackGap(\'tarea\')">📝 Cargué la tarea</button>'
+    +'<button onclick="ackGap(\'operador\')">🗣 Aviso a operador</button></div>';
+  document.getElementById('sheet').classList.add('on'); document.getElementById('shade').classList.add('on');
+}
+function ackGap(code){
+  if(!CURGAP) return;
+  var accion=GAPLAB[code]||code;
+  GAPACK[CURGAP]={accion:accion,ts:Date.now()};
+  try{localStorage.setItem('hxh_gaps_ack',JSON.stringify(GAPACK));}catch(e){}
+  var sel='.gap[data-gk="'+(window.CSS&&CSS.escape?CSS.escape(CURGAP):CURGAP)+'"]';
+  var el=document.querySelector(sel); if(el){ el.classList.add('ack'); el.textContent='✓ '+accion; }
+  cerrarDet(); CURGAP=null; recomputeAlarm();
+}
+
 function render(D){
+  GAPACK=loadGapAck();
   var rs=D.rondas_sup;
   if(rs&&rs.rodrigo){document.getElementById('cSup').innerHTML='SUPERVISORES <b>R '+(rs.rodrigo.validadas||0)+'/'+(rs.rodrigo.total||0)+' · Y '+(rs.yance.validadas||0)+'/'+(rs.yance.total||0)+'</b>'}
   var ab=document.getElementById('alertbar');
@@ -347,6 +416,11 @@ function render(D){
           SEGS.forEach(function(sg){h+='<div class="pb" style="left:'+((sg[0]-480)/60*COLP)+'px;width:'+((sg[1]-sg[0])/60*COLP)+'px" title="sin plan pendiente — jornada esperada">sin plan pendiente · jornada</div>'});
         }
         (o.real||[]).forEach(function(r){var ov=ovAttrs(r);h+='<div class="blk '+r.e+ov.cls+(r.val?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||o.nom)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(code)+'"'+ov.attr+' style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo)+' · '+esc(r.wo)+'">'+(r.val?'✓ ':'')+esc(r.mo?r.mo+' · ':'')+esc(r.wo)+'</div>'});
+        if((o.real||[]).length){ gapsDe(o,nowM,SEGS).forEach(function(g){
+          var gk=D.fecha+'|'+o.nom+'|'+g[0], ak=GAPACK[gk];
+          var L=(g[0]-H0)/60*COLP, W=Math.max((g[1]-g[0])/60*COLP,26);
+          h+='<div class="gap'+(ak?' ack':'')+'" data-gk="'+esc(gk)+'" data-op="'+esc(o.nom)+'" data-rng="'+fmtM(g[0])+'–'+fmtM(g[1])+'" data-min="'+(g[1]-g[0])+'" style="left:'+L+'px;width:'+W+'px" title="Sin actividad '+fmtM(g[0])+'–'+fmtM(g[1])+' ('+(g[1]-g[0])+'m)">'+(ak?('✓ '+esc(ak.accion)):('⚠ '+(g[1]-g[0])+'m'))+'</div>';
+        }); }
         h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
         if(planDia>0){
           h+='</div><div class="meta"><div class="t">REAL '+pR+'% vs PLAN '+pPA+'%</div>'
@@ -360,6 +434,7 @@ function render(D){
       });
     });
     document.getElementById('grid').innerHTML=h;
+    recomputeAlarm();
     return;
   }
   (D.grupos||[]).forEach(function(g){
@@ -391,6 +466,7 @@ function render(D){
     });
   });
   document.getElementById('grid').innerHTML=h;
+  recomputeAlarm();
 }
 function cargar(){
   fetch(URL_API+'&t='+Date.now(),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json()}).then(function(D){
