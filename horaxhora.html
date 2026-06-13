@@ -60,21 +60,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   display:flex;align-items:center;padding:0 7px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;cursor:default;
   box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .blk.ok{background:linear-gradient(180deg,#16a34a,#15803d)}
-.blk.ko{background:linear-gradient(180deg,#dc2626,#b91c1c)}
+.blk.ko{background:linear-gradient(180deg,#dc2626,#b91c1c)}             /* terminada ineficiente GRAVE (ef < 80%) → rojo */
+.blk.ko.warn{background:linear-gradient(180deg,#f97316,#ea580c)}        /* terminada ineficiente LEVE (ef 80–100%) → naranja */
 .blk.curso{background:linear-gradient(180deg,#0ea5e9,#0369a1);outline:2px solid #7dd3fc}
 .blk.curso::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:sweep 2.2s infinite}
-/* EN CURSO pero ya pasada del tiempo estándar. Dos niveles según eficiencia (obj/transcurrido):
-   - leve  (ef >= 90%): rojo MENOS intenso, recién cruzó el estándar
-   - grave (ef <  90%): rojo intenso y palpitando fuerte */
+/* EN CURSO pasada del tiempo estándar. Dos niveles según eficiencia (obj/transcurrido):
+   - leve  (ef 80–100%): NARANJA, palpita suave
+   - grave (ef < 80%):  ROJO intenso, palpita fuerte */
 .blk.curso.over{background:linear-gradient(180deg,#dc2626,#991b1b);outline:2px solid #fff;animation:overpulse 1s infinite}
-.blk.curso.over.soft{background:linear-gradient(180deg,#fb7185,#ef4444);outline:2px solid #fecaca;animation:overpulse-soft 1.8s infinite}
+.blk.curso.over.warn{background:linear-gradient(180deg,#f97316,#ea580c);outline:2px solid #fdba74;animation:overpulse-warn 1.6s infinite}
 .blk.curso.over::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent)}
 @keyframes overpulse{0%,100%{outline-color:#fecaca;box-shadow:0 1px 4px rgba(0,0,0,.45)}50%{outline-color:#fff;box-shadow:0 0 14px rgba(239,68,68,.95)}}
-@keyframes overpulse-soft{0%,100%{outline-color:#fecaca;box-shadow:0 1px 4px rgba(0,0,0,.45)}50%{outline-color:#fda4af;box-shadow:0 0 8px rgba(239,68,68,.5)}}
+@keyframes overpulse-warn{0%,100%{outline-color:#fdba74;box-shadow:0 1px 4px rgba(0,0,0,.45)}50%{outline-color:#fed7aa;box-shadow:0 0 8px rgba(249,115,22,.6)}}
 @keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
-/* No conformidad / retrabajo: MISMO color que el resto según su estado (verde en tiempo / rojo ineficiente),
-   distinguido sólo por la textura rayada (zebra). */
+/* No conformidad / retrabajo: MISMO esquema de color que el resto, distinguido por la textura rayada (zebra).
+   verde en tiempo · naranja ef 80–100% · rojo ef < 80% */
 .blk.nc{background:repeating-linear-gradient(45deg,#16a34a,#16a34a 8px,#15803d 8px,#15803d 16px)}
+.blk.nc.warn{background:repeating-linear-gradient(45deg,#f97316,#f97316 8px,#ea580c 8px,#ea580c 16px)}
 .blk.nc.inef{background:repeating-linear-gradient(45deg,#dc2626,#dc2626 8px,#b91c1c 8px,#b91c1c 16px)}
 .ahora{position:absolute;top:0;bottom:0;width:2px;background:var(--bad);z-index:10}
 .ahora::before{content:'AHORA';position:absolute;top:-1px;left:4px;background:var(--bad);color:#fff;font-size:9px;font-weight:800;padding:1px 5px;border-radius:4px}
@@ -143,11 +145,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div class="wrap"><div class="grid" id="grid"><div class="spin"></div></div></div>
 <div class="leg">
   <span><i style="background:#33415588;border:1px solid #64748b;height:8px"></i> Carril superior: tareas teóricas del día (plan 7:45 de sus órdenes)</span>
-  <span><i style="background:#16a34a"></i> Real en tiempo</span>
-  <span><i style="background:#dc2626"></i> Real ineficiente</span>
-  <span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso</span>
-  <span><i style="background:linear-gradient(180deg,#fb7185,#ef4444);outline:2px solid #fecaca"></i> En curso · recién pasada (ef ≥ 90%)</span>
-  <span><i style="background:linear-gradient(180deg,#dc2626,#991b1b);outline:2px solid #fff"></i> En curso · muy pasada (ef &lt; 90%)</span>
+  <span><i style="background:#16a34a"></i> En tiempo (ef ≥ 100%)</span>
+  <span><i style="background:linear-gradient(180deg,#f97316,#ea580c)"></i> Ineficiente leve (ef 80–100%)</span>
+  <span><i style="background:linear-gradient(180deg,#dc2626,#b91c1c)"></i> Ineficiente grave (ef &lt; 80%)</span>
+  <span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso (las ineficientes palpitan)</span>
   <span><i style="background:repeating-linear-gradient(45deg,#64748b,#64748b 4px,#475569 4px,#475569 8px)"></i> Retrabajo / NC (zebra · color = estado)</span>
   <span style="color:#ef4444;font-weight:800">│ AHORA</span>
 </div>
@@ -165,23 +166,26 @@ function fmtM(m){var h=Math.floor(m/60),mi=m%60;return (h<10?'0':'')+h+':'+(mi<1
 // Clasifica una tarea EN CURSO según su tiempo transcurrido vs el estándar (obj).
 // ef = obj/transcurrido*100. over si transcurrido>obj. soft si ef>=90 (recién cruzó), hard si ef<90.
 function overInfo(r){
-  if(r.e!=='curso') return {over:false,soft:false,ef:null,elap:0};
+  if(r.e!=='curso') return {over:false,warn:false,ef:null,elap:0};
   var obj=+(r.obj||0), ini=toMin(r.ini);
-  if(!(NOWG>0)) return {over:false,soft:false,ef:null,elap:0};
+  if(!(NOWG>0)) return {over:false,warn:false,ef:null,elap:0};
   var elap=Math.max(NOWG-ini,0);
-  if(obj<=0||elap<=obj) return {over:false,soft:false,ef:(obj>0&&elap>0?Math.round(obj*100/elap):null),elap:elap};
+  if(obj<=0||elap<=obj) return {over:false,warn:false,ef:(obj>0&&elap>0?Math.round(obj*100/elap):null),elap:elap};
   var ef=Math.round(obj*100/elap);
-  return {over:true,soft:ef>=90,ef:ef,elap:elap};
+  return {over:true,warn:ef>=80,ef:ef,elap:elap};   // warn = NARANJA (ef 80–100%); si ef<80 queda rojo
 }
-var KLAB={ok:['Terminada en tiempo','#16a34a'],ko:['Terminada ineficiente','#dc2626'],curso:['En curso','#0ea5e9'],over:['En curso · pasada de tiempo','#ef4444'],overHard:['En curso · MUY pasada de tiempo','#dc2626'],nc:['NC / Retrabajo','#dc2626'],plan:['Tarea planificada (teórico)','#475569']};
+var KLAB={ok:['Terminada en tiempo','#16a34a'],ko:['Terminada ineficiente grave (ef < 80%)','#dc2626'],koWarn:['Terminada ineficiente leve (ef 80–100%)','#f97316'],curso:['En curso','#0ea5e9'],over:['En curso · ineficiente leve (ef 80–100%)','#f97316'],overHard:['En curso · ineficiente grave (ef < 80%)','#dc2626'],nc:['NC / Retrabajo','#dc2626'],plan:['Tarea planificada (teórico)','#475569']};
 function cerrarDet(){document.getElementById('sheet').classList.remove('on');document.getElementById('shade').classList.remove('on')}
 var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
 var CUR=null;
 document.addEventListener('click',function(ev){
   var b=ev.target.closest('.blk,.pb'); if(!b) return;
   var over=b.getAttribute('data-over')==='1';
-  var soft=b.getAttribute('data-soft')==='1';
-  var k=b.getAttribute('data-k')||'plan', lab=(over?(soft?KLAB.over:KLAB.overHard):(KLAB[k]||KLAB.plan));
+  var warn=b.getAttribute('data-warn')==='1';
+  var k=b.getAttribute('data-k')||'plan', lab;
+  if(over) lab=warn?KLAB.over:KLAB.overHard;
+  else if(k==='ko') lab=warn?KLAB.koWarn:KLAB.ko;
+  else lab=KLAB[k]||KLAB.plan;
   document.getElementById('shK').textContent=lab[0];
   document.getElementById('shK').style.background=lab[1];
   document.getElementById('shT').textContent=(b.getAttribute('title')||b.textContent).replace(/^PLAN: /,'');
@@ -190,7 +194,7 @@ document.addEventListener('click',function(ev){
   var elap=+(b.getAttribute('data-elap')||0);
   var inef=(obj>0&&rmin>obj)||over, ef=(obj>0&&rmin>0)?Math.round(obj*100/rmin):null;
   var meta=(who?who+' · ':'')+(b.getAttribute('data-h')||'');
-  if(over&&obj>0){ var efc=elap>0?Math.round(obj*100/elap):0; meta+=' · lleva '+elap+'m / estándar '+obj+'m (+'+(elap-obj)+'m · ef '+efc+'%'+(soft?'':' · MUY pasada')+')'; }
+  if(over&&obj>0){ var efc=elap>0?Math.round(obj*100/elap):0; meta+=' · lleva '+elap+'m / estándar '+obj+'m (+'+(elap-obj)+'m · ef '+efc+'%'+(warn?'':' · GRAVE ef<80%')+')'; }
   else{
     if(rmin>0) meta+=' · real '+rmin+'m'+(obj>0?' / obj '+obj+'m':'');
     if(ef!=null) meta+=' · ef '+ef+'%'+((obj>0&&rmin>obj)?' · INEFICIENTE':'');
@@ -233,11 +237,21 @@ function valHxH(tipo){
 
 // arma clase + atributos extra (over / soft / elapsed) para un bloque real EN CURSO pasado de tiempo
 function ovAttrs(r){
-  var info=overInfo(r);
-  var cls=info.over?(info.soft?' over soft':' over'):'';
-  // retrabajo/NC: mismo color que el resto según eficiencia (rojo si rmin>obj), la zebra ya la da la clase .nc
-  if(r.e==='nc'){ var o=+(r.obj||0), rm=+(r.rmin||0); if(o>0&&rm>o) cls+=' inef'; }
-  return {cls:cls, attr:' data-over="'+(info.over?1:0)+'" data-soft="'+(info.soft?1:0)+'" data-elap="'+info.elap+'"'};
+  var cls='', over=0, warn=0, elap=0;
+  if(r.e==='curso'){
+    var info=overInfo(r);
+    over=info.over?1:0; warn=info.warn?1:0; elap=info.elap;
+    cls=info.over?(info.warn?' over warn':' over'):'';
+  } else if(r.e==='ko'){
+    // terminada ineficiente: naranja si ef 80–100%, rojo si <80%
+    var o=+(r.obj||0), rm=+(r.rmin||0), ef=(o>0&&rm>0)?Math.round(o*100/rm):0;
+    if(ef>=80){cls=' warn';warn=1;}
+  } else if(r.e==='nc'){
+    // retrabajo/NC: mismo criterio, la zebra la da la clase .nc
+    var o2=+(r.obj||0), rm2=+(r.rmin||0);
+    if(o2>0&&rm2>o2){ var ef2=Math.round(o2*100/rm2); if(ef2>=80){cls=' warn';warn=1;} else cls=' inef'; }
+  }
+  return {cls:cls, attr:' data-over="'+over+'" data-warn="'+warn+'" data-elap="'+elap+'"'};
 }
 
 function render(D){
@@ -388,8 +402,8 @@ setInterval(function(){
       var elap=Math.max(NOWG-ini,0);
       if(elap>obj){
         var ef=Math.round(obj*100/elap);
-        b.classList.add('over'); b.classList.toggle('soft',ef>=90);
-        b.setAttribute('data-over','1'); b.setAttribute('data-soft',ef>=90?'1':'0'); b.setAttribute('data-elap',elap);
+        b.classList.add('over'); b.classList.toggle('warn',ef>=80);
+        b.setAttribute('data-over','1'); b.setAttribute('data-warn',ef>=80?'1':'0'); b.setAttribute('data-elap',elap);
       }
     }
   });
