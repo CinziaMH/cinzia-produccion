@@ -347,8 +347,10 @@ function openGap(gp){
 function ackGap(code){
   if(!CURGAP) return;
   var accion=GAPLAB[code]||code;
+  var _k=CURGAP;
   GAPACK[CURGAP]={accion:accion,ts:Date.now()};
   try{localStorage.setItem('hxh_gaps_ack',JSON.stringify(GAPACK));}catch(e){}
+  try{fetch(URL_EXEC,{method:'POST',redirect:'follow',body:JSON.stringify({tipo:'gap_ack',key:_k,accion:accion,user:'web'})});}catch(e){} // compartir con las demás pantallas
   var sel='.gap[data-gk="'+(window.CSS&&CSS.escape?CSS.escape(CURGAP):CURGAP)+'"]';
   var el=document.querySelector(sel); if(el){ el.classList.add('ack'); el.textContent='✓ '+accion; }
   cerrarDet(); CURGAP=null; recomputeAlarm();
@@ -356,6 +358,7 @@ function ackGap(code){
 
 function render(D){
   GAPACK=loadGapAck();
+  var _ga=D.gaps_ack||{}; Object.keys(_ga).forEach(function(k){ GAPACK[k]={accion:_ga[k]}; }); // confirmaciones compartidas (backend)
   var aus=D.ausentes||[];
   var cAus=document.getElementById('cAus'), ausbar=document.getElementById('ausbar');
   if(aus.length){ if(cAus){cAus.style.display='';cAus.innerHTML='🚫 AUSENTES <b>'+aus.length+'</b>';} if(ausbar){ausbar.style.display='block';ausbar.innerHTML='🚫 AUSENTES HOY ('+aus.length+'): '+aus.map(function(a){return esc(a.nombre)+(a.sector?' <span style="opacity:.7">('+esc(a.sector)+')</span>':'')}).join(' · ');} }
