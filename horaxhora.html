@@ -150,6 +150,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   <div class="chip" id="cDesv">DESVÍO <b>—</b></div>
   <div class="chip" id="cSup" style="background:rgba(255,255,255,.22)">SUPERVISORES <b>—</b></div>
   <div class="chip" id="cGap" style="display:none;background:#fff;color:#b91c1c;border-color:#fff">⚠ INACTIVIDAD <b>0</b></div>
+  <div class="chip" id="cAus" style="display:none;background:#7f1d1d;color:#fecaca;border-color:#b91c1c">🚫 AUSENTES <b>0</b></div>
   <a class="chip" href="./" style="margin-left:auto;background:rgba(255,255,255,.1);text-decoration:none;color:#fff">🏠 Inicio</a>
   <div class="chip" style="background:rgba(255,255,255,.1)" onclick="cargar()">↻ Actualizar</div>
 </div>
@@ -158,6 +159,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div class="off" id="off">⚠ SIN CONEXIÓN — mostrando últimos datos</div>
 <div id="sndbar" onclick="ensureAudio();updateAlarm()">🔔 Tocá la pantalla para activar el sonido de las alarmas de inactividad</div>
 <div class="alertbar" id="alertbar" onclick="this.classList.toggle('exp')"></div>
+<div id="ausbar" style="display:none;background:#7f1d1d;color:#fff;padding:6px 14px;font-weight:800;font-size:13px;flex:0 0 auto;line-height:1.5"></div>
 <div class="wrap"><div class="grid" id="grid"><div class="spin"></div></div></div>
 <div class="leg">
   <span><i style="background:#33415588;border:1px solid #64748b;height:8px"></i> Carril superior: tareas teóricas del día (plan 7:45 de sus órdenes)</span>
@@ -285,10 +287,14 @@ function loadGapAck(){ try{return JSON.parse(localStorage.getItem('hxh_gaps_ack'
 function gapsDe(o,nowM,SEGS){
   var iv=[]; (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=toMin(r.fin);if(b>a)iv.push([a,b]);});
   iv.sort(function(a,b){return a[0]-b[0]});
+  // tiempo muerto de la mañana: arranca a las 8:20 (o la hora de fichada si fichó más tarde)
+  var ciMin=(o.ci&&/^\d/.test(o.ci))?toMin(o.ci):0;
+  var leadStart=Math.max(500, ciMin); // 500 = 08:20
   var gaps=[];
-  SEGS.forEach(function(sg){
+  SEGS.forEach(function(sg,si){
     var segEnd=Math.min(sg[1],nowM); if(segEnd<=sg[0]) return;
-    var cur=sg[0];
+    var cur=(si===0)?Math.max(sg[0],leadStart):sg[0];
+    if(cur>=segEnd) return;
     iv.forEach(function(p){
       var a=Math.max(p[0],sg[0]), b=Math.min(p[1],segEnd); if(b<=a) return;
       if(a-cur>15) gaps.push([cur,a]);
@@ -338,6 +344,10 @@ function ackGap(code){
 
 function render(D){
   GAPACK=loadGapAck();
+  var aus=D.ausentes||[];
+  var cAus=document.getElementById('cAus'), ausbar=document.getElementById('ausbar');
+  if(aus.length){ if(cAus){cAus.style.display='';cAus.innerHTML='🚫 AUSENTES <b>'+aus.length+'</b>';} if(ausbar){ausbar.style.display='block';ausbar.innerHTML='🚫 AUSENTES HOY ('+aus.length+'): '+aus.map(function(n){return esc(n)}).join(' · ');} }
+  else { if(cAus)cAus.style.display='none'; if(ausbar)ausbar.style.display='none'; }
   var rs=D.rondas_sup;
   if(rs&&rs.rodrigo){document.getElementById('cSup').innerHTML='SUPERVISORES <b>R '+(rs.rodrigo.validadas||0)+'/'+(rs.rodrigo.total||0)+' · Y '+(rs.yance.validadas||0)+'/'+(rs.yance.total||0)+'</b>'}
   var ab=document.getElementById('alertbar');
