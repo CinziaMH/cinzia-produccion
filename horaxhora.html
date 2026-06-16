@@ -186,7 +186,7 @@ function overInfo(r){
   if(r.e!=='curso') return {over:false,warn:false,ef:null,elap:0};
   var obj=+(r.obj||0), ini=toMin(r.ini);
   if(!(NOWG>0)) return {over:false,warn:false,ef:null,elap:0};
-  var elap=Math.max(NOWG-ini,0);
+  var elap=Math.max(NOWG-ini, +(r.acum||0));   // incluye tiempo acumulado de días anteriores (Odoo)
   if(obj<=0||elap<=obj) return {over:false,warn:false,ef:(obj>0&&elap>0?Math.round(obj*100/elap):null),elap:elap};
   var ef=Math.round(obj*100/elap);
   return {over:true,warn:ef>=80,crit:ef<50,ef:ef,elap:elap};   // warn=NARANJA 80–100% · crit=+200% estándar (ef<50%) · si no, rojo
@@ -276,7 +276,7 @@ function ovAttrs(r){
     var o2=+(r.obj||0), rm2=+(r.rmin||0);
     if(o2>0&&rm2>o2){ var ef2=Math.round(o2*100/rm2); if(ef2<50){cls=' inef crit';crit=1;} else if(ef2>=80){cls=' warn';warn=1;} else cls=' inef'; }
   }
-  return {cls:cls, attr:' data-over="'+over+'" data-warn="'+warn+'" data-crit="'+crit+'" data-elap="'+elap+'"'};
+  return {cls:cls, attr:' data-over="'+over+'" data-warn="'+warn+'" data-crit="'+crit+'" data-elap="'+elap+'" data-acum="'+(+(r.acum||0))+'"'};
 }
 
 // ===== Huecos de inactividad (>15 min) + alarma sonora =====
@@ -489,7 +489,8 @@ setInterval(function(){
     var obj=+(b.getAttribute('data-obj')||0);
     var ini=b.getAttribute('data-h'); ini=ini?toMin(ini.split('–')[0]):0;
     if(obj>0&&NOWG>0){
-      var elap=Math.max(NOWG-ini,0);
+      var acv=+(b.getAttribute('data-acum')||0);
+      var elap=Math.max(NOWG-ini, acv);
       if(elap>obj){
         var ef=Math.round(obj*100/elap);
         b.classList.add('over'); b.classList.toggle('crit',ef<50); b.classList.toggle('warn',ef>=80);
