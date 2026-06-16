@@ -81,6 +81,7 @@ tbody tr:hover{background:rgba(255,255,255,.05)}
   <div class="fg"><label>Montaje</label><select id="fMon" onchange="aplicar()"><option value="">Todos</option></select></div>
   <div class="fg"><label>Acción correctiva</label><select id="fAcc" onchange="aplicar()"><option value="">Todas</option><option>Pendiente</option><option>Sí</option><option>No</option></select></div>
   <div class="fg"><label>Rango rápido</label><div class="quick">
+    <button class="qbtn" data-r="hoy" onclick="setRango('hoy')">Hoy</button>
     <button class="qbtn" data-r="ayer" onclick="setRango('ayer')">Ayer</button>
     <button class="qbtn" data-r="semana" onclick="setRango('semana')">Semana en curso</button>
     <button class="qbtn" data-r="semanaAnt" onclick="setRango('semanaAnt')">Semana anterior</button>
@@ -134,7 +135,8 @@ function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0
 function lunesDe(d){ var x=new Date(d); var off=(x.getDay()+6)%7; x.setDate(x.getDate()-off); x.setHours(0,0,0,0); return x; }
 function setRango(t){
   var hoy=new Date(); hoy.setHours(0,0,0,0); var d=null,h=null;
-  if(t==='ayer'){ d=new Date(hoy); d.setDate(d.getDate()-1); h=new Date(d); }
+  if(t==='hoy'){ d=new Date(hoy); h=new Date(hoy); }
+  else if(t==='ayer'){ d=new Date(hoy); d.setDate(d.getDate()-1); h=new Date(d); }
   else if(t==='semana'){ d=lunesDe(hoy); h=new Date(d); h.setDate(h.getDate()+6); }
   else if(t==='semanaAnt'){ d=lunesDe(hoy); d.setDate(d.getDate()-7); h=new Date(d); h.setDate(h.getDate()+6); }
   document.getElementById('fDesde').value = d?ymd(d):'';
