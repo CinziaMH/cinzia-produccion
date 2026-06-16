@@ -290,15 +290,19 @@ function ovAttrs(r){
 // ===== Huecos de inactividad (>15 min) + alarma sonora =====
 var GAPACK={};
 function loadGapAck(){ try{return JSON.parse(localStorage.getItem('hxh_gaps_ack')||'{}');}catch(e){return {};} }
+// operarios con horario reducido: terminan su turno antes (minutos del día). No se les cuenta inactividad después.
+var HORARIO_FIN={'dylan mansilla':720}; // 720 = 12:00
+function finOperario(nom){ var k=String(nom||'').toLowerCase().replace(/\s+/g,' ').trim(); return HORARIO_FIN[k]||9999; }
 function gapsDe(o,nowM,SEGS){
   var iv=[]; (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=toMin(r.fin);if(b>a)iv.push([a,b]);});
   iv.sort(function(a,b){return a[0]-b[0]});
   // tiempo muerto de la mañana: arranca a las 8:20 (o la hora de fichada si fichó más tarde)
   var ciMin=(o.ci&&/^\d/.test(o.ci))?toMin(o.ci):0;
   var leadStart=Math.max(500, ciMin); // 500 = 08:20
+  var fin=finOperario(o.nom);          // corte de turno propio (Dylan hasta 12:00, etc.)
   var gaps=[];
   SEGS.forEach(function(sg,si){
-    var segEnd=Math.min(sg[1],nowM); if(segEnd<=sg[0]) return;
+    var segEnd=Math.min(sg[1],nowM,fin); if(segEnd<=sg[0]) return;
     var cur=(si===0)?Math.max(sg[0],leadStart):sg[0];
     if(cur>=segEnd) return;
     iv.forEach(function(p){
