@@ -370,7 +370,7 @@ function render(D){
   HIST=!!D.hist;
   var hb=document.getElementById('cHoyBtn'); if(hb) hb.style.display=HIST?'':'none';
   document.getElementById('reloj').textContent = HIST ? ('📅 '+String(D.fecha||'').slice(8,10)+'/'+String(D.fecha||'').slice(5,7)) : D.hora;
-  document.getElementById('sub').textContent = HIST ? ('📅 ANÁLISIS DÍA ANTERIOR · '+D.fecha+' · jornada cerrada — tocá "Hoy ▶" para volver') : (D.fecha+' · jornada '+(D.sab?'8–13':'8:10–12 / 13–17')+(D.congelado?' · plan congelado 7:45':' · plan recién armado')+' · refresca cada 5 min');
+  document.getElementById('sub').textContent = HIST ? ('📅 ANÁLISIS DÍA ANTERIOR · '+D.fecha+' · jornada cerrada — tocá "Hoy ▶" para volver') : (D.fecha+' · jornada '+(D.sab?'8–13':'8:10–12 / 13–17')+(D.congelado?' · plan congelado 7:45':' · plan recién armado')+' · refresca cada 1 min');
   var planH=hN(D.plan_total_min/60), paH=hN(D.plan_ahora_min/60), raH=hN(D.real_ahora_min/60);
   document.getElementById('cPlan').textContent=planH+' h';
   document.getElementById('cPa').textContent=paH+' h';
@@ -514,7 +514,7 @@ function cargar(){
   });
 }
 cargar();
-setInterval(cargar,300000);
+setInterval(cargar,60000);
 // recolorea las tareas en curso que cruzan su estándar entre refrescos (sin esperar 5 min)
 setInterval(function(){
   var now=document.getElementById('reloj').textContent;
