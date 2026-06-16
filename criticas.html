@@ -24,6 +24,10 @@ a.btn,.btn{background:rgba(255,255,255,.12);text-decoration:none;color:#fff;bord
 .fg label{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
 .fg select,.fg input{background:#0f172a;color:#f1f5f9;border:1px solid #475569;border-radius:8px;padding:7px 9px;font-size:13px;min-width:130px}
 .fg input[type=date]{min-width:140px}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.qbtn{background:#0f172a;color:#cbd5e1;border:1px solid #475569;border-radius:8px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap}
+.qbtn:hover{border-color:#94a3b8}
+.qbtn.on{background:var(--nar);border-color:var(--nar);color:#fff}
 .cnt{margin-left:auto;display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
 .wrap{flex:1;overflow:auto;padding:0 0 40px}
 table{border-collapse:collapse;width:100%;min-width:1000px;font-size:13px}
@@ -76,8 +80,14 @@ tbody tr:hover{background:rgba(255,255,255,.05)}
   <div class="fg"><label>Operario</label><select id="fOp" onchange="aplicar()"><option value="">Todos</option></select></div>
   <div class="fg"><label>Montaje</label><select id="fMon" onchange="aplicar()"><option value="">Todos</option></select></div>
   <div class="fg"><label>Acción correctiva</label><select id="fAcc" onchange="aplicar()"><option value="">Todas</option><option>Pendiente</option><option>Sí</option><option>No</option></select></div>
-  <div class="fg"><label>Desde</label><input type="date" id="fDesde" onchange="aplicar()"></div>
-  <div class="fg"><label>Hasta</label><input type="date" id="fHasta" onchange="aplicar()"></div>
+  <div class="fg"><label>Rango rápido</label><div class="quick">
+    <button class="qbtn" data-r="ayer" onclick="setRango('ayer')">Ayer</button>
+    <button class="qbtn" data-r="semana" onclick="setRango('semana')">Semana en curso</button>
+    <button class="qbtn" data-r="semanaAnt" onclick="setRango('semanaAnt')">Semana anterior</button>
+    <button class="qbtn" data-r="todo" onclick="setRango('todo')">Todo</button>
+  </div></div>
+  <div class="fg"><label>Desde</label><input type="date" id="fDesde" onchange="manualFecha()"></div>
+  <div class="fg"><label>Hasta</label><input type="date" id="fHasta" onchange="manualFecha()"></div>
   <div class="fg"><label>Buscar</label><input type="text" id="fTxt" placeholder="orden, operación…" oninput="aplicar()"></div>
   <div class="cnt">
     <div class="chip" id="cTot">— críticas</div>
@@ -120,6 +130,19 @@ function cargar(){
    .catch(function(e){ document.getElementById('cont').innerHTML='<div class="empty">No se pudo cargar: '+esc(e.message)+'</div>'; });
 }
 
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function lunesDe(d){ var x=new Date(d); var off=(x.getDay()+6)%7; x.setDate(x.getDate()-off); x.setHours(0,0,0,0); return x; }
+function setRango(t){
+  var hoy=new Date(); hoy.setHours(0,0,0,0); var d=null,h=null;
+  if(t==='ayer'){ d=new Date(hoy); d.setDate(d.getDate()-1); h=new Date(d); }
+  else if(t==='semana'){ d=lunesDe(hoy); h=new Date(d); h.setDate(h.getDate()+6); }
+  else if(t==='semanaAnt'){ d=lunesDe(hoy); d.setDate(d.getDate()-7); h=new Date(d); h.setDate(h.getDate()+6); }
+  document.getElementById('fDesde').value = d?ymd(d):'';
+  document.getElementById('fHasta').value = h?ymd(h):'';
+  [].forEach.call(document.querySelectorAll('.qbtn'),function(b){b.classList.toggle('on', b.getAttribute('data-r')===t);});
+  aplicar();
+}
+function manualFecha(){ [].forEach.call(document.querySelectorAll('.qbtn'),function(b){b.classList.remove('on');}); aplicar(); }
 function aplicar(){
   var fc=document.getElementById('fCausa').value, fo=document.getElementById('fOp').value,
       fm=document.getElementById('fMon').value, fa=document.getElementById('fAcc').value,
