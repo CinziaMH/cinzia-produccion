@@ -184,11 +184,17 @@ function hN(v){return Math.round(v*10)/10}
 function fmtM(m){var h=Math.floor(m/60),mi=m%60;return (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi}
 // Clasifica una tarea EN CURSO según su tiempo transcurrido vs el estándar (obj).
 // ef = obj/transcurrido*100. over si transcurrido>obj. soft si ef>=90 (recién cruzó), hard si ef<90.
+// suma a cada bloque el tiempo de las OTRAS sesiones del mismo día de la misma operación (mo+wo)
+function annotateAcum(arr){
+  var by={}; (arr||[]).forEach(function(r){var k=(r.mo||'')+'|'+(r.wo||'');by[k]=(by[k]||0)+(+r.rmin||0);});
+  (arr||[]).forEach(function(r){var k=(r.mo||'')+'|'+(r.wo||'');r.acumPrev=Math.max(0,(by[k]||0)-(+r.rmin||0));});
+}
 function overInfo(r){
   if(r.e!=='curso') return {over:false,warn:false,ef:null,elap:0};
   var obj=+(r.obj||0), ini=toMin(r.ini);
   if(!(NOWG>0)) return {over:false,warn:false,ef:null,elap:0};
-  var elap=Math.max(NOWG-ini, +(r.acum||0));   // incluye tiempo acumulado de días anteriores (Odoo)
+  // tiempo total de la operación en curso = reloj de esta sesión + sesiones previas del día + acumulado de días anteriores (Odoo)
+  var elap=Math.max((NOWG-ini)+(+(r.acumPrev||0)), +(r.acum||0));
   if(obj<=0||elap<=obj) return {over:false,warn:false,ef:(obj>0&&elap>0?Math.round(obj*100/elap):null),elap:elap};
   var ef=Math.round(obj*100/elap);
   return {over:true,warn:ef>=80,crit:ef<50,ef:ef,elap:elap};   // warn=NARANJA 80–100% · crit=+200% estándar (ef<50%) · si no, rojo
@@ -278,7 +284,7 @@ function ovAttrs(r){
     var o2=+(r.obj||0), rm2=+(r.rmin||0);
     if(o2>0&&rm2>o2){ var ef2=Math.round(o2*100/rm2); if(ef2<50){cls=' inef crit';crit=1;} else if(ef2>=80){cls=' warn';warn=1;} else cls=' inef'; }
   }
-  return {cls:cls, attr:' data-over="'+over+'" data-warn="'+warn+'" data-crit="'+crit+'" data-elap="'+elap+'" data-acum="'+(+(r.acum||0))+'"'};
+  return {cls:cls, attr:' data-over="'+over+'" data-warn="'+warn+'" data-crit="'+crit+'" data-elap="'+elap+'" data-acum="'+(+(r.acum||0))+'" data-acumprev="'+(+(r.acumPrev||0))+'"'};
 }
 
 // ===== Huecos de inactividad (>15 min) + alarma sonora =====
@@ -406,6 +412,7 @@ function render(D){
       var lst=bySec[code]; lst.sort(function(a,b){return a.nom<b.nom?-1:1});
       h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span><span class="cnt" style="margin-left:8px">'+lst.length+' operarios</span></span></div>';
       lst.forEach(function(o){
+        annotateAcum(o.real);
         var reg=0, mos={}, ordenMos=[];
         (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)reg+=b-a; if(r.mo&&!mos[r.mo]){mos[r.mo]=1;ordenMos.push(r.mo)}});
         var durs=[]; ordenMos.forEach(function(mo){(moPlan[mo]||[]).forEach(function(p){durs.push({n:mo+' · '+p.wo,d:toMin(p.fin)-toMin(p.ini)})})});
@@ -450,6 +457,7 @@ function render(D){
   (D.grupos||[]).forEach(function(g){
     h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span><span class="cnt" style="margin-left:8px">'+g.mos.length+' órdenes</span></span></div>';
     g.mos.forEach(function(m){
+      annotateAcum(m.real);
       var planDia=0, planAhora=0, realHecho=0;
       (m.plan||[]).forEach(function(p){var a=toMin(p.ini),b=toMin(p.fin);planDia+=b-a;var v=Math.min(b,nowM)-a;if(v>0)planAhora+=v});
       (m.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)realHecho+=b-a});
@@ -500,7 +508,8 @@ setInterval(function(){
     var ini=b.getAttribute('data-h'); ini=ini?toMin(ini.split('–')[0]):0;
     if(obj>0&&NOWG>0){
       var acv=+(b.getAttribute('data-acum')||0);
-      var elap=Math.max(NOWG-ini, acv);
+      var ap=+(b.getAttribute('data-acumprev')||0);
+      var elap=Math.max((NOWG-ini)+ap, acv);
       if(elap>obj){
         var ef=Math.round(obj*100/elap);
         b.classList.add('over'); b.classList.toggle('crit',ef<50); b.classList.toggle('warn',ef>=80);
