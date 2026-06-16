@@ -99,6 +99,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .lista .li{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)}
 .lista .li b{font-weight:700}
 .nctotal{font-size:30px;font-weight:800;color:var(--warn)}
+/* --- panel ausentes dedicado --- */
+.auswrap{display:flex;flex-direction:column;gap:14px;flex:1;min-height:0}
+.aushero{display:flex;align-items:center;gap:22px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 24px}
+.aushero .big{font-size:90px;font-weight:800;line-height:1;color:var(--bad)}
+.aushero.ok .big{color:var(--ok)}
+.aushero .lbl{font-size:20px;font-weight:800;letter-spacing:.5px}
+.aushero .sub{font-size:14px;color:var(--muted);margin-top:4px}
+.ausgrid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-content:start;overflow:auto}
+.auscard{background:#fef2f2;border:1px solid #fecaca;border-radius:13px;padding:14px 18px;display:flex;flex-direction:column;gap:3px}
+.auscard .nom{font-size:21px;font-weight:800;color:#991b1b}
+.auscard .sec{font-size:13px;font-weight:800;color:#b91c1c;opacity:.8}
+.aus-ok{font-size:34px;font-weight:800;color:var(--ok);text-align:center;padding:40px}
 .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:var(--bg);z-index:30}
 .spin{width:46px;height:46px;border:5px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite}
 @keyframes r{to{transform:rotate(360deg)}}
@@ -113,6 +125,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   .mo-num{font-size:22px}
   .mo-meta{font-size:16px}
   .mon-pill{font-size:21px}
+  .aushero .big{font-size:120px}
+  .auscard .nom{font-size:25px}
 }
 </style>
 </head>
@@ -194,6 +208,7 @@ function build() {
   const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
   panels = monPanels.map(rows => () => renderMonPanel(rows));
   panels.push(() => renderIndicadores());
+  panels.push(() => renderAusentesPanel());
 
   renderDots();
   if (cur >= panels.length) cur = 0;
@@ -328,6 +343,27 @@ function renderIndicadores() {
     + '<div class="botcard"><h4>AUSENTES HOY · ' + (D.ausentes || []).length + '</h4><div class="lista">' + aus + '</div></div>'
     + '<div class="botcard"><h4>NO CONFORMIDAD HOY</h4><div class="lista">' + nc + '</div></div>'
     + '</div>';
+  return h;
+}
+
+function renderAusentesPanel() {
+  const aus = D.ausentes || [];
+  const n = aus.length;
+  let h = '<div class="auswrap">';
+  h += '<div class="aushero' + (n ? '' : ' ok') + '">'
+    + '<div class="big">' + n + '</div>'
+    + '<div><div class="lbl">AUSENTES HOY</div><div class="sub">No ficharon asistencia en Odoo · pasantes no se cuentan</div></div>'
+    + '</div>';
+  if (!n) {
+    h += '<div class="aus-ok">✓ Todos presentes hoy</div>';
+  } else {
+    h += '<div class="ausgrid">';
+    aus.forEach(a => {
+      h += '<div class="auscard"><div class="nom">' + esc(a.nombre) + '</div><div class="sec">' + esc(a.sector || '—') + '</div></div>';
+    });
+    h += '</div>';
+  }
+  h += '</div>';
   return h;
 }
 

@@ -346,7 +346,7 @@ function render(D){
   GAPACK=loadGapAck();
   var aus=D.ausentes||[];
   var cAus=document.getElementById('cAus'), ausbar=document.getElementById('ausbar');
-  if(aus.length){ if(cAus){cAus.style.display='';cAus.innerHTML='🚫 AUSENTES <b>'+aus.length+'</b>';} if(ausbar){ausbar.style.display='block';ausbar.innerHTML='🚫 AUSENTES HOY ('+aus.length+'): '+aus.map(function(n){return esc(n)}).join(' · ');} }
+  if(aus.length){ if(cAus){cAus.style.display='';cAus.innerHTML='🚫 AUSENTES <b>'+aus.length+'</b>';} if(ausbar){ausbar.style.display='block';ausbar.innerHTML='🚫 AUSENTES HOY ('+aus.length+'): '+aus.map(function(a){return esc(a.nombre)+(a.sector?' <span style="opacity:.7">('+esc(a.sector)+')</span>':'')}).join(' · ');} }
   else { if(cAus)cAus.style.display='none'; if(ausbar)ausbar.style.display='none'; }
   var rs=D.rondas_sup;
   if(rs&&rs.rodrigo){document.getElementById('cSup').innerHTML='SUPERVISORES <b>R '+(rs.rodrigo.validadas||0)+'/'+(rs.rodrigo.total||0)+' · Y '+(rs.yance.validadas||0)+'/'+(rs.yance.total||0)+'</b>'}
