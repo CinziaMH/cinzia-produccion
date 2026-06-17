@@ -126,7 +126,7 @@ function cargar(){
       fillSelect('fCausa', Object.keys(causas).sort());
       fillSelect('fOp', Object.keys(ops).sort());
       fillSelect('fMon', Object.keys(mons).sort());
-      aplicar();
+      setRango('ayer');
    })
    .catch(function(e){ document.getElementById('cont').innerHTML='<div class="empty">No se pudo cargar: '+esc(e.message)+'</div>'; });
 }
@@ -173,23 +173,28 @@ function render(){
     +'<th style="text-align:right">Estánd.</th><th style="text-align:right">Real</th><th style="text-align:right">Ef%</th>'
     +'<th>Causa (supervisor)</th><th>Acción correctiva</th></tr></thead><tbody>';
   VIEW.forEach(function(r,i){
+    var esGap = r.tipo==='inactividad';
     var esZebra = (r.montaje==='RETRAB'||r.montaje==='NC');
     var causalBadge = (r.causal && r.causal!=='Pendiente')
         ? '<span class="badge b-causal">'+esc(r.causal)+'</span>'
         : '<span class="badge b-pend">Pendiente</span>';
-    var sup = r.supervisor ? ' <span class="b-sup">'+esc(r.supervisor)+(r.validacion?(' · <span class="b-val-'+esc(r.validacion)+'">'+esc(r.validacion.toUpperCase())+'</span>'):'')+'</span>' : ' <span class="b-sup">sin validar</span>';
+    var sup = esGap ? '' : (r.supervisor ? ' <span class="b-sup">'+esc(r.supervisor)+(r.validacion?(' · <span class="b-val-'+esc(r.validacion)+'">'+esc(r.validacion.toUpperCase())+'</span>'):'')+'</span>' : ' <span class="b-sup">sin validar</span>');
     var accCls = r.accion==='Sí'?'si':(r.accion==='No'?'no':'pend');
     var idx = ALL.indexOf(r);
-    var pctReal = Math.round(r.real*100/r.obj);
-    h+='<tr>'
+    var pctReal = r.obj>0?Math.round(r.real*100/r.obj):0;
+    var montajeCell = esGap ? '<span class="badge" style="background:#fff;color:#b91c1c;border:1px solid #fecaca">⚠ INACTIVIDAD</span>' : ((esZebra?'<span class="zebra"></span>':'')+esc(r.montaje||'—'));
+    var objCell = esGap ? '—' : (r.obj+'m');
+    var realCell = esGap ? (r.real+'m') : (r.real+'m <span class="pct">('+pctReal+'%)</span>');
+    var efCell = esGap ? '<td class="ef" style="color:#94a3b8">—</td>' : ('<td class="ef '+efCls(r.ef)+'">'+r.ef+'%</td>');
+    h+='<tr'+(esGap?' style="background:#fffbeb"':'')+'>'
       +'<td class="fecha">'+esc(fmtFecha(r.fecha))+'</td>'
-      +'<td>'+(esZebra?'<span class="zebra"></span>':'')+esc(r.montaje||'—')+'</td>'
+      +'<td>'+montajeCell+'</td>'
       +'<td class="mo">'+esc(r.mo)+'</td>'
       +'<td class="wo">'+esc(r.wo)+'</td>'
       +'<td>'+esc(r.operario)+'</td>'
-      +'<td class="obj">'+r.obj+'m</td>'
-      +'<td class="real">'+r.real+'m <span class="pct">('+pctReal+'%)</span></td>'
-      +'<td class="ef '+efCls(r.ef)+'">'+r.ef+'%</td>'
+      +'<td class="obj">'+objCell+'</td>'
+      +'<td class="real">'+realCell+'</td>'
+      +efCell
       +'<td>'+causalBadge+sup+(r.nota?'<div class="pct">📝 '+esc(r.nota)+'</div>':'')+'</td>'
       +'<td><select class="acc '+accCls+'" data-idx="'+idx+'" onchange="guardar(this)">'
          +['Pendiente','Sí','No'].map(function(o){return '<option'+(o===r.accion?' selected':'')+'>'+o+'</option>';}).join('')
