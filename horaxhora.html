@@ -89,6 +89,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .gap{position:absolute;top:26px;height:30px;border-radius:6px;background:#ffffff;color:#0f172a;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 6px;overflow:hidden;white-space:nowrap;cursor:pointer;z-index:4;animation:gapflash 1s infinite}
 @keyframes gapflash{0%,100%{box-shadow:0 0 0 2px #ef4444,0 0 6px rgba(255,255,255,.6)}50%{box-shadow:0 0 0 3px #fde047,0 0 18px rgba(255,255,255,1)}}
 .gap.ack{background:#cbd5e1;color:#334155;animation:none;box-shadow:none;opacity:.85;cursor:default}
+.pgap{position:absolute;top:26px;height:30px;border-radius:6px;background:repeating-linear-gradient(45deg,#f59e0b,#f59e0b 6px,#d97706 6px,#d97706 12px);color:#1f2937;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 6px;overflow:hidden;white-space:nowrap;cursor:pointer;z-index:4;box-shadow:0 0 0 2px #f59e0b,0 0 6px rgba(245,158,11,.55)}
 #sheet .gapbtns{display:flex;flex-direction:column;gap:9px;margin-top:12px}
 #sheet .gapbtns button{border:none;border-radius:11px;padding:14px 0;font-size:15px;font-weight:800;color:#fff;background:#2563eb;cursor:pointer}
 #sndbar{display:none;background:#1d4ed8;color:#fff;padding:8px 14px;font-weight:800;font-size:13px;text-align:center;cursor:pointer;flex:0 0 auto}
@@ -207,7 +208,7 @@ var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kW
 var CUR=null;
 document.addEventListener('click',function(ev){
   ensureAudio();
-  var gp=ev.target.closest('.gap'); if(gp){ openGap(gp); return; }
+  var pg=ev.target.closest('.pgap'); if(pg){ openPGap(pg); return; } var gp=ev.target.closest('.gap'); if(gp){ openGap(gp); return; }
   var b=ev.target.closest('.blk,.pb'); if(!b) return;
   var over=b.getAttribute('data-over')==='1';
   var warn=b.getAttribute('data-warn')==='1';
@@ -316,6 +317,8 @@ function gapsDe(o,nowM,SEGS){
   });
   return gaps;
 }
+function futurePlanGaps(planOps,nowM,SEGS,finOp){var iv=planOps.map(function(p){return [p.a,p.b];}).sort(function(a,b){return a[0]-b[0]});var gaps=[];SEGS.forEach(function(sg){var start=Math.max(sg[0],nowM);var end=Math.min(sg[1],finOp===9999?sg[1]:finOp);if(end<=start)return;var cur=start;iv.forEach(function(p){var a=Math.max(p[0],start),b=Math.min(p[1],end);if(b<=a)return;if(a-cur>15)gaps.push([cur,a]);if(b>cur)cur=b;});if(end-cur>15)gaps.push([cur,end]);});return gaps;}
+function openPGap(pg){var k=document.getElementById('shK');if(k){k.textContent='▦ SIN TAREA CARGADA';k.style.background='#f59e0b';k.style.color='#1f2937';}document.getElementById('shT').textContent=(pg.getAttribute('data-op')||'')+' · '+(pg.getAttribute('data-rng')||'');document.getElementById('shM').innerHTML='<b>'+pg.getAttribute('data-min')+' min sin tarea cargada hacia adelante.</b> Cargá la operación en Odoo para este operario.';document.getElementById('shCtl').innerHTML='<div class="stx" style="color:#94a3b8;font-size:13px">No suena alarma · no pasa a Operaciones Críticas.</div>';document.getElementById('sheet').classList.add('on');document.getElementById('shade').classList.add('on');}
 var actx=null,alarmTimer=null,pendingGaps=0,CURGAP=null;
 var GAPLAB={sup:'Aviso a supervisor',tarea:'Cargué la tarea',operador:'Aviso a operador'};
 function ensureAudio(){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(e){} }
@@ -449,6 +452,7 @@ function render(D){
           var L=(g[0]-H0)/60*COLP, W=Math.max((g[1]-g[0])/60*COLP,26);
           h+='<div class="gap'+(ak?' ack':'')+'" data-gk="'+esc(gk)+'" data-op="'+esc(o.nom)+'" data-sec="'+esc(code)+'" data-rng="'+fmtM(g[0])+'–'+fmtM(g[1])+'" data-min="'+(g[1]-g[0])+'" style="left:'+L+'px;width:'+W+'px" title="Sin actividad '+fmtM(g[0])+'–'+fmtM(g[1])+' ('+(g[1]-g[0])+'m)">'+(ak?('✓ '+esc(ak.accion)):('⚠ '+(g[1]-g[0])+'m'))+'</div>';
         }); }
+        if(!HIST && planOps.length){ futurePlanGaps(planOps,nowM,SEGS,finOperario(o.nom)).forEach(function(g){ var L=(g[0]-H0)/60*COLP, W=Math.max((g[1]-g[0])/60*COLP,26); h+='<div class="pgap" data-op="'+esc(o.nom)+'" data-sec="'+esc(code)+'" data-rng="'+fmtM(g[0])+'–'+fmtM(g[1])+'" data-min="'+(g[1]-g[0])+'" style="left:'+L+'px;width:'+W+'px" title="Sin tarea cargada '+fmtM(g[0])+'–'+fmtM(g[1])+'">▦ '+(g[1]-g[0])+'m s/tarea</div>'; }); }
         h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
         if(planDia>0){
           h+='</div><div class="meta"><div class="t">REAL '+pR+'% vs PLAN '+pPA+'%</div>'
