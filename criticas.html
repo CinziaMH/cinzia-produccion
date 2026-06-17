@@ -186,7 +186,7 @@ function render(){
     var objCell = esGap ? '—' : (r.obj+'m');
     var realCell = esGap ? (r.real+'m') : (r.real+'m <span class="pct">('+pctReal+'%)</span>');
     var efCell = esGap ? '<td class="ef" style="color:#94a3b8">—</td>' : ('<td class="ef '+efCls(r.ef)+'">'+r.ef+'%</td>');
-    h+='<tr'+(esGap?' style="background:#fffbeb"':'')+'>'
+    h+='<tr'+(esGap?' style="background:rgba(245,158,11,.14)"':'')+'>'
       +'<td class="fecha">'+esc(fmtFecha(r.fecha))+'</td>'
       +'<td>'+montajeCell+'</td>'
       +'<td class="mo">'+esc(r.mo)+'</td>'
