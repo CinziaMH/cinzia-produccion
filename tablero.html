@@ -101,6 +101,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .nctotal{font-size:30px;font-weight:800;color:var(--warn)}
 /* --- panel ausentes dedicado --- */
 .auswrap{display:flex;flex-direction:column;gap:14px;flex:1;min-height:0}
+.calmes{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;flex:1;min-height:0;align-content:start;margin-top:6px}
+.calhd{text-align:center;font-weight:800;color:var(--muted);font-size:15px;padding:2px 0}
+.calcell{background:#1e293b;border-radius:8px;padding:6px 6px 7px;min-height:50px;display:flex;flex-direction:column;gap:2px;border:1px solid #2a3a52}
+.calcell.empty{background:transparent;border:none}
+.calcell.dom{opacity:.35}
+.calcell.nodata{opacity:.5}
+.calcell .cd{font-size:15px;font-weight:800;color:#cbd5e1;line-height:1}
+.calcell .cv{display:flex;gap:6px;font-size:16px;font-weight:800;flex-wrap:wrap}
+.calcell .cf{color:#f87171}
+.calcell .ct{color:#fbbf24}
+.calcell .cok{color:#475569}
+.calcell.hasf{border-color:#7f1d1d}
+.calcell.hast{box-shadow:inset 0 0 0 1px #b45309}
 .aushero{display:flex;align-items:center;gap:22px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 24px}
 .aushero .big{font-size:90px;font-weight:800;line-height:1;color:var(--bad)}
 .aushero.ok .big{color:var(--ok)}
@@ -209,6 +222,7 @@ function build() {
   panels = monPanels.map(rows => () => renderMonPanel(rows));
   panels.push(() => renderIndicadores());
   panels.push(() => renderAusentesPanel());
+  panels.push(() => renderAusMesPanel());
 
   renderDots();
   if (cur >= panels.length) cur = 0;
@@ -346,6 +360,35 @@ function renderIndicadores() {
   return h;
 }
 
+function renderAusMesPanel(){
+  var m=D.ausentismo_mes;
+  if(!m||!m.dias) return '<div class="auswrap"><div class="aus-ok">Sin datos del mes</div></div>';
+  var map={}; m.dias.forEach(function(x){map[x.fecha]=x;});
+  var ym=String(m.mes).split('-'), Y=+ym[0], Mo=+ym[1];
+  var daysInMonth=new Date(Y,Mo,0).getDate();
+  var firstDow=(new Date(Y,Mo-1,1).getDay()+6)%7;
+  var MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][Mo-1];
+  var h='<div class="auswrap"><div class="aushero"><div><div class="lbl">AUSENTISMO · '+MN+' '+Y+'</div><div class="sub">'+m.total_ausentes+' faltas · '+m.total_tardes+' llegadas tarde · '+m.roster_n+' operarios · F=falta T=tarde</div></div></div>';
+  h+='<div class="calmes">';
+  ['L','M','M','J','V','S','D'].forEach(function(w){h+='<div class="calhd">'+w+'</div>';});
+  for(var i=0;i<firstDow;i++) h+='<div class="calcell empty"></div>';
+  for(var dn=1;dn<=daysInMonth;dn++){
+    var ds=Y+'-'+String(Mo).padStart(2,'0')+'-'+String(dn).padStart(2,'0');
+    var dd=map[ds];
+    var dow=(new Date(Y,Mo-1,dn).getDay()+6)%7;
+    var cls='calcell'+(dow===6?' dom':'');
+    if(dd){
+      var fal=dd.ausentes, tar=dd.tardes;
+      var tip=(dd.ausentes_nombres||[]).concat((dd.tardes_nombres||[]).map(function(t){return 'tarde: '+t;})).join(' · ');
+      cls+=(fal>0?' hasf':'')+(tar>0?' hast':'');
+      h+='<div class="'+cls+'" title="'+esc(tip)+'"><div class="cd">'+dn+'</div><div class="cv">'+(fal>0?'<span class="cf">'+fal+'F</span>':'')+(tar>0?'<span class="ct">'+tar+'T</span>':'')+((fal+tar)===0?'<span class="cok">·</span>':'')+'</div></div>';
+    } else {
+      h+='<div class="'+cls+' nodata"><div class="cd">'+dn+'</div></div>';
+    }
+  }
+  h+='</div></div>';
+  return h;
+}
 function renderAusentesPanel() {
   const aus = D.ausentes || [];
   const n = aus.length;
