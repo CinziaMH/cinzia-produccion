@@ -505,13 +505,14 @@ var offsetDias=0, HIST=false;
 function fechaOffset(n){ var d=new Date(); d.setDate(d.getDate()-n); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function diaAnterior(){ offsetDias++; cargar(); }
 function diaHoy(){ offsetDias=0; cargar(); }
+function reportGaps(D){ try{ if(!D || D.teorico) return; var gs=[].slice.call(document.querySelectorAll('.gap')).map(function(g){ return {key:g.getAttribute('data-gk'), fecha:D.fecha, operario:g.getAttribute('data-op'), montaje:g.getAttribute('data-sec'), rng:g.getAttribute('data-rng'), min:g.getAttribute('data-min')}; }).filter(function(x){ return x.key && (Number(x.min)||0)>15; }); if(!gs.length) return; fetch(URL_API.split('?')[0],{method:'POST',redirect:'follow',body:JSON.stringify({tipo:'gaps_seen',gaps:gs})}); }catch(e){} }
 function cargar(){
   var url=URL_API+(offsetDias>0?('&fecha='+fechaOffset(offsetDias)):'');
   fetch(url+'&t='+Date.now(),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json()}).then(function(D){
     if(!D.ok) throw new Error(D.error||'error');
     document.getElementById('off').style.display='none';
     try{localStorage.setItem('hxh_last',JSON.stringify(D))}catch(e){}
-    render(D);
+    render(D); reportGaps(D);
   }).catch(function(e){
     document.getElementById('off').style.display='block';
     try{var u=localStorage.getItem('hxh_last'); if(u) render(JSON.parse(u));}catch(e2){}
