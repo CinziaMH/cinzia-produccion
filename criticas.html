@@ -65,6 +65,7 @@ tbody tr:hover{background:rgba(255,255,255,.05)}
   .filters{top:50px;padding:10px}
   .fg select,.fg input{min-width:108px;font-size:12px}
 }
+.resp{padding:4px 6px;border-radius:7px;border:1px solid #475569;background:#0f172a;color:#cbd5e1;font-size:11px;font-weight:700}
 </style>
 </head>
 <body>
@@ -79,7 +80,7 @@ tbody tr:hover{background:rgba(255,255,255,.05)}
   <div class="fg"><label>Causa</label><select id="fCausa" onchange="aplicar()"><option value="">Todas</option></select></div>
   <div class="fg"><label>Operario</label><select id="fOp" onchange="aplicar()"><option value="">Todos</option></select></div>
   <div class="fg"><label>Montaje</label><select id="fMon" onchange="aplicar()"><option value="">Todos</option></select></div>
-  <div class="fg"><label>Acción correctiva</label><select id="fAcc" onchange="aplicar()"><option value="">Todas</option><option>Pendiente</option><option>Sí</option><option>No</option></select></div>
+  <div class="fg"><label>Acción correctiva</label><select id="fAcc" onchange="aplicar()"><option value="">Todas</option><option>Pendiente</option><option>Notificar al operador</option><option>Mejora Proceso</option><option>Mejora Diseño</option><option>Sí</option><option>No</option></select></div>
   <div class="fg"><label>Rango rápido</label><div class="quick">
     <button class="qbtn" data-r="hoy" onclick="setRango('hoy')">Hoy</button>
     <button class="qbtn" data-r="ayer" onclick="setRango('ayer')">Ayer</button>
@@ -171,7 +172,7 @@ function render(){
   var h='<table><thead><tr>'
     +'<th>Fecha</th><th>Montaje</th><th>Orden</th><th>Operación</th><th>Operario</th>'
     +'<th style="text-align:right">Estánd.</th><th style="text-align:right">Real</th><th style="text-align:right">Ef%</th>'
-    +'<th>Causa (supervisor)</th><th>Acción correctiva</th></tr></thead><tbody>';
+    +'<th>Causa (supervisor)</th><th>Acción correctiva</th><th>Responsable</th></tr></thead><tbody>';
   VIEW.forEach(function(r,i){
     var esGap = r.tipo==='inactividad';
     var esZebra = (r.montaje==='RETRAB'||r.montaje==='NC');
@@ -196,32 +197,30 @@ function render(){
       +'<td class="real">'+realCell+'</td>'
       +efCell
       +'<td>'+causalBadge+sup+(r.nota?'<div class="pct">📝 '+esc(r.nota)+'</div>':'')+'</td>'
-      +'<td><select class="acc '+accCls+'" data-idx="'+idx+'" onchange="guardar(this)">'
-         +['Pendiente','Sí','No'].map(function(o){return '<option'+(o===r.accion?' selected':'')+'>'+o+'</option>';}).join('')
-         +'</select><span class="saved" id="sv'+idx+'">✓</span></td>'
+      +'<td><select class="acc '+accCls+'" data-idx="'+idx+'" onchange="guardarAccion(this)">'
+         +['Pendiente','Notificar al operador','Mejora Proceso','Mejora Diseño','Sí','No'].map(function(o){return '<option'+(o===r.accion?' selected':'')+'>'+o+'</option>';}).join('')
+         +'</select><span class="saved" id="sv'+idx+'">✓</span></td>'+'<td><select class="resp" data-idx="'+idx+'" onchange="guardarResp(this)">'+['','Mayer','Madoeri','Soler','Orona','Lopez','Bonis','Pucheta','Castro','Alcaraz'].map(function(o){return '<option value="'+o+'"'+(o===(r.responsable||'')?' selected':'')+'>'+(o||'—')+'</option>';}).join('')+'</select></td>'
       +'</tr>';
   });
   h+='</tbody></table>';
   document.getElementById('cont').innerHTML=h;
 }
 
-function guardar(sel){
-  var idx=+sel.getAttribute('data-idx'); var r=ALL[idx]; if(!r) return;
-  var accion=sel.value; r.accion=accion;
-  sel.className='acc '+(accion==='Sí'?'si':(accion==='No'?'no':'pend'));
-  fetch(URL_EXEC,{method:'POST',redirect:'follow',body:JSON.stringify({tipo:'accion_critica',key:r.key,accion:accion,user:'web'})})
+function _postCritica(r,idx){
+  return fetch(URL_EXEC,{method:'POST',redirect:'follow',body:JSON.stringify({tipo:'accion_critica',key:r.key,accion:r.accion||'Pendiente',responsable:r.responsable||'',user:'web'})})
     .then(function(x){return x.text()})
     .then(function(){ var sv=document.getElementById('sv'+idx); if(sv){sv.classList.add('on');setTimeout(function(){sv.classList.remove('on')},1200);}
-       // refrescar contador de pendientes
        var pend=VIEW.filter(function(z){return z.accion==='Pendiente'}).length;
-       document.getElementById('cPend').innerHTML='<b>'+pend+'</b> sin acción';
+       var cp=document.getElementById('cPend'); if(cp) cp.innerHTML='<b>'+pend+'</b> sin acción';
     })
-    .catch(function(e){ sel.className='acc'; alert('No se pudo guardar: '+e); });
+    .catch(function(e){ alert('No se pudo guardar: '+e); });
 }
+function guardarAccion(sel){ var idx=+sel.getAttribute('data-idx'); var r=ALL[idx]; if(!r) return; r.accion=sel.value; sel.className='acc '+(sel.value==='Sí'?'si':(sel.value==='No'?'no':'pend')); _postCritica(r,idx); }
+function guardarResp(sel){ var idx=+sel.getAttribute('data-idx'); var r=ALL[idx]; if(!r) return; r.responsable=sel.value; _postCritica(r,idx); }
 
 function exportCSV(){
-  var cols=['fecha','montaje','mo','wo','operario','obj','real','ef','causal','supervisor','validacion','nota','accion'];
-  var head=['Fecha','Montaje','Orden','Operacion','Operario','Estandar_min','Real_min','Ef_%','Causa','Supervisor','Validacion','Nota','Accion_correctiva'];
+  var cols=['fecha','montaje','mo','wo','operario','obj','real','ef','causal','supervisor','validacion','nota','accion','responsable'];
+  var head=['Fecha','Montaje','Orden','Operacion','Operario','Estandar_min','Real_min','Ef_%','Causa','Supervisor','Validacion','Nota','Accion_correctiva','Responsable'];
   var lines=[head.join(';')];
   VIEW.forEach(function(r){ lines.push(cols.map(function(c){var v=(r[c]==null?'':String(r[c])).replace(/;/g,',').replace(/\n/g,' ');return '"'+v.replace(/"/g,'""')+'"';}).join(';')); });
   var blob=new Blob(["﻿"+lines.join("\n")],{type:'text/csv;charset=utf-8'});
