@@ -114,6 +114,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .calcell .cok{color:#475569}
 .calcell.hasf{border-color:#7f1d1d}
 .calcell.hast{box-shadow:inset 0 0 0 1px #b45309}
+.tardehoy{border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
+.th-hd{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.th-big{font-size:34px;font-weight:800;color:#fbbf24;line-height:1}
+.th-lbl{font-size:18px;font-weight:800;color:var(--muted);letter-spacing:.5px}
 .aushero{display:flex;align-items:center;gap:22px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 24px}
 .aushero .big{font-size:90px;font-weight:800;line-height:1;color:var(--bad)}
 .aushero.ok .big{color:var(--ok)}
@@ -360,6 +364,17 @@ function renderIndicadores() {
   return h;
 }
 
+function _hoyStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _tardesHoyHTML(){
+  var m=D.ausentismo_mes; if(!m||!m.dias) return '';
+  var hoy=_hoyStr();
+  var dd=m.dias.filter(function(x){return x.fecha===hoy;})[0];
+  var nombres=(dd&&dd.tardes_nombres)||[];
+  var h='<div class="tardehoy"><div class="th-hd"><span class="th-big">'+nombres.length+'</span><span class="th-lbl">LLEGADAS TARDE HOY</span></div>';
+  if(!nombres.length){ h+='<div class="aus-ok" style="font-size:18px">✓ Sin llegadas tarde hoy</div>'; }
+  else { h+='<div class="ausgrid">'; nombres.forEach(function(t){ var p=String(t).split(' '); var hh=p.pop(); var nm=p.join(' '); h+='<div class="auscard"><div class="nom">'+esc(nm)+'</div><div class="sec" style="color:#fbbf24">⏰ '+esc(hh)+'</div></div>'; }); h+='</div>'; }
+  h+='</div>'; return h;
+}
 function renderAusMesPanel(){
   var m=D.ausentismo_mes;
   if(!m||!m.dias) return '<div class="auswrap"><div class="aus-ok">Sin datos del mes</div></div>';
@@ -406,6 +421,7 @@ function renderAusentesPanel() {
     });
     h += '</div>';
   }
+  h += _tardesHoyHTML();
   h += '</div>';
   return h;
 }
