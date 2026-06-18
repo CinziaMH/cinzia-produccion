@@ -102,7 +102,11 @@ tbody tr:hover{background:rgba(255,255,255,.05)}
 
 <script>
 var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
-var ALL=[], VIEW=[];
+var ALL=[], VIEW=[]; var SORT={col:null,dir:-1};
+function _th(lbl,f,right){ var a=SORT.col===f?(SORT.dir<0?' ▼':' ▲'):''; return '<th data-sort="'+f+'" style="cursor:pointer;user-select:none'+(right?';text-align:right':'')+'" title="Ordenar (mayor a menor)">'+lbl+a+'</th>'; }
+function sortBy(f){ if(SORT.col===f){ SORT.dir=-SORT.dir; } else { SORT.col=f; SORT.dir=-1; } render(); }
+function _sortVIEW(){ if(!SORT.col) return; var f=SORT.col, dir=SORT.dir, num=(f==='obj'||f==='real'||f==='ef'); VIEW.sort(function(a,b){ var x=a[f], y=b[f]; if(num){ x=(x==null||x==='')?-Infinity:Number(x); y=(y==null||y==='')?-Infinity:Number(y); return (x-y)*dir; } x=String(x==null?'':x).toLowerCase(); y=String(y==null?'':y).toLowerCase(); return x<y?-dir:(x>y?dir:0); }); }
+try{ document.getElementById('cont').addEventListener('click',function(e){ var th=e.target.closest&&e.target.closest('th[data-sort]'); if(th){ sortBy(th.getAttribute('data-sort')); } }); }catch(e){}
 function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML}
 function efCls(ef){ if(ef<50) return 'c3'; if(ef<80) return 'c2'; return 'c1'; }
 function fmtFecha(f){ var p=String(f).split('-'); return p.length===3? p[2]+'/'+p[1] : f; }
@@ -164,15 +168,15 @@ function aplicar(){
   render();
 }
 
-function render(){
+function render(){ _sortVIEW();
   var pend=VIEW.filter(function(r){return r.accion==='Pendiente'}).length;
   document.getElementById('cTot').textContent=VIEW.length+' críticas';
   document.getElementById('cPend').innerHTML='<b>'+pend+'</b> sin acción';
   if(!VIEW.length){ document.getElementById('cont').innerHTML='<div class="empty">Sin operaciones críticas para los filtros elegidos.</div>'; return; }
   var h='<table><thead><tr>'
-    +'<th>Fecha</th><th>Montaje</th><th>Orden</th><th>Operación</th><th>Operario</th>'
-    +'<th style="text-align:right">Estánd.</th><th style="text-align:right">Real</th><th style="text-align:right">Ef%</th>'
-    +'<th>Causa (supervisor)</th><th>Acción correctiva</th><th>Responsable</th></tr></thead><tbody>';
+    +''+_th('Fecha','fecha')+''+_th('Montaje','montaje')+''+_th('Orden','mo')+''+_th('Operación','wo')+''+_th('Operario','operario')+''
+    +''+_th('Estánd.','obj',1)+''+_th('Real','real',1)+''+_th('Ef%','ef',1)+''
+    +''+_th('Causa (supervisor)','causal')+''+_th('Acción correctiva','accion')+''+_th('Responsable','responsable')+'</tr></thead><tbody>';
   VIEW.forEach(function(r,i){
     var esGap = r.tipo==='inactividad';
     var esZebra = (r.montaje==='RETRAB'||r.montaje==='NC');
