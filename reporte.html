@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinzia · Reporte Reunión</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#0b1220; --card:#151f33; --card2:#1b2740; --line:#26334d;
+    --tx:#e7edf7; --mut:#93a3bd; --grn:#22c55e; --amb:#f59e0b; --red:#ef4444; --blu:#3b82f6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:16px 18px 60px}
+  h1{font-size:22px;margin:0 0 2px;letter-spacing:.3px}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:16px}
+  .row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+  .kpi{flex:1 1 140px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .kpi .k{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+  .kpi .v{font-size:30px;font-weight:800;line-height:1.1;margin-top:4px}
+  .kpi .s{font-size:12px;color:var(--mut);margin-top:2px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px}
+  .card h2{font-size:15px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  .card h2 .tag{font-size:11px;color:var(--mut);font-weight:600}
+  .grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+  @media(max-width:860px){.grid2{grid-template-columns:1fr}}
+  .chartbox{position:relative;height:260px}
+  .chartbox.sm{height:230px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;position:sticky;top:0;background:var(--card)}
+  .scroll{max-height:300px;overflow:auto}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px}
+  .g{background:rgba(34,197,94,.16);color:#86efac}
+  .a{background:rgba(245,158,11,.16);color:#fcd34d}
+  .r{background:rgba(239,68,68,.16);color:#fca5a5}
+  .muted{color:var(--mut)}
+  .err{color:#fca5a5;font-size:13px}
+  .load{color:var(--mut);font-size:13px;padding:8px 0}
+  .legend{font-size:12px;color:var(--mut);margin-top:6px}
+  .badge{display:inline-flex;gap:6px;align-items:center;margin-right:14px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  button.rf{background:var(--card2);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+</style>
+</head>
+<body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px">
+    <div>
+      <h1>📋 Reporte Pie de Línea — Reunión</h1>
+      <div class="sub" id="sub">Cargando…</div>
+    </div>
+    <button class="rf" onclick="cargar()">↻ Actualizar</button>
+  </div>
+
+  <div class="row" id="kpis"></div>
+
+  <div class="card">
+    <h2>Eficiencia día a día <span class="tag" id="efrange"></span></h2>
+    <div class="chartbox"><canvas id="chEf"></canvas></div>
+    <div class="legend">
+      <span class="badge"><span class="dot" style="background:var(--grn)"></span>Eficiencia (ganado ÷ disponible)</span>
+      <span class="badge"><span class="dot" style="background:var(--blu)"></span>Productividad (ganado ÷ trabajado)</span>
+    </div>
+    <div class="scroll" style="margin-top:12px"><table id="tbEf"></table></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Eficiencia por montaje <span class="tag">promedio del período</span></h2>
+      <div class="chartbox sm"><canvas id="chMon"></canvas></div>
+    </div>
+    <div class="card">
+      <h2>5S por sector <span class="tag" id="cincoHora"></span></h2>
+      <div id="cinco"></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Ausentismo (faltas) <span class="tag" id="ausrange"></span></h2>
+      <div class="chartbox sm"><canvas id="chAus"></canvas></div>
+      <div class="scroll" style="margin-top:12px"><table id="tbAus"></table></div>
+    </div>
+    <div class="card">
+      <h2>Llegadas tarde <span class="tag" id="tardrange"></span></h2>
+      <div class="chartbox sm"><canvas id="chTar"></canvas></div>
+      <div class="scroll" style="margin-top:12px"><table id="tbTar"></table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Hospital <span class="tag">unidades demoradas (&gt;7 días en producción)</span></h2>
+    <div class="scroll"><table id="tbHosp"></table></div>
+  </div>
+
+<script>
+var API='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
+var charts={};
+function $(id){return document.getElementById(id);}
+function efClass(p){ if(p>=85) return 'g'; if(p>=60) return 'a'; return 'r'; }
+function dm(f){ var p=String(f).split('-'); return p[2]+'/'+p[1]; }
+function chart(id,cfg){ if(charts[id]) charts[id].destroy(); charts[id]=new Chart($(id),cfg); }
+var gridC='rgba(255,255,255,.06)', tickC='#93a3bd';
+Chart.defaults.color=tickC; Chart.defaults.font.size=11;
+
+function cargar(){
+  $('sub').textContent='Cargando…';
+  // reporte (rápido) + dashboard (lento, trae ausentismo/hospital/5S)
+  fetch(API+'?view=reporte&cb='+Date.now()).then(function(r){return r.json();}).then(renderReporte).catch(function(e){ $('sub').innerHTML='<span class=err>Error reporte: '+e+'</span>'; });
+  fetch(API+'?view=dashboard&cb='+Date.now()).then(function(r){return r.json();}).then(renderDash).catch(function(e){ console.log('dash err',e); });
+}
+
+function renderReporte(d){
+  if(!d || !d.ef_serie){ $('sub').innerHTML='<span class=err>Sin datos de reporte</span>'; return; }
+  var s=d.ef_serie;
+  $('sub').textContent='Período '+dm(d.desde)+' a '+dm(d.hasta)+' · '+d.dias+' días con producción · actualizado '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+  $('efrange').textContent=dm(d.desde)+'–'+dm(d.hasta);
+
+  // KPIs
+  var ultDia=s[s.length-1]||{};
+  var kp=[
+    ['Eficiencia promedio', d.ef_prom+'%', d.dias+' días'],
+    ['Eficiencia último día', (ultDia.ef||0)+'%', dm(ultDia.fecha||'')+' · '+(ultDia.oper||0)+' oper.'],
+    ['Horas ganadas (prom/día)', Math.round(s.reduce(function(a,b){return a+(b.obj_h||0);},0)/(s.length||1))+' h',''],
+    ['Operarios (prom)', Math.round(s.reduce(function(a,b){return a+(b.oper||0);},0)/(s.length||1)),'']
+  ];
+  $('kpis').innerHTML=kp.map(function(k){return '<div class="kpi"><div class="k">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>';}).join('');
+
+  // chart eficiencia
+  chart('chEf',{type:'line',data:{labels:s.map(function(x){return dm(x.fecha);}),datasets:[
+    {label:'Eficiencia',data:s.map(function(x){return x.ef;}),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.12)',fill:true,tension:.3,pointRadius:3},
+    {label:'Productividad',data:s.map(function(x){return x.prod;}),borderColor:'#3b82f6',backgroundColor:'transparent',borderDash:[5,4],tension:.3,pointRadius:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:gridC},ticks:{callback:function(v){return v+'%';}}},x:{grid:{display:false}}}}});
+
+  // tabla eficiencia
+  var th='<tr><th>Fecha</th><th>Efic.</th><th>Prod.</th><th>Activ.</th><th>Oper.</th><th>Gan. h</th><th>Trab. h</th><th>Disp. h</th></tr>';
+  var rows=s.slice().reverse().map(function(x){
+    return '<tr><td>'+dm(x.fecha)+'</td><td><span class="pill '+efClass(x.ef)+'">'+x.ef+'%</span></td><td>'+x.prod+'%</td><td>'+x.act+'%</td><td>'+x.oper+'</td><td>'+x.obj_h+'</td><td>'+x.real_h+'</td><td>'+x.disp_h+'</td></tr>';
+  }).join('');
+  $('tbEf').innerHTML=th+rows;
+
+  // chart montaje
+  var m=(d.por_montaje||[]).slice().sort(function(a,b){return b.ef-a.ef;});
+  chart('chMon',{type:'bar',data:{labels:m.map(function(x){return x.montaje;}),datasets:[{data:m.map(function(x){return x.ef;}),backgroundColor:m.map(function(x){return x.ef>=85?'#22c55e':x.ef>=60?'#f59e0b':'#ef4444';})}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.y+'%';}}}},scales:{y:{grid:{color:gridC},ticks:{callback:function(v){return v+'%';}}},x:{grid:{display:false}}}}});
+}
+
+function nameOnly(s){ return String(s).replace(/\s+\d{1,2}:\d{2}.*$/,'').trim(); }
+function rankFrom(dias,field){
+  var m={};
+  (dias||[]).forEach(function(d){ (d[field]||[]).forEach(function(nm){ var n=nameOnly(nm); if(n) m[n]=(m[n]||0)+1; }); });
+  return Object.keys(m).map(function(k){return {n:k,c:m[k]};}).sort(function(a,b){return b.c-a.c;});
+}
+
+function renderDash(d){
+  if(!d) return;
+  var a=d.ausentismo_mes||{}; var dias=a.dias||[];
+
+  // KPI extra (append): faltas, tardes, hospital
+  var extra=[
+    ['Faltas (mes)', a.total_ausentes||0, (a.mes||'')+' · '+(a.roster_n||0)+' en plantel'],
+    ['Llegadas tarde (mes)', a.total_tardes||0, a.mes||''],
+    ['Hospital', d.hospital_count||0, 'unidades demoradas']
+  ];
+  $('kpis').insertAdjacentHTML('beforeend', extra.map(function(k){return '<div class="kpi"><div class="k">'+k[0]+'</div><div class="v">'+k[1]+'</div><div class="s">'+k[2]+'</div></div>';}).join(''));
+
+  // ausentismo chart + ranking
+  var lab=dias.map(function(x){return x.dia;});
+  $('ausrange').textContent=a.mes||'';
+  $('tardrange').textContent=a.mes||'';
+  chart('chAus',{type:'bar',data:{labels:lab,datasets:[{data:dias.map(function(x){return x.ausentes;}),backgroundColor:'#ef4444'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:gridC},ticks:{precision:0}},x:{grid:{display:false}}}}});
+  chart('chTar',{type:'bar',data:{labels:lab,datasets:[{data:dias.map(function(x){return x.tardes;}),backgroundColor:'#f59e0b'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:gridC},ticks:{precision:0}},x:{grid:{display:false}}}}});
+
+  var ra=rankFrom(dias,'ausentes_nombres');
+  $('tbAus').innerHTML='<tr><th>Operario</th><th>Faltas</th></tr>'+(ra.length?ra.map(function(x){return '<tr><td>'+x.n+'</td><td><span class="pill r">'+x.c+'</span></td></tr>';}).join(''):'<tr><td class="muted" colspan="2">Sin faltas en el período</td></tr>');
+  var rt=rankFrom(dias,'tardes_nombres');
+  $('tbTar').innerHTML='<tr><th>Operario</th><th>Tardanzas</th></tr>'+(rt.length?rt.map(function(x){return '<tr><td>'+x.n+'</td><td><span class="pill a">'+x.c+'</span></td></tr>';}).join(''):'<tr><td class="muted" colspan="2">Sin tardanzas</td></tr>');
+
+  // 5S
+  var c=d.cinco_s_hoy||{};
+  $('cincoHora').textContent=c.hora?('tour '+c.hora):'';
+  $('cinco').innerHTML=
+    '<div class="row" style="margin:0">'+
+    '<div class="kpi" style="flex:1 1 70px"><div class="k">Verdes</div><div class="v" style="color:var(--grn)">'+(c.verdes||0)+'</div></div>'+
+    '<div class="kpi" style="flex:1 1 70px"><div class="k">Amarillos</div><div class="v" style="color:var(--amb)">'+(c.amarillos||0)+'</div></div>'+
+    '<div class="kpi" style="flex:1 1 70px"><div class="k">Rojos</div><div class="v" style="color:var(--red)">'+(c.rojos||0)+'</div></div>'+
+    '<div class="kpi" style="flex:1 1 70px"><div class="k">Relevados</div><div class="v">'+(c.sectores_ok||0)+'/'+(c.sectores_total||0)+'</div></div>'+
+    '</div>'+
+    '<div class="sub" style="margin:10px 0 0">Pendientes: '+((c.pendientes&&c.pendientes.length)?c.pendientes.join(' · '):'—')+'</div>';
+
+  // hospital
+  var h=(d.hospital_mos||[]).slice().sort(function(a,b){return (b.dias||0)-(a.dias||0);});
+  $('tbHosp').innerHTML='<tr><th>Unidad (MO)</th><th>Cliente</th><th>Días</th></tr>'+(h.length?h.map(function(x){var num=(String(x.mo).match(/(\d{3,6})/)||[])[1]||x.mo;return '<tr><td>'+num+'</td><td style="text-align:left">'+(x.cliente||'')+'</td><td><span class="pill '+((x.dias||0)>30?'r':'a')+'">'+(x.dias||0)+'</span></td></tr>';}).join(''):'<tr><td class="muted" colspan="3">Sin unidades demoradas</td></tr>');
+}
+
+cargar();
+setInterval(cargar, 180000);
+</script>
+</body>
+</html>
