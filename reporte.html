@@ -6,23 +6,30 @@
 <title>Cinzia · Reporte Reunión</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root{
-    --bg:#0b1220; --card:#151f33; --card2:#1b2740; --line:#26334d;
-    --tx:#e7edf7; --mut:#93a3bd; --grn:#22c55e; --amb:#f59e0b; --red:#ef4444; --blu:#3b82f6;
-  }
+  :root{--bg:#0b1220;--card:#151f33;--card2:#1b2740;--line:#26334d;--tx:#e7edf7;--mut:#93a3bd;--grn:#22c55e;--amb:#f59e0b;--red:#ef4444;--blu:#3b82f6;}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--tx);font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;padding:16px 18px 60px}
   h1{font-size:22px;margin:0 0 2px;letter-spacing:.3px}
-  .sub{color:var(--mut);font-size:13px;margin-bottom:14px}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:12px}
+  .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;font-size:13px}
+  .controls .lbl{color:var(--mut);font-size:12px}
+  .controls button.p{background:var(--card);border:1px solid var(--line);color:var(--mut);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px}
+  .controls button.p.on{background:var(--blu);border-color:var(--blu);color:#fff}
+  .controls input[type=date]{background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:7px;padding:5px 8px;font-size:12px;color-scheme:dark}
+  .controls .sep{width:1px;height:22px;background:var(--line);margin:0 2px}
+  .cmpwrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .cmpwrap.off{opacity:.4;pointer-events:none}
   .row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px}
   .kpi{flex:1 1 150px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 13px;position:relative}
-  .kpi.btn{cursor:pointer;transition:border-color .12s, background .12s, opacity .12s}
-  .kpi.btn{opacity:.55;border-style:dashed}
+  .kpi.btn{cursor:pointer;opacity:.55;border-style:dashed;transition:opacity .12s}
   .kpi.btn.on{opacity:1;border-style:solid;border-width:2px;padding:10px 12px}
   .kpi .k{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;font-weight:700;display:flex;align-items:center;gap:7px}
   .kpi .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
-  .kpi .v{font-size:27px;font-weight:800;line-height:1.1;margin-top:4px}
+  .kpi .v{font-size:26px;font-weight:800;line-height:1.1;margin-top:4px}
   .kpi .s{font-size:12px;color:var(--mut);margin-top:2px}
+  .kpi .cmp{font-size:12px;margin-top:3px}
+  .kpi .cmp .b{color:var(--mut)}
+  .kpi .up{color:#86efac;font-weight:700}.kpi .down{color:#fca5a5;font-weight:700}.kpi .neu{color:var(--mut);font-weight:700}
   .kpi .tick{position:absolute;top:9px;right:11px;font-size:12px;color:var(--mut)}
   .kpi.btn.on .tick{color:var(--tx)}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:16px}
@@ -39,168 +46,170 @@
   th{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;position:sticky;top:0;background:var(--card)}
   .scroll{max-height:300px;overflow:auto}
   .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:700;font-size:12px}
-  .g{background:rgba(34,197,94,.16);color:#86efac}
-  .a{background:rgba(245,158,11,.16);color:#fcd34d}
-  .r{background:rgba(239,68,68,.16);color:#fca5a5}
-  .muted{color:var(--mut)}
-  .err{color:#fca5a5;font-size:13px}
+  .g{background:rgba(34,197,94,.16);color:#86efac}.a{background:rgba(245,158,11,.16);color:#fcd34d}.r{background:rgba(239,68,68,.16);color:#fca5a5}
+  .muted{color:var(--mut)}.err{color:#fca5a5;font-size:13px}
   button.rf{background:var(--card2);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
 </style>
 </head>
 <body>
   <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:8px">
-    <div>
-      <h1>📋 Reporte Pie de Línea — Reunión</h1>
-      <div class="sub" id="sub">Cargando…</div>
-    </div>
+    <div><h1>📋 Reporte Pie de Línea — Reunión</h1><div class="sub" id="sub">Cargando…</div></div>
     <button class="rf" onclick="cargar()">↻ Actualizar</button>
   </div>
 
-  <div class="hint">Tocá las tarjetas para sumar o quitar su línea del gráfico y comparar.</div>
+  <div class="controls">
+    <span class="lbl">Período:</span>
+    <div class="seg" id="presets"></div>
+    <input type="date" id="dA" onchange="customA()"><span class="lbl">→</span><input type="date" id="hA" onchange="customA()">
+    <div class="sep"></div>
+    <label class="lbl"><input type="checkbox" id="cmpChk" onchange="toggleCmp()"> Comparar con otro período</label>
+    <span class="cmpwrap off" id="cmpBox">
+      <button class="p" onclick="setPrev()">Período anterior</button>
+      <input type="date" id="dB" onchange="customB()"><span class="lbl">→</span><input type="date" id="hB" onchange="customB()">
+    </span>
+  </div>
+
+  <div class="hint">Tocá las tarjetas para sumar o quitar su línea del gráfico. Con "Comparar" activado, cada tarjeta muestra Período A vs B.</div>
   <div class="row" id="kpis"></div>
 
-  <div class="card">
-    <h2>Comparativa día a día <span class="tag" id="efrange"></span></h2>
-    <div class="chartbox"><canvas id="chMain"></canvas></div>
-  </div>
+  <div class="card"><h2>Comparativa día a día <span class="tag" id="efrange"></span></h2><div class="chartbox"><canvas id="chMain"></canvas></div></div>
 
   <div class="grid2">
-    <div class="card">
-      <h2>Eficiencia por montaje <span class="tag">promedio del período</span></h2>
-      <div class="chartbox sm"><canvas id="chMon"></canvas></div>
-    </div>
-    <div class="card">
-      <h2>5S por sector <span class="tag" id="cincoHora"></span></h2>
-      <div id="cinco"></div>
-    </div>
+    <div class="card"><h2>Eficiencia por montaje <span class="tag">promedio del rango</span></h2><div class="chartbox sm"><canvas id="chMon"></canvas></div></div>
+    <div class="card"><h2>5S por sector <span class="tag" id="cincoHora"></span></h2><div id="cinco"></div></div>
   </div>
 
-  <div class="card">
-    <h2>Detalle diario</h2>
-    <div class="scroll"><table id="tbEf"></table></div>
-  </div>
+  <div class="card"><h2>Detalle diario</h2><div class="scroll"><table id="tbEf"></table></div></div>
 
   <div class="grid2">
-    <div class="card">
-      <h2>Ausentismo — ranking <span class="tag" id="ausrange"></span></h2>
-      <div class="scroll"><table id="tbAus"></table></div>
-    </div>
-    <div class="card">
-      <h2>Llegadas tarde — ranking <span class="tag" id="tardrange"></span></h2>
-      <div class="scroll"><table id="tbTar"></table></div>
-    </div>
+    <div class="card"><h2>Ausentismo — ranking <span class="tag" id="ausrange"></span></h2><div class="scroll"><table id="tbAus"></table></div></div>
+    <div class="card"><h2>Llegadas tarde — ranking <span class="tag" id="tardrange"></span></h2><div class="scroll"><table id="tbTar"></table></div></div>
   </div>
 
-  <div class="card">
-    <h2>Hospital <span class="tag">unidades demoradas (&gt;7 días en producción)</span></h2>
-    <div class="scroll"><table id="tbHosp"></table></div>
-  </div>
+  <div class="card"><h2>Hospital <span class="tag">unidades demoradas (&gt;7 días)</span></h2><div class="scroll"><table id="tbHosp"></table></div></div>
 
 <script>
 var API='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
 function $(id){return document.getElementById(id);}
-function dm(f){ var p=String(f).split('-'); return p[2]+'/'+p[1]; }
-function efClass(p){ if(p>=85) return 'g'; if(p>=60) return 'a'; return 'r'; }
+function dm(f){var p=String(f).split('-');return p[2]+'/'+p[1];}
+function efClass(p){if(p>=85)return 'g';if(p>=60)return 'a';return 'r';}
+function dadd(s,n){var d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+function span(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000)+1;}
 var gridC='rgba(255,255,255,.06)';
-Chart.defaults.color='#93a3bd'; Chart.defaults.font.size=11;
+Chart.defaults.color='#93a3bd';Chart.defaults.font.size=11;
 
-// metrica: key, label, unidad, color, eje (y=%, y1=cantidad/horas), agg para el KPI
 var METRICS=[
-  {key:'ef',        label:'Eficiencia',     u:'%', color:'#22c55e', axis:'y',  agg:'avg'},
-  {key:'prod',      label:'Productividad',  u:'%', color:'#3b82f6', axis:'y',  agg:'avg'},
-  {key:'cinco_pct', label:'Cumpl. 5S',      u:'%', color:'#a855f7', axis:'y',  agg:'avg'},
-  {key:'nc_h',      label:'NC (horas)',     u:'h', color:'#ef4444', axis:'y1', agg:'sum'},
-  {key:'faltas',    label:'Faltas',         u:'',  color:'#f59e0b', axis:'y1', agg:'sum'},
-  {key:'tardes',    label:'Llegadas tarde', u:'',  color:'#eab308', axis:'y1', agg:'sum'}
+  {key:'ef',label:'Eficiencia',u:'%',color:'#22c55e',axis:'y',agg:'avg',good:'up'},
+  {key:'prod',label:'Productividad',u:'%',color:'#3b82f6',axis:'y',agg:'avg',good:'up'},
+  {key:'cinco_pct',label:'Cumpl. 5S',u:'%',color:'#a855f7',axis:'y',agg:'avg',good:'up'},
+  {key:'nc_pct',label:'NC (% s/total)',u:'%',color:'#ef4444',axis:'y',agg:'ratio',num:'nc_h',den:'real_h',good:'down'},
+  {key:'faltas',label:'Faltas',u:'',color:'#f59e0b',axis:'y1',agg:'sum',good:'down'},
+  {key:'tardes',label:'Llegadas tarde',u:'',color:'#eab308',axis:'y1',agg:'sum',good:'down'},
+  {key:'hosp_pers',label:'Hospital (pers.)',u:'',color:'#14b8a6',axis:'y1',agg:'avg',good:null}
 ];
-var active={ ef:true, prod:true };
-var FECHAS=[], BYDATE={}, chMain=null, chMon=null, DASH=null, REP=null;
+var active={ef:true,prod:true};
+var ALLF=[],BYDATE={},chMain=null,chMon=null,DASH=null,REP=null;
+var rA={desde:'',hasta:''},rB={desde:'',hasta:''},cmpOn=false,preset='30';
 
 function cargar(){
   $('sub').textContent='Cargando…';
-  fetch(API+'?view=reporte&cb='+Date.now()).then(function(r){return r.json();}).then(function(d){REP=d;ingest();}).catch(function(e){ $('sub').innerHTML='<span class=err>Error reporte: '+e+'</span>'; });
-  fetch(API+'?view=dashboard&cb='+Date.now()).then(function(r){return r.json();}).then(function(d){DASH=d;ingest();renderDash(d);}).catch(function(e){ console.log('dash',e); });
+  fetch(API+'?view=reporte&cb='+Date.now()).then(function(r){return r.json();}).then(function(d){REP=d;ingest();}).catch(function(e){$('sub').innerHTML='<span class=err>Error: '+e+'</span>';});
+  fetch(API+'?view=dashboard&cb='+Date.now()).then(function(r){return r.json();}).then(function(d){DASH=d;ingest();renderDash(d);}).catch(function(e){console.log('dash',e);});
 }
 
 function ingest(){
-  if(!REP || !REP.ef_serie) return;
+  if(!REP||!REP.ef_serie)return;
   var s=REP.ef_serie;
-  FECHAS=s.map(function(x){return x.fecha;});
+  ALLF=s.map(function(x){return x.fecha;});
   BYDATE={};
-  s.forEach(function(x){ BYDATE[x.fecha]={ef:x.ef,prod:x.prod,cinco_pct:x.cinco_pct,nc_h:x.nc_h,act:x.act,oper:x.oper,obj_h:x.obj_h,real_h:x.real_h,disp_h:x.disp_h,faltas:0,tardes:0}; });
-  if(DASH && DASH.ausentismo_mes){ (DASH.ausentismo_mes.dias||[]).forEach(function(x){ if(BYDATE[x.fecha]){ BYDATE[x.fecha].faltas=x.ausentes; BYDATE[x.fecha].tardes=x.tardes; } }); }
-  $('sub').textContent='Período '+dm(REP.desde)+' a '+dm(REP.hasta)+' · '+REP.dias+' días con producción · '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-  $('efrange').textContent=dm(REP.desde)+'–'+dm(REP.hasta);
-  renderKpis(); renderMain(); renderMontaje(); renderTabla();
+  s.forEach(function(x){BYDATE[x.fecha]={ef:x.ef,prod:x.prod,cinco_pct:x.cinco_pct,nc_h:x.nc_h,nc_pct:(x.real_h>0?Math.round(x.nc_h*100/x.real_h):0),hosp_pers:x.hosp_pers,act:x.act,oper:x.oper,obj_h:x.obj_h,real_h:x.real_h,disp_h:x.disp_h,faltas:0,tardes:0};});
+  if(DASH&&DASH.ausentismo_mes){(DASH.ausentismo_mes.dias||[]).forEach(function(x){if(BYDATE[x.fecha]){BYDATE[x.fecha].faltas=x.ausentes;BYDATE[x.fecha].tardes=x.tardes;}});}
+  if(!rA.hasta && ALLF.length){ setPreset('30',true); }
+  renderPresets(); syncInputs(); renderAll();
+  $('sub').textContent='Datos '+dm(REP.desde)+' a '+dm(REP.hasta)+' · '+REP.dias+' días con producción · '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
 }
 
-function aggVal(m){
-  var vals=FECHAS.map(function(f){return (BYDATE[f]||{})[m.key]||0;});
-  if(!vals.length) return 0;
-  if(m.agg==='sum') return Math.round(vals.reduce(function(a,b){return a+b;},0)*10)/10;
-  return Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length);
+function lastF(){return ALLF[ALLF.length-1];}
+function firstF(){return ALLF[0];}
+function clampA(f){return f<firstF()?firstF():(f>lastF()?lastF():f);}
+
+function setPreset(p,silent){
+  preset=p;
+  if(p==='mes'){var h=lastF();rA={desde:h.slice(0,7)+'-01',hasta:h};}
+  else if(p==='30'){var h2=lastF();rA={desde:clampA(dadd(h2,-29)),hasta:h2};}
+  else if(p==='todo'){rA={desde:firstF(),hasta:lastF()};}
+  if(cmpOn) setPrev(true);
+  if(!silent){renderPresets();syncInputs();renderAll();}
 }
+function renderPresets(){
+  var defs=[['mes','Mes en curso'],['30','Últimos 30 días'],['todo','Todo']];
+  $('presets').innerHTML=defs.map(function(d){return '<button class="p'+(preset===d[0]?' on':'')+'" onclick="setPreset(\''+d[0]+'\')">'+d[1]+'</button>';}).join('');
+}
+function syncInputs(){$('dA').value=rA.desde;$('hA').value=rA.hasta;$('dB').value=rB.desde;$('hB').value=rB.hasta;}
+function customA(){rA={desde:$('dA').value,hasta:$('hA').value};preset='';renderPresets();renderAll();}
+function customB(){rB={desde:$('dB').value,hasta:$('hB').value};renderAll();}
+function toggleCmp(){cmpOn=$('cmpChk').checked;$('cmpBox').className='cmpwrap'+(cmpOn?'':' off');if(cmpOn&&!rB.hasta)setPrev(true);syncInputs();renderAll();}
+function setPrev(silent){var sp=span(rA.desde,rA.hasta);rB={desde:dadd(rA.desde,-sp),hasta:dadd(rA.hasta,-sp)};if(!silent){syncInputs();renderAll();}}
+
+function fechasIn(r){return ALLF.filter(function(f){return (!r.desde||f>=r.desde)&&(!r.hasta||f<=r.hasta);});}
+function aggFor(m,fechas){if(m.agg==='ratio'){var n=0,d=0;fechas.forEach(function(f){var x=BYDATE[f]||{};n+=x[m.num]||0;d+=x[m.den]||0;});return d>0?Math.round(n*100/d):0;}var v=fechas.map(function(f){return (BYDATE[f]||{})[m.key]||0;});if(!v.length)return 0;var s=v.reduce(function(a,b){return a+b;},0);return m.agg==='sum'?Math.round(s*10)/10:Math.round(s/v.length);}
+
+function renderAll(){renderKpis();renderMain();renderMontaje();renderTabla();}
 
 function renderKpis(){
+  var FA=fechasIn(rA),FB=fechasIn(rB);
+  $('efrange').textContent=dm(rA.desde)+'–'+dm(rA.hasta)+(cmpOn?('  vs  '+dm(rB.desde)+'–'+dm(rB.hasta)):'');
   var html='';
   METRICS.forEach(function(m){
-    var on=active[m.key]?' on':'';
+    var A=aggFor(m,FA),on=active[m.key]?' on':'';
+    var sub;
+    if(cmpOn){var B=aggFor(m,FB);var dlt=Math.round((A-B)*10)/10;var cls='neu',arr='=';if(dlt>0){arr='▲ +'+dlt;cls=m.good==='up'?'up':(m.good==='down'?'down':'neu');}else if(dlt<0){arr='▼ '+dlt;cls=m.good==='down'?'up':(m.good==='up'?'down':'neu');}
+      sub='<div class="cmp"><span class="b">B: '+B+(m.u||'')+'</span> <span class="'+cls+'">'+arr+'</span></div>';}
+    else sub='<div class="s">'+(m.agg==='sum'?'total rango':'promedio')+'</div>';
     html+='<div class="kpi btn'+on+'" style="border-color:'+m.color+'" onclick="toggle(\''+m.key+'\')">'+
       '<div class="tick">'+(active[m.key]?'●':'○')+'</div>'+
       '<div class="k"><span class="dot" style="background:'+m.color+'"></span>'+m.label+'</div>'+
-      '<div class="v">'+aggVal(m)+(m.u||'')+'</div>'+
-      '<div class="s">'+(m.agg==='sum'?'total período':'promedio')+'</div></div>';
+      '<div class="v">'+A+(m.u||'')+'</div>'+sub+'</div>';
   });
-  // estáticas
-  var prom=FECHAS.length?Math.round(FECHAS.reduce(function(a,f){return a+((BYDATE[f]||{}).oper||0);},0)/FECHAS.length):0;
-  html+='<div class="kpi"><div class="k">Operarios</div><div class="v">'+prom+'</div><div class="s">promedio/día</div></div>';
-  var hc=DASH?(DASH.hospital_count||0):'—';
-  html+='<div class="kpi"><div class="k">Hospital</div><div class="v">'+hc+'</div><div class="s">unidades demoradas</div></div>';
+  var prom=FA.length?Math.round(FA.reduce(function(a,f){return a+((BYDATE[f]||{}).oper||0);},0)/FA.length):0;
+  html+='<div class="kpi"><div class="k">Operarios</div><div class="v">'+prom+'</div><div class="s">promedio/día (A)</div></div>';
   $('kpis').innerHTML=html;
 }
-
-function toggle(key){ active[key]=!active[key]; renderKpis(); renderMain(); }
+function toggle(key){active[key]=!active[key];renderKpis();renderMain();}
 
 function renderMain(){
+  var FA=fechasIn(rA);
   var ds=METRICS.filter(function(m){return active[m.key];}).map(function(m){
-    return { label:m.label+(m.u?(' ('+m.u+')'):''), data:FECHAS.map(function(f){return (BYDATE[f]||{})[m.key]||0;}),
-      borderColor:m.color, backgroundColor:m.color+'22', yAxisID:m.axis, tension:.3, pointRadius:2, borderWidth:2, fill:false };
+    return {label:m.label+(m.u?(' ('+m.u+')'):''),data:FA.map(function(f){return (BYDATE[f]||{})[m.key]||0;}),borderColor:m.color,backgroundColor:m.color+'22',yAxisID:m.axis,tension:.3,pointRadius:2,borderWidth:2,fill:false};
   });
   var useY1=METRICS.some(function(m){return active[m.key]&&m.axis==='y1';});
   var useY=METRICS.some(function(m){return active[m.key]&&m.axis==='y';});
-  if(chMain) chMain.destroy();
-  chMain=new Chart($('chMain'),{type:'line',data:{labels:FECHAS.map(dm),datasets:ds},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
-      plugins:{legend:{display:true,labels:{usePointStyle:true,boxWidth:8}}},
-      scales:{
-        y:{display:useY,position:'left',grid:{color:gridC},title:{display:true,text:'%'},ticks:{callback:function(v){return v+'%';}}},
-        y1:{display:useY1,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'cant. / horas'}},
-        x:{grid:{display:false}}
-      }}});
+  if(chMain)chMain.destroy();
+  chMain=new Chart($('chMain'),{type:'line',data:{labels:FA.map(dm),datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:true,labels:{usePointStyle:true,boxWidth:8}}},scales:{y:{display:useY,position:'left',grid:{color:gridC},title:{display:true,text:'%'},ticks:{callback:function(v){return v+'%';}}},y1:{display:useY1,position:'right',grid:{drawOnChartArea:false},title:{display:true,text:'cant. / horas'}},x:{grid:{display:false}}}}});
 }
 
 function renderMontaje(){
   var m=(REP.por_montaje||[]).slice().sort(function(a,b){return b.ef-a.ef;});
-  if(chMon) chMon.destroy();
-  chMon=new Chart($('chMon'),{type:'bar',data:{labels:m.map(function(x){return x.montaje;}),datasets:[{data:m.map(function(x){return x.ef;}),backgroundColor:m.map(function(x){return x.ef>=85?'#22c55e':x.ef>=60?'#f59e0b':'#ef4444';})}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.y+'%';}}}},scales:{y:{grid:{color:gridC},ticks:{callback:function(v){return v+'%';}}},x:{grid:{display:false}}}}});
+  if(chMon)chMon.destroy();
+  chMon=new Chart($('chMon'),{type:'bar',data:{labels:m.map(function(x){return x.montaje;}),datasets:[{data:m.map(function(x){return x.ef;}),backgroundColor:m.map(function(x){return x.ef>=85?'#22c55e':x.ef>=60?'#f59e0b':'#ef4444';})}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.y+'%';}}}},scales:{y:{grid:{color:gridC},ticks:{callback:function(v){return v+'%';}}},x:{grid:{display:false}}}}});
 }
 
 function renderTabla(){
-  var th='<tr><th>Fecha</th><th>Efic.</th><th>Prod.</th><th>5S</th><th>NC h</th><th>Faltas</th><th>Tarde</th><th>Oper.</th><th>Gan.h</th><th>Trab.h</th></tr>';
-  var rows=FECHAS.slice().reverse().map(function(f){var x=BYDATE[f]||{};
-    return '<tr><td>'+dm(f)+'</td><td><span class="pill '+efClass(x.ef)+'">'+x.ef+'%</span></td><td>'+x.prod+'%</td><td>'+x.cinco_pct+'%</td><td>'+x.nc_h+'</td><td>'+x.faltas+'</td><td>'+x.tardes+'</td><td>'+x.oper+'</td><td>'+x.obj_h+'</td><td>'+x.real_h+'</td></tr>';
+  var FA=fechasIn(rA);
+  var th='<tr><th>Fecha</th><th>Efic.</th><th>Prod.</th><th>5S</th><th>NC %</th><th>Faltas</th><th>Tarde</th><th>Hosp.</th><th>Oper.</th></tr>';
+  var rows=FA.slice().reverse().map(function(f){var x=BYDATE[f]||{};
+    return '<tr><td>'+dm(f)+'</td><td><span class="pill '+efClass(x.ef)+'">'+x.ef+'%</span></td><td>'+x.prod+'%</td><td>'+x.cinco_pct+'%</td><td>'+x.nc_pct+'%</td><td>'+x.faltas+'</td><td>'+x.tardes+'</td><td>'+x.hosp_pers+'</td><td>'+x.oper+'</td></tr>';
   }).join('');
   $('tbEf').innerHTML=th+rows;
 }
 
-function nameOnly(s){ return String(s).replace(/\s+\d{1,2}:\d{2}.*$/,'').trim(); }
+function nameOnly(s){return String(s).replace(/\s+\d{1,2}:\d{2}.*$/,'').trim();}
 function rankFrom(dias,field){var m={};(dias||[]).forEach(function(d){(d[field]||[]).forEach(function(nm){var n=nameOnly(nm);if(n)m[n]=(m[n]||0)+1;});});return Object.keys(m).map(function(k){return {n:k,c:m[k]};}).sort(function(a,b){return b.c-a.c;});}
 
 function renderDash(d){
-  if(!d) return;
-  var a=d.ausentismo_mes||{}; var dias=a.dias||[];
-  $('ausrange').textContent=a.mes||''; $('tardrange').textContent=a.mes||'';
+  if(!d)return;
+  var a=d.ausentismo_mes||{};var dias=a.dias||[];
+  $('ausrange').textContent=a.mes||'';$('tardrange').textContent=a.mes||'';
   var ra=rankFrom(dias,'ausentes_nombres');
   $('tbAus').innerHTML='<tr><th>Operario</th><th>Faltas</th></tr>'+(ra.length?ra.map(function(x){return '<tr><td>'+x.n+'</td><td><span class="pill r">'+x.c+'</span></td></tr>';}).join(''):'<tr><td class="muted" colspan="2">Sin faltas</td></tr>');
   var rt=rankFrom(dias,'tardes_nombres');
@@ -218,7 +227,7 @@ function renderDash(d){
 }
 
 cargar();
-setInterval(cargar, 180000);
+setInterval(cargar,180000);
 </script>
 </body>
 </html>
