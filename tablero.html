@@ -268,7 +268,7 @@ function renderMonPanel(rows) {
       const dias = mo.dias_en_produccion;
       h += '<div class="mo-item"><div class="mo-l1">'
         + '<span class="mo-num">' + esc(num) + '</span>'
-        + '<span class="mo-meta">' + esc(mo.operario || '—') + (mo.producto ? ' · ' + esc(mo.producto) : '') + '</span>'
+        + '<span class="mo-meta">' + esc(mo.operario || '—') + (mo.producto ? ' · ' + esc(mo.producto) : '') + (mo.prod ? ' · <b style="color:var(--nar)">' + esc(String(mo.prod).slice(0,30)) + '</b>' : '') + '</span>'
         + '<span class="st st-' + mo.estado.replace(/\s/g, '') + '">' + mo.estado + '</span></div>'
         + '<div class="mo-l2">'
         + (mo.actividad_hoy === false ? '<span>sin actividad hoy</span>' : '<span>avance día <b>' + mo.avance_dia_pct + '%</b></span>')
