@@ -146,6 +146,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   .auscard .nom{font-size:25px}
 }
 .mo-fren{font-size:11px;color:var(--muted);padding:5px 8px 2px;line-height:1.6;opacity:.85;border-top:1px dashed var(--line);margin-top:3px}
+.wkc{margin-top:8px}
+.wkc-h{font-size:11px;color:var(--muted);font-weight:600}
+.wkbars{display:flex;align-items:flex-end;gap:3px;height:24px;margin-top:3px}
+.wkb{width:9px;background:var(--nar);border-radius:2px 2px 0 0;display:inline-block}
 </style>
 </head>
 <body>
@@ -261,7 +265,7 @@ function renderMonPanel(rows) {
       + '<div class="mon-cnt">' + m.activas + ' act · ' + (m.cola || 0) + ' cola</div>'
       + (m.sigue ? '<div class="mon-cnt" style="color:var(--nar);font-weight:700">sigue: ' + esc((String(m.sigue.mo).match(/(\d{3,6})/) || [])[1] || m.sigue.mo) + (m.sigue.cliente ? ' · ' + esc(String(m.sigue.cliente).slice(0, 18)) : '') + '</div>' : '')
       + (m.page ? '<span class="pagetag">' + m.page + '</span>' : '')
-      + '</div><div class="mon-mos">';
+      + (function(){ var cs=(D.cierres_semana&&D.cierres_semana.porMontaje&&D.cierres_semana.porMontaje[m.code])||null; var dd=(D.cierres_semana&&D.cierres_semana.dias)||['Lun','Mar','Mié','Jue','Vie','Sáb']; var tot=cs?cs.reduce(function(a,b){return a+b;},0):0; var mx=cs?Math.max.apply(null,cs.concat([1])):1; var bars=(cs||[0,0,0,0,0,0]).map(function(v,i){return '<span class="wkb" title="'+dd[i]+': '+v+'" style="height:'+(3+Math.round((v/mx)*20))+'px;opacity:'+(v?1:0.3)+'"></span>';}).join(''); return '<div class="wkc"><div class="wkc-h">✓ cerradas/sem <b>'+tot+'</b></div><div class="wkbars">'+bars+'</div></div>'; })() + '</div><div class="mon-mos">';
     if (!m.mos.length && !(m.fren && m.fren.length)) h += '<div class="mo-item" style="color:var(--muted)">Sin MOs en este montaje' + (m.cola ? ' · ' + m.cola + ' en cola' : '') + '</div>';
     m.mos.forEach(mo => {
       const num = (String(mo.mo).match(/(\d{4,6})/) || [])[1] || mo.mo;
