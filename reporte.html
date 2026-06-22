@@ -49,6 +49,9 @@
   .g{background:rgba(34,197,94,.16);color:#86efac}.a{background:rgba(245,158,11,.16);color:#fcd34d}.r{background:rgba(239,68,68,.16);color:#fca5a5}
   .muted{color:var(--mut)}.err{color:#fca5a5;font-size:13px}
   button.rf{background:var(--card2);border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer}
+.czweek{margin-bottom:10px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.czh{font-size:13px;font-weight:700;margin-bottom:3px}
+.czu{font-size:12px;padding-left:6px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -88,6 +91,7 @@
   </div>
 
   <div class="card"><h2>Hospital <span class="tag">unidades demoradas (&gt;7 días)</span></h2><div class="scroll"><table id="tbHosp"></table></div></div>
+  <div class="card"><h2>Cierres por semana <span class="tag">unidades terminadas · últimas 6 sem</span></h2><div id="cierres"></div></div>
 
 <script>
 var API='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
@@ -231,6 +235,8 @@ function renderDash(d){
     '<div class="sub" style="margin:10px 0 0">Pendientes hoy: '+((c.pendientes&&c.pendientes.length)?c.pendientes.join(' · '):'—')+'</div>';
   var h=(d.hospital_mos||[]).slice().sort(function(a,b){return (b.dias||0)-(a.dias||0);});
   $('tbHosp').innerHTML='<tr><th>Unidad (MO)</th><th>Cliente</th><th>Días</th></tr>'+(h.length?h.map(function(x){var num=(String(x.mo).match(/(\d{3,6})/)||[])[1]||x.mo;return '<tr><td>'+num+'</td><td style="text-align:left">'+(x.cliente||'')+'</td><td><span class="pill '+((x.dias||0)>30?'r':'a')+'">'+(x.dias||0)+'</span></td></tr>';}).join(''):'<tr><td class="muted" colspan="3">Sin unidades</td></tr>');
+  var cz=(d.cierres_semana&&d.cierres_semana.semanas)||[];
+  $('cierres').innerHTML=cz.length?cz.map(function(s){var safe=function(x){return String(x||'').replace(/[<>]/g,'');};var head='<div class="czh">Semana '+s.num+' <span class="muted">'+s.label+'</span> · <b>'+s.total+'</b></div>';var list=(s.unidades&&s.unidades.length)?s.unidades.map(function(u){return '<div class="czu">· '+safe(u.prod||'?')+(u.cliente?(' <span class="muted">'+safe(u.cliente)+'</span>'):'')+'</div>';}).join(''):'<div class="czu muted">—</div>';return '<div class="czweek">'+head+list+'</div>';}).join(''):'<div class="muted">Sin datos</div>';
 }
 
 cargar();
