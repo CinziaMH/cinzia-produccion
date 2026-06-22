@@ -145,6 +145,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   .aushero .big{font-size:120px}
   .auscard .nom{font-size:25px}
 }
+.mo-fren{font-size:11px;color:var(--muted);padding:5px 8px 2px;line-height:1.6;opacity:.85;border-top:1px dashed var(--line);margin-top:3px}
 </style>
 </head>
 <body>
@@ -238,11 +239,13 @@ function buildLinePanels(montajes) {
   // dividir montajes grandes en páginas
   const units = [];
   montajes.forEach(m => {
-    if (m.mos.length <= MAX_MOS_PER_PANEL) units.push({ ...m, page: null });
+    var __act = (m.mos||[]).filter(function(x){return x.estado!=='SIN ACT';});
+    var __fren = (m.mos||[]).filter(function(x){return x.estado==='SIN ACT';});
+    if (__act.length <= MAX_MOS_PER_PANEL) units.push({ ...m, mos: __act, fren: __fren, page: null });
     else {
-      const npages = Math.ceil(m.mos.length / MAX_MOS_PER_PANEL);
+      const npages = Math.ceil(__act.length / MAX_MOS_PER_PANEL);
       for (let p = 0; p < npages; p++)
-        units.push({ ...m, mos: m.mos.slice(p * MAX_MOS_PER_PANEL, (p + 1) * MAX_MOS_PER_PANEL), page: (p + 1) + '/' + npages });
+        units.push({ ...m, mos: __act.slice(p * MAX_MOS_PER_PANEL, (p + 1) * MAX_MOS_PER_PANEL), fren: (p===0?__fren:[]), page: (p + 1) + '/' + npages });
     }
   });
   // agrupar: budget de filas-mo por panel
@@ -266,7 +269,7 @@ function renderMonPanel(rows) {
       + (m.sigue ? '<div class="mon-cnt" style="color:var(--nar);font-weight:700">sigue: ' + esc((String(m.sigue.mo).match(/(\d{3,6})/) || [])[1] || m.sigue.mo) + (m.sigue.cliente ? ' · ' + esc(String(m.sigue.cliente).slice(0, 18)) : '') + '</div>' : '')
       + (m.page ? '<span class="pagetag">' + m.page + '</span>' : '')
       + '</div><div class="mon-mos">';
-    if (!m.mos.length) h += '<div class="mo-item" style="color:var(--muted)">Sin MOs en este montaje' + (m.cola ? ' · ' + m.cola + ' en cola' : '') + '</div>';
+    if (!m.mos.length && !(m.fren && m.fren.length)) h += '<div class="mo-item" style="color:var(--muted)">Sin MOs en este montaje' + (m.cola ? ' · ' + m.cola + ' en cola' : '') + '</div>';
     m.mos.forEach(mo => {
       const num = (String(mo.mo).match(/(\d{4,6})/) || [])[1] || mo.mo;
       const dias = mo.dias_en_produccion;
@@ -281,6 +284,7 @@ function renderMonPanel(rows) {
         + (mo.cuello ? '<span class="cuello">cuello: "' + esc(mo.cuello.wo) + '" +' + mo.cuello.delta_min + 'min (' + esc(mo.cuello.operario) + ')</span>' : '')
         + '</div></div>';
     });
+    if (m.fren && m.fren.length) { h += '<div class="mo-fren">⏸ ' + m.fren.length + ' frenada' + (m.fren.length>1?'s':'') + ': ' + m.fren.map(function(f){ var nn=(String(f.mo).match(/(\d{4,6})/)||[])[1]||f.mo; return esc(nn)+(f.producto?(' '+esc(String(f.producto).slice(0,14))):''); }).join('   ·   ') + '</div>'; }
     h += '</div></div>';
   });
   return h;
