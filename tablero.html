@@ -310,7 +310,7 @@ function renderIndicadores() {
     + '<div class="rgrid">'
     + '<div class="rcell"><div class="k">EFICIENCIA AYER</div><div class="v">' + (ay.eficiencia_pct ?? '—') + '%</div><div class="d">' + delta(ay.eficiencia_pct, D.eficiencia_hoy_pct, '%') + '</div></div>'
     + '<div class="rcell"><div class="k">HOSPITAL AYER</div><div class="v">' + (ay.hospital_count ?? '—') + ' p</div><div class="d">' + esc((ay.hospital_personas || []).map(function(n){return String(n).split(' ')[0];}).join(' · ') || ('hoy: ' + D.hospital_count + ' p')) + '</div></div>'
-    + '<div class="rcell"><div class="k">AUSENTES AYER</div><div class="v">' + (ay.ausentes_count ?? '—') + ' p</div><div class="d">' + delta(ay.ausentes_count, (D.ausentes || []).length, 'p', true) + '</div></div>'
+    + '<div class="rcell"><div class="k">AUSENTES AYER</div><div class="v">' + (ay.ausentes_count ?? '—') + ' p</div><div class="d">' + (function(){var dd=((D.ausentismo_mes&&D.ausentismo_mes.dias)||[]).filter(function(x){return x.fecha===ay.fecha;})[0];var nm=(dd&&dd.ausentes_nombres)||[];return nm.length?esc(nm.map(function(n){return String(n).split(' ')[0];}).join(' · ')):delta(ay.ausentes_count, (D.ausentes || []).length, 'p', true);})() + '</div></div>'
     + (function () {
         const dowA = ay.fecha ? new Date(ay.fecha + 'T12:00:00').getDay() : 0;
         const dispAyerH = Math.round((ay.operarios || 0) * (dowA === 6 ? 300 : 470) / 60 * 10) / 10;
