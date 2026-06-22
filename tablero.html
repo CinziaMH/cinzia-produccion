@@ -248,15 +248,8 @@ function buildLinePanels(montajes) {
         units.push({ ...m, mos: __act.slice(p * MAX_MOS_PER_PANEL, (p + 1) * MAX_MOS_PER_PANEL), fren: (p===0?__fren:[]), page: (p + 1) + '/' + npages });
     }
   });
-  // agrupar: budget de filas-mo por panel
-  const out = []; let curP = [], curRows = 0;
-  units.forEach(u => {
-    const w = Math.max(1, u.mos.length);
-    if (curP.length && (curRows + w > 7 || curP.length >= 3)) { out.push(curP); curP = []; curRows = 0; }
-    curP.push(u); curRows += w;
-  });
-  if (curP.length) out.push(curP);
-  return out;
+  // un montaje por panel (más espacio, más legible)
+  return units.map(function(u){ return [u]; });
 }
 
 function renderMonPanel(rows) {
