@@ -109,7 +109,7 @@ var METRICS=[
 ];
 var active={ef:true,prod:true};
 var ALLF=[],BYDATE={},chMain=null,chMon=null,DASH=null,REP=null;
-var rA={desde:'',hasta:''},rB={desde:'',hasta:''},cmpOn=false,preset='30';
+var rA={desde:'',hasta:''},rB={desde:'',hasta:''},cmpOn=false,preset='sem';
 
 function cargar(){
   $('sub').textContent='Cargando…';
@@ -124,7 +124,7 @@ function ingest(){
   BYDATE={};
   s.forEach(function(x){BYDATE[x.fecha]={ef:x.ef,prod:x.prod,cinco_pct:x.cinco_pct,nc_h:x.nc_h,nc_pct:(x.real_h>0?Math.round(x.nc_h*100/x.real_h):0),hosp_pers:x.hosp_pers,act:x.act,oper:x.oper,obj_h:x.obj_h,real_h:x.real_h,disp_h:x.disp_h,faltas:0,tardes:0};});
   if(DASH&&DASH.ausentismo_mes){(DASH.ausentismo_mes.dias||[]).forEach(function(x){if(BYDATE[x.fecha]){BYDATE[x.fecha].faltas=x.ausentes;BYDATE[x.fecha].tardes=x.tardes;}});}
-  if(!rA.hasta && ALLF.length){ setPreset('30',true); }
+  if(!rA.hasta && ALLF.length){ setPreset('sem',true); }
   renderPresets(); syncInputs(); renderAll();
   $('sub').textContent='Datos '+dm(REP.desde)+' a '+dm(REP.hasta)+' · '+REP.dias+' días con producción · '+new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
 }
@@ -133,16 +133,19 @@ function lastF(){return ALLF[ALLF.length-1];}
 function firstF(){return ALLF[0];}
 function clampA(f){return f<firstF()?firstF():(f>lastF()?lastF():f);}
 
+function monday(s){var d=new Date(s+'T12:00:00');var w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return d.toISOString().slice(0,10);}
 function setPreset(p,silent){
-  preset=p;
-  if(p==='mes'){var h=lastF();rA={desde:h.slice(0,7)+'-01',hasta:h};}
-  else if(p==='30'){var h2=lastF();rA={desde:clampA(dadd(h2,-29)),hasta:h2};}
+  preset=p;var h=lastF();
+  if(p==='sem'){rA={desde:clampA(monday(h)),hasta:h};}
+  else if(p==='semprev'){var m=monday(h);rA={desde:clampA(dadd(m,-7)),hasta:dadd(m,-1)};}
+  else if(p==='mes'){rA={desde:h.slice(0,7)+'-01',hasta:h};}
+  else if(p==='30'){rA={desde:clampA(dadd(h,-29)),hasta:h};}
   else if(p==='todo'){rA={desde:firstF(),hasta:lastF()};}
   if(cmpOn) setPrev(true);
   if(!silent){renderPresets();syncInputs();renderAll();}
 }
 function renderPresets(){
-  var defs=[['mes','Mes en curso'],['30','Últimos 30 días'],['todo','Todo']];
+  var defs=[['sem','Semana en curso'],['semprev','Semana anterior'],['mes','Mes en curso'],['30','Últimos 30'],['todo','Todo']];
   $('presets').innerHTML=defs.map(function(d){return '<button class="p'+(preset===d[0]?' on':'')+'" onclick="setPreset(\''+d[0]+'\')">'+d[1]+'</button>';}).join('');
 }
 function syncInputs(){$('dA').value=rA.desde;$('hA').value=rA.hasta;$('dB').value=rB.desde;$('hB').value=rB.hasta;}
