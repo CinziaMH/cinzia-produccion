@@ -154,6 +154,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .wkb{width:9px;background:var(--nar);border-radius:2px 2px 0 0;display:inline-block}
 .wkrow{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:1px 0;border-bottom:1px dotted var(--line)}
 .wkrow b{font-weight:700}
+.floor{padding:14px 18px}
+.ftitle{font-size:13px;color:#374151;margin-bottom:12px}
+.frow{display:flex;gap:10px;margin-bottom:10px}
+.fbox{flex:1 1 0;min-width:0;border:2px solid #e4e4e7;border-radius:12px;padding:10px 12px;background:#fff}
+.fbox.over{border-color:#dc2626;background:#fef2f2}
+.fcode{font-weight:800;font-size:18px;color:#1f2937}
+.fname{font-size:12px;color:#71717a;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcnt{font-size:12px;font-weight:600;color:#374151}
+.fops{font-size:11px;color:#71717a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fover{font-size:12px;color:#dc2626;font-weight:800;margin-top:5px}
+.faisle{text-align:center;font-size:11px;color:#a1a1aa;letter-spacing:3px;border-top:2px dashed #e4e4e7;border-bottom:2px dashed #e4e4e7;padding:5px 0;margin:8px 0}
 </style>
 </head>
 <body>
@@ -234,6 +245,7 @@ function build() {
   // armar paneles de montajes (sin scroll)
   const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
   panels = monPanels.map(function(rows){ var f = function(){ return renderMonPanel(rows); }; var m = (rows && rows[0]) || {}; f.label = (m.code || '') + (m.page ? (' ' + m.page) : ''); return f; });
+  var _pL = function(){ return renderLayoutPanel(); }; _pL.label = 'Layout'; panels.push(_pL);
   var _pI = function(){ return renderIndicadores(); }; _pI.label = 'Indic.'; panels.push(_pI);
   var _pA = function(){ return renderAusentesPanel(); }; _pA.label = 'Ausentes'; panels.push(_pA);
   var _pM = function(){ return renderAusMesPanel(); }; _pM.label = 'Mes'; panels.push(_pM);
@@ -289,6 +301,33 @@ function renderMonPanel(rows) {
     h += '</div></div>';
   });
   return h;
+}
+
+function renderLayoutPanel() {
+  function boxFor(code){
+    var m = (D.montajes||[]).filter(function(x){return x.code===code;})[0];
+    var name = m? m.name : code;
+    var act = m? (m.mos||[]).length : 0;
+    var cola = m? (m.cola||0) : 0;
+    var over = m? (m.mos||[]).filter(function(mo){return (mo.dias_en_produccion||0) > 3;}) : [];
+    var worst = over.length? over.reduce(function(a,b){return (b.dias_en_produccion>a.dias_en_produccion)?b:a;}) : null;
+    var ops = m? (m.mos||[]).map(function(mo){return mo.operario;}).filter(Boolean).slice(0,2).join(' · ') : '';
+    return '<div class="fbox'+(over.length?' over':'')+'">'
+      + '<div class="fcode">'+esc(code)+'</div>'
+      + '<div class="fname">'+esc(name)+'</div>'
+      + '<div class="fcnt">'+act+' act'+(cola?(' · '+cola+' cola'):'')+'</div>'
+      + (ops?'<div class="fops">'+esc(ops)+'</div>':'')
+      + (over.length?'<div class="fover">⚠ '+(worst?((String(worst.mo).match(/(\d{3,6})/)||[])[1]||worst.mo)+' · '+worst.dias_en_produccion+'d':over.length+' pasada(s)')+'</div>':'')
+      + '</div>';
+  }
+  var top = ['QC','M7','M6','M5','M3','M0'];
+  var bot = ['M1','M2','S1','S2','M4','S5','S6','S7'];
+  return '<div class="floor">'
+    + '<div class="ftitle">Layout de planta · órdenes activas hoy · <b>rojo = pasada del takt (3 días)</b></div>'
+    + '<div class="frow">'+top.map(boxFor).join('')+'</div>'
+    + '<div class="faisle">PASILLO DE CIRCULACIÓN</div>'
+    + '<div class="frow">'+bot.map(boxFor).join('')+'</div>'
+    + '</div>';
 }
 
 function renderIndicadores() {
