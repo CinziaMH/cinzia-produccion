@@ -25,8 +25,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .supchip .lbl{font-size:10px;font-weight:800;letter-spacing:1px;opacity:.9}
 .supchip .val{font-size:15px;font-weight:800;margin-top:2px}
 .dots{display:flex;gap:8px;align-items:center}
-.dot{width:34px;height:8px;border-radius:99px;background:rgba(255,255,255,.35);cursor:pointer;overflow:hidden;position:relative}
-.dot.act{background:rgba(255,255,255,.45)}
+.dot{min-width:24px;height:16px;border-radius:99px;background:rgba(255,255,255,.22);cursor:pointer;overflow:hidden;position:relative;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
+.dot span{position:relative;z-index:1;font-size:9px;font-weight:700;color:#fff;white-space:nowrap;letter-spacing:.2px}
+.dot.act{background:#fff}
+.dot.act span{color:#c2410c}
 .dot.act i{position:absolute;left:0;top:0;bottom:0;background:#fff;display:block;width:0%}
 .pausebtn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:9px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer}
 .clockbox{text-align:right}
@@ -231,10 +233,10 @@ function build() {
 
   // armar paneles de montajes (sin scroll)
   const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
-  panels = monPanels.map(rows => () => renderMonPanel(rows));
-  panels.push(() => renderIndicadores());
-  panels.push(() => renderAusentesPanel());
-  panels.push(() => renderAusMesPanel());
+  panels = monPanels.map(function(rows){ var f = function(){ return renderMonPanel(rows); }; var m = (rows && rows[0]) || {}; f.label = (m.code || '') + (m.page ? (' ' + m.page) : ''); return f; });
+  var _pI = function(){ return renderIndicadores(); }; _pI.label = 'Indic.'; panels.push(_pI);
+  var _pA = function(){ return renderAusentesPanel(); }; _pA.label = 'Ausentes'; panels.push(_pA);
+  var _pM = function(){ return renderAusMesPanel(); }; _pM.label = 'Mes'; panels.push(_pM);
 
   renderDots();
   if (cur >= panels.length) cur = 0;
@@ -434,7 +436,7 @@ function renderAusentesPanel() {
 function renderDots() {
   let h = '';
   for (let i = 0; i < panels.length; i++)
-    h += '<div class="dot' + (i === cur ? ' act' : '') + '" data-i="' + i + '"><i></i></div>';
+    h += '<div class="dot' + (i === cur ? ' act' : '') + '" data-i="' + i + '"><span>' + ((panels[i] && panels[i].label) || (i + 1)) + '</span></div>';
   $('dots').innerHTML = h;
   document.querySelectorAll('.dot').forEach(d => d.onclick = () => { cur = Number(d.dataset.i); showPanel(cur); });
 }
