@@ -164,6 +164,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .fcnt{font-size:12px;font-weight:600;color:#374151}
 .fops{font-size:11px;color:#71717a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fover{font-size:12px;color:#dc2626;font-weight:800;margin-top:5px}
+.wku{font-size:10px;color:var(--muted);padding:1px 0 4px 12px;line-height:1.4}
 .faisle{text-align:center;font-size:11px;color:#a1a1aa;letter-spacing:3px;border-top:2px dashed #e4e4e7;border-bottom:2px dashed #e4e4e7;padding:5px 0;margin:8px 0}
 </style>
 </head>
@@ -245,8 +246,7 @@ function build() {
   // armar paneles de montajes (sin scroll)
   const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
   panels = monPanels.map(function(rows){ var f = function(){ return renderMonPanel(rows); }; var m = (rows && rows[0]) || {}; f.label = (m.code || '') + (m.page ? (' ' + m.page) : ''); return f; });
-  var _pL = function(){ return renderLayoutPanel(); }; _pL.label = 'Layout'; panels.push(_pL);
-  var _pI = function(){ return renderIndicadores(); }; _pI.label = 'Indic.'; panels.push(_pI);
+  var _pI = function(){ return renderIndicadores() + renderLayoutPanel(); }; _pI.label = 'Indic.'; panels.push(_pI);
   var _pA = function(){ return renderAusentesPanel(); }; _pA.label = 'Ausentes'; panels.push(_pA);
   var _pM = function(){ return renderAusMesPanel(); }; _pM.label = 'Mes'; panels.push(_pM);
 
@@ -281,7 +281,7 @@ function renderMonPanel(rows) {
       + '<div class="mon-cnt">' + m.activas + ' act · ' + (m.cola || 0) + ' cola</div>'
       + (m.sigue ? '<div class="mon-cnt" style="color:var(--nar);font-weight:700">sigue: ' + esc((String(m.sigue.mo).match(/(\d{3,6})/) || [])[1] || m.sigue.mo) + (m.sigue.cliente ? ' · ' + esc(String(m.sigue.cliente).slice(0, 18)) : '') + '</div>' : '')
       + (m.page ? '<span class="pagetag">' + m.page + '</span>' : '')
-      + (function(){ var cs=(D.cierres_semana&&D.cierres_semana.porMontaje&&D.cierres_semana.porMontaje[m.code])||null; var dd=(D.cierres_semana&&D.cierres_semana.dias)||['Lun','Mar','Mié','Jue','Vie','Sáb']; var tot=cs?cs.reduce(function(a,b){return a+b;},0):0; function isoW(s){var p=String(s).split('/');if(p.length<2)return s;var d=new Date(new Date().getFullYear(),(+p[1])-1,+p[0]);var dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));var day=dt.getUTCDay()||7;dt.setUTCDate(dt.getUTCDate()+4-day);var ys=new Date(Date.UTC(dt.getUTCFullYear(),0,1));return Math.ceil((((dt-ys)/86400000)+1)/7);} var rows=(cs||(dd||[]).map(function(){return 0;})).map(function(v,i){return '<div class="wkrow"><span>Sem '+isoW(dd[i]||'')+'</span><b'+(v?' style="color:var(--nar)"':'')+'>'+v+'</b></div>';}).join(''); return '<div class="wkc"><div class="wkc-h">✓ cerradas · 10 sem <b>'+tot+'</b></div>'+rows+'</div>'; })() + '</div><div class="mon-mos">';
+      + (function(){ var cs=(D.cierres_semana&&D.cierres_semana.porMontaje&&D.cierres_semana.porMontaje[m.code])||null; var dd=(D.cierres_semana&&D.cierres_semana.dias)||['Lun','Mar','Mié','Jue','Vie','Sáb']; var tot=cs?cs.reduce(function(a,b){return a+(b&&b.n?b.n:0);},0):0; function isoW(s){var p=String(s).split('/');if(p.length<2)return s;var d=new Date(new Date().getFullYear(),(+p[1])-1,+p[0]);var dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));var day=dt.getUTCDay()||7;dt.setUTCDate(dt.getUTCDate()+4-day);var ys=new Date(Date.UTC(dt.getUTCFullYear(),0,1));return Math.ceil((((dt-ys)/86400000)+1)/7);} var rows=(cs||(dd||[]).map(function(){return {n:0,u:[]};})).map(function(v,i){var n=(v&&typeof v==='object')?(v.n||0):(v||0);var u=(v&&v.u)||[];var head='<div class="wkrow"><span>Sem '+isoW(dd[i]||'')+'</span><b'+(n?' style="color:var(--nar)"':'')+'>'+n+'</b></div>';var det=u.length?'<div class="wku">'+u.map(function(x){return '\u00b7 '+esc((x.prod||'?')+(x.cliente?(' '+x.cliente):''));}).join('<br>')+'</div>':'';return head+det;}).join(''); return '<div class="wkc"><div class="wkc-h">✓ cerradas · 10 sem <b>'+tot+'</b></div>'+rows+'</div>'; })() + '</div><div class="mon-mos">';
     if (!m.mos.length && !(m.fren && m.fren.length)) h += '<div class="mo-item" style="color:var(--muted)">Sin MOs en este montaje' + (m.cola ? ' · ' + m.cola + ' en cola' : '') + '</div>';
     m.mos.forEach(mo => {
       const num = (String(mo.mo).match(/(\d{4,6})/) || [])[1] || mo.mo;
