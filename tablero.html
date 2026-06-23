@@ -166,6 +166,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .fover{font-size:12px;color:#dc2626;font-weight:800;margin-top:5px}
 .wku{font-size:10px;color:var(--muted);padding:1px 0 4px 12px;line-height:1.4}
 .faisle{text-align:center;font-size:11px;color:#a1a1aa;letter-spacing:3px;border-top:2px dashed #e4e4e7;border-bottom:2px dashed #e4e4e7;padding:5px 0;margin:8px 0}
+.rgrid2{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
+.ha2 .ha{display:flex;gap:16px;align-items:baseline;margin-top:4px}
+.ha2 .hcol,.ha2 .acol{display:flex;flex-direction:column}
+.ha2 .hl{font-size:9px;letter-spacing:1px;color:#94a3b8;font-weight:700}
+.ha2 .hvv{font-size:30px;font-weight:800;line-height:1;color:#fff}
+.ha2 .avv{font-size:20px;font-weight:700;line-height:1;color:#94a3b8}
+.ha2.bad .hvv{color:#f87171}
+.ha2 .d{margin-top:6px;font-size:11px;color:#94a3b8}
 </style>
 </head>
 <body>
@@ -336,76 +344,46 @@ function renderIndicadores() {
   const cs = D.cinco_s_hoy || {};
   const ray = ay.rondas_rodrigo || {}, yay = ay.rondas_yance || {};
 
-  const delta = (a, h, unit, invertido) => {
-    if (a == null || h == null) return '';
-    const d = h - a;
-    const good = invertido ? d < 0 : d > 0;
-    const sign = d > 0 ? '+' : '';
-    return '<span style="color:' + (d === 0 ? '#94a3b8' : good ? '#4ade80' : '#f87171') + '">' + sign + d + unit + ' hoy</span>';
-  };
+  const dowJ = new Date(D.fecha_hoy + 'T12:00:00').getDay();
+  const dispFullH = Math.round((ef.operarios || 0) * (dowJ === 6 ? 300 : 470) / 60 * 10) / 10;
+  const ncPctH = dispFullH > 0 ? Math.round(D.nc_horas_hoy * 1000 / dispFullH) / 10 : 0;
+  const dowA = ay.fecha ? new Date(ay.fecha + 'T12:00:00').getDay() : 0;
+  const dispAyerH = Math.round((ay.operarios || 0) * (dowA === 6 ? 300 : 470) / 60 * 10) / 10;
+  const ncPctA = dispAyerH > 0 ? Math.round((ay.nc_horas || 0) * 1000 / dispAyerH) / 10 : null;
+
+  const efH = (D.eficiencia_hoy_pct != null ? D.eficiencia_hoy_pct : '—');
+  const efA = (ay.eficiencia_pct != null ? ay.eficiencia_pct : '—');
+  const hospH = (D.hospital_count != null ? D.hospital_count : 0);
+  const hospA = (ay.hospital_personas || []).length;
+  const ausH = (D.ausentes || []).length;
+  const ausA = (ay.ausentes_count != null ? ay.ausentes_count : 0);
+
+  const hospMosH = esc((D.hospital_mos || []).map(function(x){return (String(x.mo).match(/(\d{3,6})/) || [])[1] || x.mo;}).join(' · '));
+  const ausNamesH = (D.ausentes || []).map(function(a){return esc(String(a.nombre||'').split(' ')[0]);}).join(' · ');
+  const _aDia = ((D.ausentismo_mes && D.ausentismo_mes.dias) || []).filter(function(x){return x.fecha === ay.fecha;})[0];
+  const ausNamesA = esc(((_aDia && _aDia.ausentes_nombres) || []).map(function(n){return String(n).split(' ')[0];}).join(' · '));
+  const ncMonH = esc((D.nc_por_montaje || []).slice(0,3).map(function(m){return m.montaje + ' ' + m.pct + '%';}).join(' · '));
+
+  function dd2(k, hoy, ayer, det, bad){
+    return '<div class="rcell ha2' + (bad ? ' bad' : '') + '"><div class="k">' + k + '</div>'
+      + '<div class="ha"><div class="hcol"><span class="hl">HOY</span><span class="hvv">' + hoy + '</span></div>'
+      + '<div class="acol"><span class="hl">AYER</span><span class="avv">' + ayer + '</span></div></div>'
+      + (det ? '<div class="d">' + det + '</div>' : '') + '</div>';
+  }
 
   let h = '<div class="reunion">'
     + '<span class="rtag">REUNIÓN 11 AM</span>'
-    + '<h3>Cierre de ayer (' + esc(ay.fecha || '—') + ') + 5S de hoy</h3>'
-    + '<div class="rgrid">'
-    + '<div class="rcell"><div class="k">EFICIENCIA AYER</div><div class="v">' + (ay.eficiencia_pct ?? '—') + '%</div><div class="d">' + delta(ay.eficiencia_pct, D.eficiencia_hoy_pct, '%') + '</div></div>'
-    + '<div class="rcell"><div class="k">HOSPITAL AYER</div><div class="v">' + (ay.hospital_count ?? '—') + ' p</div><div class="d">' + esc((ay.hospital_personas || []).map(function(n){return String(n).split(' ')[0];}).join(' · ') || ('hoy: ' + D.hospital_count + ' p')) + '</div></div>'
-    + '<div class="rcell"><div class="k">AUSENTES AYER</div><div class="v">' + (ay.ausentes_count ?? '—') + ' p</div><div class="d">' + (function(){var dd=((D.ausentismo_mes&&D.ausentismo_mes.dias)||[]).filter(function(x){return x.fecha===ay.fecha;})[0];var nm=(dd&&dd.ausentes_nombres)||[];return nm.length?esc(nm.map(function(n){return String(n).split(' ')[0];}).join(' · ')):delta(ay.ausentes_count, (D.ausentes || []).length, 'p', true);})() + '</div></div>'
-    + (function () {
-        const dowA = ay.fecha ? new Date(ay.fecha + 'T12:00:00').getDay() : 0;
-        const dispAyerH = Math.round((ay.operarios || 0) * (dowA === 6 ? 300 : 470) / 60 * 10) / 10;
-        const pctA = dispAyerH > 0 ? Math.round((ay.nc_horas || 0) * 1000 / dispAyerH) / 10 : null;
-        return '<div class="rcell"><div class="k">NC HORAS AYER</div><div class="v">' + (ay.nc_horas ?? '—') + ' h' + (pctA != null ? ' <span style="font-size:14px;color:' + (pctA > 10 ? '#f87171' : '#94a3b8') + '">· ' + pctA + '% del día (' + dispAyerH + 'h)</span>' : '') + '</div><div class="d">' + delta(ay.nc_horas, D.nc_horas_hoy, 'h', true) + '</div></div>';
-      })()
+    + '<h3>Indicadores · HOY vs AYER (' + esc(ay.fecha || '—') + ')</h3>'
+    + '<div class="rgrid2">'
+    + dd2('EFICIENCIA PARCIAL', efH + '%', efA + '%', 'prom. mes ' + (D.eficiencia_mes_pct||0) + '% (' + (D.eficiencia_mes_dias||0) + ' días)')
+    + dd2('NO CONFORMIDAD', D.nc_horas_hoy + 'h · ' + ncPctH + '%', (ay.nc_horas||0) + 'h · ' + (ncPctA==null?'—':ncPctA+'%'), ncMonH, ncPctH>10)
+    + dd2('GENTE EN HOSPITAL', hospH + ' p', hospA + ' p', (hospMosH?('hoy: '+hospMosH):''), hospH>(D.hospital_target||2))
+    + dd2('GENTE AUSENTE', ausH + ' p', ausA + ' p', (ausH?('hoy: '+ausNamesH):(ausNamesA?('ayer: '+ausNamesA):'✓ sin ausentes hoy')))
     + '</div><div class="rrow2">'
-    + '<div class="rcell"><div class="k">5S HOY TEMPRANO</div><div class="v" style="font-size:17px">' + (cs.hora ? cs.hora + ' · ' : '') + (cs.sectores_ok || 0) + '/' + (cs.sectores_total || 9) + ' OK · <span style="color:#4ade80">🟢 ' + (cs.verdes || 0) + '</span> <span style="color:#facc15">🟡 ' + (cs.amarillos || 0) + '</span> <span style="color:#f87171">🔴 ' + (cs.rojos || 0) + '</span></div>'
-    + '<div class="d">' + ((cs.pendientes || []).length ? 'Pendientes: ' + cs.pendientes.join(' · ') : 'Todos relevados ✓') + '</div></div>'
+    + '<div class="rcell"><div class="k">5S HOY TEMPRANO</div><div class="v" style="font-size:17px">' + (cs.hora ? cs.hora + ' · ' : '') + (cs.sectores_ok || 0) + '/' + (cs.sectores_total || 9) + ' OK · <span style="color:#4ade80">🟢 ' + (cs.verdes || 0) + '</span> <span style="color:#facc15">🟡 ' + (cs.amarillos || 0) + '</span> <span style="color:#f87171">🔴 ' + (cs.rojos || 0) + '</span></div><div class="d">' + ((cs.pendientes || []).length ? 'Pendientes: ' + cs.pendientes.join(' · ') : 'Todos relevados ✓') + '</div></div>'
     + '<div class="rcell"><div class="k">RONDAS YANCE AYER</div><div class="v" style="font-size:17px">' + (yay.validadas||0) + '/' + (yay.total||0) + '</div><div class="d">' + (yay.flagged||0) + ' a revisar</div></div>'
     + '<div class="rcell"><div class="k">RONDAS RODRIGO AYER</div><div class="v" style="font-size:17px">' + (ray.validadas||0) + '/' + (ray.total||0) + '</div><div class="d">' + (ray.flagged||0) + ' a revisar</div></div>'
     + '</div></div>';
-
-  // KPIs
-  const hospBad = D.hospital_count > D.hospital_target;
-  h += '<div class="kpis">'
-    + '<div class="kpi"><div class="k">TAKT OBJETIVO</div><div class="v">' + D.takt_dias + ' días</div><div class="s">Pegasso 4d · CONFIG</div></div>'
-    + '<div class="kpi"><div class="k">EN FABRICACIÓN</div><div class="v">' + D.en_fabricacion + ' MOs</div><div class="s">con actividad hoy</div></div>'
-    + '<div class="kpi' + (hospBad ? ' bad' : ' good') + '"><div class="k">HOSPITAL / QC</div><div class="v">' + D.hospital_count + '</div><div class="s">' + esc((D.hospital_mos || []).map(h => (String(h.mo).match(/(\d{3,6})/) || [])[1] || h.mo).join(' · ') || 'sin unidades') + ' · target ≤ ' + D.hospital_target + '</div></div>'
-    + '<div class="kpi ' + efClass(D.eficiencia_hoy_pct) + '"><div class="k">EFICIENCIA HOY (PARCIAL)</div><div class="v">' + D.eficiencia_hoy_pct + '%</div><div class="s">prom. mes ' + D.eficiencia_mes_pct + '% (' + (D.eficiencia_mes_dias || 0) + ' días) · ayer ' + (ay.eficiencia_pct ?? '—') + '%</div></div>'
-    + '</div>';
-
-  // eficiencia detalle
-  h += '<div class="efgrid">'
-    + '<div class="efcell"><div class="k">EFICIENCIA HOY</div><div class="v">' + D.eficiencia_hoy_pct + '%</div><div class="s">Earned ÷ jornada transcurrida (' + (ef.jornada_min ?? 0) + ' min/op)</div></div>'
-    + '<div class="efcell"><div class="k">REAL</div><div class="v">' + (ef.real_h ?? 0) + 'h</div><div class="s">cronómetro Odoo</div></div>'
-    + '<div class="efcell"><div class="k">EARNED</div><div class="v">' + (ef.earned_h ?? 0) + 'h</div><div class="s">tiempo objetivo</div></div>'
-    + '<div class="efcell"><div class="k">DISPONIBLE</div><div class="v">' + (ef.disponible_h ?? 0) + 'h</div><div class="s">' + (ef.operarios ?? 0) + ' ops × transcurrido</div></div>'
-    + '<div class="efcell"><div class="k">PRODUCTIVIDAD</div><div class="v">' + (ef.productividad_pct ?? 0) + '%</div><div class="s">Earned/Real</div></div>'
-    + '<div class="efcell final"><div class="k">EFICIENCIA</div><div class="v">' + (ef.eficiencia_pct ?? 0) + '%</div><div class="s">parcial del día</div></div>'
-    + '</div>';
-
-  // bottom: tendencia + ausentes + NC
-  const tmax = Math.max(20, ...(D.tendencia || []).map(t => t.pct));
-  let tend = '';
-  (D.tendencia || []).forEach(t => {
-    const hpct = Math.round(t.pct / tmax * 100);
-    tend += '<div class="tcol"><div class="tbar' + (t.hoy ? ' hoy' : '') + '" style="height:' + Math.max(3, hpct) + '%"><span class="tv">' + t.pct + '</span></div><div class="tlab">' + t.day + '</div></div>';
-  });
-  let aus = '';
-  (D.ausentes || []).slice(0, 8).forEach(a => { aus += '<div class="li"><b>' + esc(a.nombre) + '</b><span>' + esc(a.sector) + '</span></div>'; });
-  if (!(D.ausentes || []).length) aus = '<div class="li">Sin ausentes hoy ✓</div>';
-  // % de NC contra las horas TOTALES del día (jornada completa × operarios): Lu-Vi 470 min · Sáb 300 min
-  const dowJ = new Date(D.fecha_hoy + 'T12:00:00').getDay();
-  const dispFullH = Math.round((ef.operarios || 0) * (dowJ === 6 ? 300 : 470) / 60 * 10) / 10;
-  const ncPct = dispFullH > 0 ? Math.round(D.nc_horas_hoy * 1000 / dispFullH) / 10 : 0;
-  let nc = '<div class="nctotal">' + D.nc_horas_hoy + ' h <span style="font-size:16px;color:' + (ncPct > 10 ? 'var(--bad)' : 'var(--muted)') + ';font-weight:800">· ' + ncPct + '% del total del día (' + dispFullH + 'h)</span></div>';
-  (D.nc_por_montaje || []).forEach(m => { nc += '<div class="li" style="background:rgba(248,113,113,.10);border-radius:6px"><b style="color:var(--bad)">' + esc(m.montaje) + '</b><span><b>' + m.pct + '%</b> · ' + m.horas + ' h</span></div>'; });
-  (D.nc_personas || []).slice(0, 4).forEach(p => { nc += '<div class="li"><b>' + esc(p.operario) + '</b><span>' + p.horas + ' h</span></div>'; });
-
-  h += '<div class="bot">'
-    + '<div class="botcard"><h4>TENDENCIA SEMANAL · EFICIENCIA DIARIA</h4><div class="tend">' + tend + '</div></div>'
-    + '<div class="botcard"><h4>AUSENTES HOY · ' + (D.ausentes || []).length + '</h4><div class="lista">' + aus + '</div></div>'
-    + '<div class="botcard"><h4>NO CONFORMIDAD HOY</h4><div class="lista">' + nc + '</div></div>'
-    + '</div>';
   return h;
 }
 
