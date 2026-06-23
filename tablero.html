@@ -185,6 +185,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .fempty{font-size:11px;color:#a1a1aa;padding:3px 0}
 .calcell.fer{background:#0b1220;border:1px dashed #334155}
 .cfer{font-size:8px;color:#64748b;font-weight:800;letter-spacing:.5px}
+.ausuni{display:flex;flex-direction:column;gap:20px}
+.ausuni .auswrap{flex:none;min-height:auto}
+.ausuni .calmes{flex:none}
 </style>
 </head>
 <body>
@@ -266,7 +269,7 @@ function build() {
   const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
   panels = monPanels.map(function(rows){ var f = function(){ return renderMonPanel(rows); }; var m = (rows && rows[0]) || {}; f.label = (m.code || '') + (m.page ? (' ' + m.page) : ''); return f; });
   var _pI = function(){ return renderIndicadores() + renderLayoutPanel(); }; _pI.label = 'Indic.'; panels.push(_pI);
-  var _pA = function(){ return renderAusentesPanel() + renderAusMesPanel(); }; _pA.label = 'Ausentismo'; panels.push(_pA);
+  var _pA = function(){ return '<div class="ausuni">' + renderAusentesPanel() + renderAusMesPanel() + '</div>'; }; _pA.label = 'Ausentismo'; panels.push(_pA);
 
   renderDots();
   if (cur >= panels.length) cur = 0;
