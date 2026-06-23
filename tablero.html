@@ -174,6 +174,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .ha2 .avv{font-size:20px;font-weight:700;line-height:1;color:#94a3b8}
 .ha2.bad .hvv{color:#f87171}
 .ha2 .d{margin-top:6px;font-size:11px;color:#94a3b8}
+.frow2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;padding:3px 0;border-top:1px solid #f1f1f3}
+.fbox .frow2:first-of-type{border-top:none}
+.fcli{color:#1f2937;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fdays{color:#71717a;font-weight:800;flex:none;font-size:12px}
+.frow2.bad .fdays{color:#dc2626}
+.fempty{font-size:11px;color:#a1a1aa;padding:3px 0}
 </style>
 </head>
 <body>
@@ -314,18 +320,18 @@ function renderMonPanel(rows) {
 function renderLayoutPanel() {
   function boxFor(code){
     var m = (D.montajes||[]).filter(function(x){return x.code===code;})[0];
-    var name = m? m.name : code;
-    var act = m? (m.mos||[]).length : 0;
-    var cola = m? (m.cola||0) : 0;
-    var over = m? (m.mos||[]).filter(function(mo){return (mo.dias_en_produccion||0) > 3;}) : [];
-    var worst = over.length? over.reduce(function(a,b){return (b.dias_en_produccion>a.dias_en_produccion)?b:a;}) : null;
-    var ops = m? (m.mos||[]).map(function(mo){return mo.operario;}).filter(Boolean).slice(0,2).join(' · ') : '';
+    var mos = m ? (m.mos||[]) : [];
+    var over = mos.filter(function(mo){return (mo.dias_en_produccion||0) > 3;});
+    function cliName(mo){ var c = String(mo.producto||mo.prod||mo.mo||'').replace(/^s?\d+\s*-?\s*/i,'').trim(); return c || '—'; }
+    var rows = mos.map(function(mo){
+      var bad = (mo.dias_en_produccion||0) > 3;
+      var d = (mo.dias_en_produccion!=null ? mo.dias_en_produccion : '?');
+      return '<div class="frow2'+(bad?' bad':'')+'"><span class="fcli">'+esc(cliName(mo).slice(0,24))+'</span><span class="fdays">'+d+'d</span></div>';
+    }).join('');
+    if(!rows) rows = '<div class="fempty">sin órdenes</div>';
     return '<div class="fbox'+(over.length?' over':'')+'">'
       + '<div class="fcode">'+esc(code)+'</div>'
-      + '<div class="fname">'+esc(name)+'</div>'
-      + '<div class="fcnt">'+act+' act'+(cola?(' · '+cola+' cola'):'')+'</div>'
-      + (ops?'<div class="fops">'+esc(ops)+'</div>':'')
-      + (over.length?'<div class="fover">⚠ '+(worst?((String(worst.mo).match(/(\d{3,6})/)||[])[1]||worst.mo)+' · '+worst.dias_en_produccion+'d':over.length+' pasada(s)')+'</div>':'')
+      + rows
       + '</div>';
   }
   var top = ['QC','M7','M6','M5','M3','M0'];
