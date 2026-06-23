@@ -183,6 +183,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .fdays{color:#71717a;font-weight:800;flex:none;font-size:12px}
 .frow2.bad .fdays{color:#dc2626}
 .fempty{font-size:11px;color:#a1a1aa;padding:3px 0}
+.calcell.fer{background:#0b1220;border:1px dashed #334155}
+.cfer{font-size:8px;color:#64748b;font-weight:800;letter-spacing:.5px}
 </style>
 </head>
 <body>
@@ -264,8 +266,7 @@ function build() {
   const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
   panels = monPanels.map(function(rows){ var f = function(){ return renderMonPanel(rows); }; var m = (rows && rows[0]) || {}; f.label = (m.code || '') + (m.page ? (' ' + m.page) : ''); return f; });
   var _pI = function(){ return renderIndicadores() + renderLayoutPanel(); }; _pI.label = 'Indic.'; panels.push(_pI);
-  var _pA = function(){ return renderAusentesPanel(); }; _pA.label = 'Ausentes'; panels.push(_pA);
-  var _pM = function(){ return renderAusMesPanel(); }; _pM.label = 'Mes'; panels.push(_pM);
+  var _pA = function(){ return renderAusentesPanel() + renderAusMesPanel(); }; _pA.label = 'Ausentismo'; panels.push(_pA);
 
   renderDots();
   if (cur >= panels.length) cur = 0;
@@ -416,13 +417,13 @@ function renderAusMesPanel(){
   var daysInMonth=new Date(Y,Mo,0).getDate();
   var firstDow=(new Date(Y,Mo-1,1).getDay()+6)%7;
   var MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][Mo-1];
-  var h='<div class="auswrap"><div class="aushero"><div><div class="lbl">AUSENTISMO · '+MN+' '+Y+'</div><div class="sub">'+m.total_ausentes+' faltas · '+m.total_tardes+' llegadas tarde · '+m.roster_n+' operarios · F=falta T=tarde</div></div></div>';
+  var FERIADOS=['2026-06-15']; var fAus=0,fTar=0; m.dias.forEach(function(x){ if(FERIADOS.indexOf(x.fecha)>=0) return; fAus+=(x.ausentes||0); fTar+=(x.tardes||0); }); var _n=new Date(); var _hd=(_n.getFullYear()===Y&&(_n.getMonth()+1)===Mo)?_n.getDate():daysInMonth; var diasLab=0; for(var _d=1;_d<=_hd;_d++){ var _ds=Y+'-'+String(Mo).padStart(2,'0')+'-'+String(_d).padStart(2,'0'); if(new Date(Y,Mo-1,_d).getDay()!==0 && FERIADOS.indexOf(_ds)<0) diasLab++; } var _pos=(m.roster_n||0)*diasLab; var pctAus=_pos?Math.round(fAus*1000/_pos)/10:0; var pctTar=_pos?Math.round(fTar*1000/_pos)/10:0; var h='<div class="auswrap"><div class="aushero"><div><div class="lbl">AUSENTISMO · '+MN+' '+Y+'</div><div class="sub">'+fAus+' faltas · '+fTar+' llegadas tarde · '+m.roster_n+' operarios · <b style="color:#f87171">'+pctAus+'% ausent.</b> · <b style="color:#facc15">'+pctTar+'% tarde</b> · F=falta T=tarde</div></div></div>';
   h+='<div class="calmes">';
   ['L','M','M','J','V','S','D'].forEach(function(w){h+='<div class="calhd">'+w+'</div>';});
   for(var i=0;i<firstDow;i++) h+='<div class="calcell empty"></div>';
   for(var dn=1;dn<=daysInMonth;dn++){
     var ds=Y+'-'+String(Mo).padStart(2,'0')+'-'+String(dn).padStart(2,'0');
-    var dd=map[ds];
+    if(['2026-06-15'].indexOf(ds)>=0){ h+='<div class="calcell fer"><div class="cd">'+dn+'</div><div class="cv"><span class="cfer">FERIADO</span></div></div>'; continue; } var dd=map[ds];
     var dow=(new Date(Y,Mo-1,dn).getDay()+6)%7;
     var cls='calcell'+(dow===6?' dom':'');
     if(dd){
