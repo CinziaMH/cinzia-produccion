@@ -152,6 +152,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   <div class="chip" id="cSup" style="background:rgba(255,255,255,.22)">SUPERVISORES <b>—</b></div>
   <div class="chip" id="cGap" style="display:none;background:#fff;color:#b91c1c;border-color:#fff">⚠ INACTIVIDAD <b>0</b></div>
   <div class="chip" id="cAus" style="display:none;background:#7f1d1d;color:#fecaca;border-color:#b91c1c">🚫 AUSENTES <b>0</b></div>
+  <div class="chip" id="supAck" style="display:none;background:#dc2626;color:#fff;border-color:#fff;cursor:pointer" onclick="ackSup()">📢 Aviso al supervisor · silenciar</div>
   <div class="chip" style="margin-left:auto;background:rgba(255,255,255,.1);cursor:pointer" onclick="diaAnterior()">◀ día ant.</div>
   <div class="chip" id="cHoyBtn" style="background:#16a34a;border-color:#22c55e;display:none;cursor:pointer" onclick="diaHoy()">Hoy ▶</div>
   <a class="chip" href="./" style="background:rgba(255,255,255,.1);text-decoration:none;color:#fff">🏠 Inicio</a>
@@ -323,6 +324,10 @@ var actx=null,alarmTimer=null,pendingGaps=0,CURGAP=null;
 var GAPLAB={sup:'Aviso a supervisor',tarea:'Cargué la tarea',operador:'Aviso a operador'};
 function ensureAudio(){ try{ if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)(); if(actx.state==='suspended') actx.resume(); }catch(e){} }
 function beep(){ if(!actx||actx.state!=='running') return; try{ var o=actx.createOscillator(),g=actx.createGain(); o.type='square'; o.frequency.value=880; o.connect(g); g.connect(actx.destination); var t=actx.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.3,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.45); o.start(t); o.stop(t+0.5);}catch(e){} }
+var supAlarmTimer=null,supAcked=false,ackedSig='';
+function beepSup(){ if(!actx||actx.state!=='running') return; try{ [[660,0],[440,0.2]].forEach(function(p){ var o=actx.createOscillator(),g=actx.createGain(); o.type='sine'; o.frequency.value=p[0]; o.connect(g); g.connect(actx.destination); var t=actx.currentTime+p[1]; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.4,t+0.03); g.gain.exponentialRampToValueAtTime(0.0001,t+0.18); o.start(t); o.stop(t+0.2); }); }catch(e){} }
+function updateSupAlarm(){ var sr=window.__SR||{}; var sig=(sr.rodrigo?'R':'')+(sr.yance?'Y':''); var any=!!sig; if(sig!==ackedSig) supAcked=false; var btn=document.getElementById('supAck'); if(any&&!supAcked&&!HIST){ if(!supAlarmTimer){ supAlarmTimer=setInterval(function(){ensureAudio();beepSup();},3000); ensureAudio(); beepSup(); } if(btn) btn.style.display=''; } else { if(supAlarmTimer){clearInterval(supAlarmTimer);supAlarmTimer=null;} if(btn) btn.style.display='none'; } }
+function ackSup(){ var sr=window.__SR||{}; ackedSig=(sr.rodrigo?'R':'')+(sr.yance?'Y':''); supAcked=true; if(supAlarmTimer){clearInterval(supAlarmTimer);supAlarmTimer=null;} var b=document.getElementById('supAck'); if(b)b.style.display='none'; }
 function updateAlarm(){
   var chip=document.getElementById('cGap'), bar=document.getElementById('sndbar');
   if(pendingGaps>0){
@@ -367,9 +372,14 @@ function render(D){
   if(aus.length){ if(cAus){cAus.style.display='';cAus.innerHTML='🚫 AUSENTES <b>'+aus.length+'</b>';} if(ausbar){ausbar.style.display='block';ausbar.innerHTML='🚫 AUSENTES HOY ('+aus.length+'): '+aus.map(function(a){return esc(a.nombre)+(a.sector?' <span style="opacity:.7">('+esc(a.sector)+')</span>':'')}).join(' · ');} }
   else { if(cAus)cAus.style.display='none'; if(ausbar)ausbar.style.display='none'; }
   var rs=D.rondas_sup;
-  if(rs&&rs.rodrigo){document.getElementById('cSup').innerHTML='SUPERVISORES <b>R '+(rs.rodrigo.validadas||0)+'/'+(rs.rodrigo.total||0)+' · Y '+(rs.yance.validadas||0)+'/'+(rs.yance.total||0)+'</b>'}
+  var _ar=(D.alertas||[]).filter(function(a){return (a.tipo||'')==='RONDA'});
+  var SR={rodrigo:_ar.some(function(a){return /RODRIGO/i.test(a.msg||'')}),yance:_ar.some(function(a){return /YANCE/i.test(a.msg||'')})};
+  window.__SR=SR;
+  if(rs&&rs.rodrigo){var _sg=function(l,o,r){var x=l+' '+((o&&o.validadas)||0)+'/'+((o&&o.total)||0);return r?'<span style="background:#dc2626;color:#fff;padding:0 6px;border-radius:6px">'+x+' ⚠</span>':x;};var _cs=document.getElementById('cSup');_cs.innerHTML='SUPERVISORES <b>'+_sg('R',rs.rodrigo,SR.rodrigo)+' · '+_sg('Y',rs.yance,SR.yance)+'</b>';_cs.style.background=(SR.rodrigo||SR.yance)?'rgba(220,38,38,.30)':'rgba(255,255,255,.22)';}
   var ab=document.getElementById('alertbar');
-  if(D.alertas&&D.alertas.length){ab.style.display='block';ab.innerHTML=D.alertas.map(function(a){return '• '+esc(a.msg||a)}).join('   ')}else ab.style.display='none';
+  var _av=(D.alertas||[]).filter(function(a){return (a.tipo||'')!=='5S'});
+  if(_av.length){ab.style.display='block';ab.innerHTML=_av.map(function(a){return '• '+esc(a.msg||a)}).join('   ')}else ab.style.display='none';
+  updateSupAlarm();
   HIST=!!D.hist;
   var hb=document.getElementById('cHoyBtn'); if(hb) hb.style.display=HIST?'':'none';
   document.getElementById('reloj').textContent = HIST ? ('📅 '+String(D.fecha||'').slice(8,10)+'/'+String(D.fecha||'').slice(5,7)) : D.hora;
