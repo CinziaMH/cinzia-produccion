@@ -355,7 +355,7 @@ function renderLayoutPanel() {
     }).join('');
     if(!rows) rows = '<div class="fempty">sin órdenes</div>';
     return '<div class="fbox'+(over.length?' over':'')+'">'
-      + '<div class="fcode">'+esc(code)+(function(){var p=(D.cinco_s_hoy&&D.cinco_s_hoy.por_montaje&&D.cinco_s_hoy.por_montaje[code])||null;var col=p?({verde:'#16a34a',ok:'#16a34a',amarillo:'#2563eb',azul:'#2563eb',rojo:'#dc2626'}[p.color]||'#94a3b8'):'#cbd5e1';var lbl=p?({verde:'5S Verde',ok:'5S Verde',amarillo:'5S Azul',azul:'5S Azul',rojo:'5S Rojo'}[p.color]||('5S '+p.color)):'5S pendiente';return '<span class="f5s" style="background:'+col+'" title="'+lbl+'"></span><span class="f5slbl">5S</span>';})()+'</div>'
+      + '<div class="fcode">'+esc(code)+(function(){var p=(D.cinco_s_hoy&&D.cinco_s_hoy.por_montaje&&D.cinco_s_hoy.por_montaje[code])||null;var col=p?({verde:'#16a34a',ok:'#16a34a',amarillo:'#2563eb',azul:'#2563eb',rojo:'#dc2626'}[p.color]||'#94a3b8'):'#000';var lbl=p?({verde:'5S Verde',ok:'5S Verde',amarillo:'5S Azul',azul:'5S Azul',rojo:'5S Rojo'}[p.color]||('5S '+p.color)):'5S pendiente';return '<span class="f5s" style="background:'+col+'" title="'+lbl+'"></span><span class="f5slbl">5S</span>';})()+'</div>'
       + rows
       + '</div>';
   }
