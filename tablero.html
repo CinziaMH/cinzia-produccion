@@ -188,6 +188,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .ausuni{display:flex;flex-direction:column;gap:20px}
 .ausuni .auswrap{flex:none;min-height:auto}
 .ausuni .calmes{flex:none}
+html.movil,html.movil body{height:auto;min-height:100%;overflow-y:auto;overflow-x:hidden}
+body.movil .hdr{flex-wrap:wrap;gap:6px;padding:8px 10px;height:auto}
+body.movil .dots,body.movil .supchip,body.movil #pauseBtn{display:none}
+body.movil .stage{position:static;overflow:visible;flex:none;height:auto}
+body.movil .panel.mvp{position:static;display:flex;overflow:visible;height:auto;padding:10px 10px 40px;gap:14px}
+body.movil .rgrid2{grid-template-columns:repeat(2,1fr);gap:8px}
+body.movil .rgrid2 .hvv{font-size:22px}
+body.movil .rgrid2 .avv{font-size:15px}
+body.movil .rrow2{flex-direction:column;gap:8px}
+body.movil .floor{padding:4px 0}
+body.movil .frow{flex-wrap:wrap;gap:8px;margin-bottom:8px}
+body.movil .fbox{flex:1 1 46%;min-width:46%}
+body.movil .faisle{display:none}
 </style>
 </head>
 <body>
@@ -226,6 +239,7 @@ const REFRESH_MIN = 5;
 const MAX_MOS_PER_PANEL = 4;
 
 let D = null, panels = [], cur = 0, paused = false, rotT0 = Date.now();
+const MOVIL = new URLSearchParams(location.search).get('movil') === '1';
 
 const $ = id => document.getElementById(id);
 const esc = s => { const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML; };
@@ -264,6 +278,8 @@ function build() {
   const ab = $('alertbar');
   if (D.alertas && D.alertas.length) { ab.style.display = 'block'; ab.textContent = D.alertas.map(a => '• ' + (a.msg || a)).join('   '); }
   else ab.style.display = 'none';
+
+  if (MOVIL) { document.documentElement.classList.add('movil'); document.body.classList.add('movil'); $('stage').innerHTML = '<div class="panel act mvp">' + renderIndicadores() + renderLayoutPanel() + '</div>'; return; }
 
   // armar paneles de montajes (sin scroll)
   const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
