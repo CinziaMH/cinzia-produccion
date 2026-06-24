@@ -241,6 +241,8 @@ const MAX_MOS_PER_PANEL = 4;
 
 let D = null, panels = [], cur = 0, paused = false, rotT0 = Date.now();
 const MOVIL = new URLSearchParams(location.search).get('movil') === '1';
+const TVSIMPLE = new URLSearchParams(location.search).get('tv') === '1';
+const SIMPLE = MOVIL || TVSIMPLE;
 
 const $ = id => document.getElementById(id);
 const esc = s => { const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML; };
@@ -280,7 +282,7 @@ function build() {
   if (D.alertas && D.alertas.length) { ab.style.display = 'block'; ab.textContent = D.alertas.map(a => '• ' + (a.msg || a)).join('   '); }
   else ab.style.display = 'none';
 
-  if (MOVIL) { document.documentElement.classList.add('movil'); document.body.classList.add('movil'); $('stage').innerHTML = '<div class="panel act mvp">' + renderIndicadores() + renderLayoutPanel() + '</div>'; return; }
+  if (SIMPLE) { if(MOVIL){document.documentElement.classList.add('movil'); document.body.classList.add('movil');} var _dd=$('dots'); if(_dd)_dd.style.display='none'; var _pp=$('pauseBtn'); if(_pp)_pp.style.display='none'; $('stage').innerHTML = '<div class="panel act mvp">' + renderIndicadores() + renderLayoutPanel() + '</div>'; return; }
 
   // armar paneles de montajes (sin scroll)
   const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
