@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinzia · Pulso de Calidad</title>
+<style>
+:root{--nar:#EA580C;--bg:#0f172a;--panel:#1e293b;--line:#334155;--txt:#f1f5f9;--muted:#94a3b8;--verde:#22c55e;--azul:#3b82f6;--rojo:#ef4444;--otros:#64748b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;min-height:100vh}
+.hdr{display:flex;align-items:center;gap:12px;padding:8px 16px;background:linear-gradient(90deg,#7c2d12,#9a3412);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.hdr h1{font-size:17px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
+.hdr .sub{font-size:11px;opacity:.9}
+.chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:9px;padding:4px 11px;font-weight:800;font-size:12px;white-space:nowrap;color:#fff;text-decoration:none;cursor:pointer}
+select.msel,input.dpick{background:rgba(255,255,255,.92);border:none;border-radius:9px;padding:5px 9px;font-weight:700;font-size:13px;color:#1f2937}
+.maxw{max-width:1150px;margin:0 auto;padding:14px}
+h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:18px 0 10px}
+.off{background:var(--rojo);color:#fff;padding:6px 14px;font-weight:800;font-size:13px;display:none;text-align:center}
+.spin{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite;margin:60px auto}
+@keyframes r{to{transform:rotate(360deg)}}
+.vacio{color:var(--muted);font-size:13px;padding:16px;text-align:center;background:var(--panel);border-radius:11px}
+/* DPU cards */
+.qrow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.qcard{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:18px 18px 16px}
+.qcard .qt{font-size:13px;font-weight:800;letter-spacing:.5px;color:#fdba74;display:flex;align-items:center;gap:8px}
+.qcard .dpu{font-size:52px;font-weight:800;line-height:1;margin-top:8px}
+.qcard .dpusub{font-size:12px;color:var(--muted);margin-top:2px}
+.qcard .qmeta{font-size:12.5px;color:#cbd5e1;margin-top:10px;font-weight:600}
+.sevbar{display:flex;height:14px;border-radius:8px;overflow:hidden;margin-top:14px;background:#0f172a}
+.sevbar i{display:block;height:100%}
+.sevleg{display:flex;gap:14px;margin-top:9px;flex-wrap:wrap}
+.sevleg .sl{font-size:11.5px;color:#cbd5e1;font-weight:700;display:flex;align-items:center;gap:5px}
+.sevleg .sl i{width:11px;height:11px;border-radius:3px;display:inline-block}
+/* Voz cliente */
+.vozhead{display:flex;gap:14px;flex-wrap:wrap;align-items:stretch}
+.vbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;flex:0 0 auto;min-width:150px}
+.vbox .n{font-size:40px;font-weight:800;line-height:1}
+.vbox .l{font-size:11.5px;color:var(--muted);font-weight:700;margin-top:3px;letter-spacing:.4px}
+.gchips{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.gchip{border-radius:11px;padding:10px 16px;font-weight:800;color:#fff;text-align:center;min-width:96px}
+.gchip .gn{font-size:24px;line-height:1}
+.gchip .gl{font-size:10.5px;opacity:.95;font-weight:700;margin-top:2px}
+.tbl{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;margin-top:4px}
+.tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);font-weight:800}
+.tbl td{font-size:12.5px;padding:9px 10px;border-bottom:1px solid #26344a;vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.gdot{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:800;color:#fff;white-space:nowrap}
+.cli{display:flex;flex-direction:column;gap:8px}
+.clirow{display:flex;align-items:center;gap:8px;font-size:12.5px}
+.clirow .cn{flex:0 0 26px;height:20px;border-radius:6px;background:#3b2410;color:#fdba74;font-weight:800;text-align:center;font-size:12px;line-height:20px}
+.clirow .cname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.nota{max-width:1150px;margin:0 auto;padding:8px 14px 26px;font-size:11px;color:#64748b}
+@media(max-width:760px){.qrow{grid-template-columns:1fr}.hdr{gap:6px;padding:5px 10px}.hdr h1{font-size:13px}.hdr .lg{display:none}.maxw{padding:10px}
+ .tbl .hideMob{display:none}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="lg" style="background:#fff;border-radius:10px;padding:5px 10px;display:inline-flex;align-items:center"><img src="cinzia%20logo.png" onerror="this.parentNode.style.display='none'" alt="CINZIA" style="height:24px;display:block"></span>
+  <h1>🔬 PULSO DE CALIDAD</h1>
+  <select class="msel" id="rango" onchange="aplicarRango()">
+    <option value="mes" selected>Este mes</option>
+    <option value="mespasado">Mes pasado</option>
+    <option value="30">Últimos 30 días</option>
+    <option value="trim">Últimos 3 meses</option>
+    <option value="anio">Este año</option>
+    <option value="custom">Personalizado…</option>
+  </select>
+  <input class="dpick" type="date" id="desde" onchange="custom()">
+  <input class="dpick" type="date" id="hasta" onchange="custom()">
+  <div class="sub" id="gen" style="margin-left:4px">cargando…</div>
+  <a class="chip" href="./" style="margin-left:auto;background:rgba(255,255,255,.1)">🏠 Inicio</a>
+  <div class="chip" style="background:rgba(255,255,255,.1)" onclick="cargar()">↻</div>
+</div>
+<div class="off" id="off">⚠ SIN CONEXIÓN</div>
+<div class="maxw" id="cont">
+  <div class="spin"></div>
+</div>
+<div class="nota">DPU = defectos por vehículo inspeccionado, según gravedad cargada en el módulo de calidad de Odoo. Control Final = QC final · M4 = Instalaciones Etapa 2 y 3. Gravedad: 🟢 Bajo (very low/low) · 🔵 Normal · 🔴 Alto/Crítico. Voz del Cliente = reclamos externos registrados en planilla "Registro de NC Ext". Datos en vivo · refresca cada 5 min.</div>
+
+<script>
+var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
+function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML}
+function pad(n){return String(n).padStart(2,'0')}
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function aplicarRango(){
+  var t=document.getElementById('rango').value, now=new Date(), d,h;
+  if(t==='custom'){return}
+  if(t==='mes'){d=new Date(now.getFullYear(),now.getMonth(),1);h=now}
+  else if(t==='mespasado'){d=new Date(now.getFullYear(),now.getMonth()-1,1);h=new Date(now.getFullYear(),now.getMonth(),0)}
+  else if(t==='30'){d=new Date(now);d.setDate(d.getDate()-29);h=now}
+  else if(t==='trim'){d=new Date(now.getFullYear(),now.getMonth()-2,1);h=now}
+  else if(t==='anio'){d=new Date(now.getFullYear(),0,1);h=now}
+  document.getElementById('desde').value=ymd(d);
+  document.getElementById('hasta').value=ymd(h);
+  cargar();
+}
+function custom(){document.getElementById('rango').value='custom';cargar()}
+
+function barHtml(v,a,r){
+  var tot=v+a+r; if(!tot) return '';
+  function p(x){return (x*100/tot).toFixed(1)+'%'}
+  return '<div class="sevbar">'
+    +(v?'<i style="width:'+p(v)+';background:var(--verde)"></i>':'')
+    +(a?'<i style="width:'+p(a)+';background:var(--azul)"></i>':'')
+    +(r?'<i style="width:'+p(r)+';background:var(--rojo)"></i>':'')
+    +'</div>';
+}
+function dpuCard(title,icon,d){
+  if(!d||d.error) return '<div class="qcard"><div class="qt">'+icon+' '+title+'</div><div class="vacio">sin datos en el período</div></div>';
+  var tot=d.defectos||0,v=d.verde||0,a=d.azul||0,r=d.rojo||0;
+  return '<div class="qcard">'
+   +'<div class="qt">'+icon+' '+title+'</div>'
+   +'<div class="dpu">'+(d.dpu!=null?Number(d.dpu).toFixed(2):'—')+'</div>'
+   +'<div class="dpusub">defectos por vehículo inspeccionado</div>'
+   +'<div class="qmeta">'+tot+' defectos · '+(d.vehiculos||0)+' vehículos inspeccionados</div>'
+   +barHtml(v,a,r)
+   +'<div class="sevleg"><span class="sl"><i style="background:var(--verde)"></i>Bajo '+v+'</span><span class="sl"><i style="background:var(--azul)"></i>Normal '+a+'</span><span class="sl"><i style="background:var(--rojo)"></i>Alto/Crítico '+r+'</span></div>'
+   +'</div>';
+}
+function gcolorCss(c){return c==='rojo'?'var(--rojo)':c==='azul'?'var(--azul)':c==='verde'?'var(--verde)':'var(--otros)'}
+function gradLabel(c){return c==='rojo'?'Crítico':c==='azul'?'Mayor':c==='verde'?'Menor':'—'}
+
+function cargar(){
+  var desde=document.getElementById('desde').value, hasta=document.getElementById('hasta').value;
+  if(!desde||!hasta){return}
+  document.getElementById('gen').textContent='cargando…';
+  fetch(URL_EXEC+'?view=calidad&desde='+desde+'&hasta='+hasta+'&t='+Date.now(),{cache:'no-store',redirect:'follow'})
+   .then(function(r){return r.json()}).then(function(D){
+    document.getElementById('off').style.display='none';
+    document.getElementById('gen').textContent=esc(D.desde)+' → '+esc(D.hasta);
+    var h='';
+    h+='<h2>DPU · DEFECTOS POR UNIDAD SEGÚN GRAVEDAD</h2>';
+    h+='<div class="qrow">'+dpuCard('CONTROL FINAL','🏁',D.dpu_cf)+dpuCard('M4 · INSTALACIONES ET. 2 Y 3','🔧',D.dpu_m4)+'</div>';
+    var voz=D.voz||{};
+    h+='<h2>📣 VOZ DEL CLIENTE · RECLAMOS EXTERNOS</h2>';
+    if(voz.error){
+      h+='<div class="vacio">No se pudo leer la planilla: '+esc(voz.error)+'</div>';
+    } else {
+      var g=voz.por_gravedad||{rojo:0,azul:0,verde:0,otros:0};
+      h+='<div class="vozhead">';
+      h+='<div class="vbox"><div class="n">'+(voz.total||0)+'</div><div class="l">RECLAMOS EN EL PERÍODO</div></div>';
+      h+='<div class="vbox" style="flex:1;min-width:260px"><div class="l" style="margin-bottom:9px">POR GRAVEDAD</div><div class="gchips">'
+        +'<div class="gchip" style="background:var(--rojo)"><div class="gn">'+(g.rojo||0)+'</div><div class="gl">CRÍTICO</div></div>'
+        +'<div class="gchip" style="background:var(--azul)"><div class="gn">'+(g.azul||0)+'</div><div class="gl">MAYOR</div></div>'
+        +'<div class="gchip" style="background:var(--verde)"><div class="gn">'+(g.verde||0)+'</div><div class="gl">MENOR</div></div>'
+        +((g.otros||0)?'<div class="gchip" style="background:var(--otros)"><div class="gn">'+g.otros+'</div><div class="gl">S/CLASIF</div></div>':'')
+        +'</div></div>';
+      var pc=voz.por_cliente||{}, arr=Object.keys(pc).map(function(k){return [k,pc[k]]}).sort(function(a,b){return b[1]-a[1]}).slice(0,5);
+      if(arr.length){
+        h+='<div class="vbox" style="min-width:230px"><div class="l" style="margin-bottom:9px">CLIENTES CON MÁS RECLAMOS</div><div class="cli">';
+        arr.forEach(function(x){h+='<div class="clirow"><div class="cn">'+x[1]+'</div><div class="cname">'+esc(x[0])+'</div></div>'});
+        h+='</div></div>';
+      }
+      h+='</div>';
+      var rows=voz.rows||[];
+      if(rows.length){
+        h+='<table class="tbl"><thead><tr><th>Fecha</th><th>Cliente</th><th class="hideMob">Producto</th><th>Descripción de la NC</th><th>Gravedad</th><th class="hideMob">Estado</th></tr></thead><tbody>';
+        rows.forEach(function(x){
+          h+='<tr><td style="white-space:nowrap">'+esc(x.fecha)+'</td>'
+            +'<td style="font-weight:700">'+esc(x.cliente)+'</td>'
+            +'<td class="hideMob">'+esc(x.prod)+'</td>'
+            +'<td>'+esc(x.motivo)+'</td>'
+            +'<td><span class="gdot" style="background:'+gcolorCss(x.gcolor)+'">'+gradLabel(x.gcolor)+'</span></td>'
+            +'<td class="hideMob">'+esc(x.estado||'—')+'</td></tr>';
+        });
+        h+='</tbody></table>';
+      } else {
+        h+='<div class="vacio">Sin reclamos en el período seleccionado</div>';
+      }
+    }
+    document.getElementById('cont').innerHTML=h;
+  }).catch(function(e){
+    document.getElementById('off').style.display='block';
+    document.getElementById('cont').innerHTML='<div class="vacio">No se pudo cargar: '+esc(String(e))+'</div>';
+  });
+}
+aplicarRango();
+setInterval(cargar,300000);
+</script>
+</body>
+</html>
