@@ -24,7 +24,12 @@ tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#23344f}
 .pill{padding:3px 10px;border-radius:20px;font-size:11.5px;background:#0f172a;color:#cbd5e1;white-space:nowrap;border:1px solid var(--line)}
 .cli{font-weight:700}
-.nn{font-weight:800;text-align:center}
+.nn{font-weight:800;text-align:center;white-space:nowrap}
+.nn .exp{color:var(--muted);font-weight:700}
+.nn.falta{color:#fbbf24}
+.estok{background:#16a34a;color:#fff;border-color:#16a34a}
+.estprog{background:#d97706;color:#fff;border-color:#d97706}
+.estcanc{background:#dc2626;color:#fff;border-color:#dc2626}
 a.pdf{display:inline-block;padding:7px 13px;background:var(--azul);color:#fff;text-decoration:none;border-radius:7px;font-size:12.5px;white-space:nowrap;font-weight:700}
 a.pdf:hover{opacity:.88}
 .muted{color:var(--muted)}
@@ -49,7 +54,7 @@ a.pdf:hover{opacity:.88}
   <span id="cnt">cargando…</span>
 </div>
 <div class="cont" id="cont"><div class="spin"></div></div>
-<p class="nota">Cada botón abre el "Reporte de Control de Calidad" consolidado de Odoo (PDF con fotos). Requiere estar logueado en Odoo en este navegador. Datos en vivo · refresca cada 5 min.</p>
+<p class="nota">Cada botón genera y descarga el "Reporte de Control de Calidad" consolidado (PDF con fotos). Lo sirve el backend, así que cualquiera puede descargarlo sin loguearse en Odoo. La primera vez tarda unos segundos (genera el PDF); luego es instantánea. Datos en vivo · refresca cada 5 min.</p>
 
 <script>
 var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
@@ -59,6 +64,7 @@ var DATA=[];
 var ord={k:'fecha',dir:-1};
 function cl(c){return (c||'').replace(/^[0-9A-Za-z]*S?\d+\s*-\s*/,'').trim()||c||'(sin cliente)';}
 function esc(s){return (s==null?'':s).toString().replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});}
+function estCls(st){return st==='done'?'estok':(st==='progress'?'estprog':(st==='cancel'?'estcanc':''));}
 function render(){
   var q=document.getElementById('q'), sf=document.getElementById('soloFinal'), cnt=document.getElementById('cnt');
   var t=q.value.toLowerCase().trim();
@@ -81,13 +87,13 @@ function render(){
     +'<th class="sortable" data-k="n">N° controles</th>'
     +'<th>Reporte PDF</th></tr></thead><tbody>';
   var body=f.map(function(d){
-    var url=ODOO+'/report/pdf/'+REP+'/'+(d.ids||[]).join(',');
+    var url=URL_EXEC+'?view=pdf&ids='+(d.ids||[]).join(',');
     return '<tr><td class="cli">'+esc(cl(d.cliente))+'</td>'
       +'<td>'+esc(d.mo)+'</td>'
       +'<td>'+(d.producto?esc(d.producto):'<span class="muted">—</span>')+'</td>'
       +'<td style="white-space:nowrap">'+esc(d.fecha||'—')+'</td>'
-      +'<td><span class="pill">'+esc(d.estado||'—')+'</span></td>'
-      +'<td class="nn">'+d.n+'</td>'
+      +'<td><span class="pill '+estCls(d.state)+'">'+esc(d.estado||'—')+'</span></td>'
+      +'<td class="nn'+((d.n_exp&&d.n<d.n_exp)?' falta':'')+'" title="'+(d.n_exp&&d.n<d.n_exp?('faltan '+(d.n_exp-d.n)+' controles'):'completo')+'">'+d.n+' <span class="exp">/ '+(d.n_exp||d.n)+'</span></td>'
       +'<td><a class="pdf" href="'+url+'" target="_blank" rel="noopener">Descargar PDF</a></td></tr>';
   }).join('');
   document.getElementById('cont').innerHTML = f.length ? (head+body+'</tbody></table>') : '<div class="vacio">Sin unidades para el filtro</div>';
