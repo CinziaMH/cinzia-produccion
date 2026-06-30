@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cinzia · Controles de Calidad por Cliente</title>
+<style>
+:root{--nar:#EA580C;--bg:#0f172a;--panel:#1e293b;--line:#334155;--txt:#f1f5f9;--muted:#94a3b8;--azul:#0891b2;--ok:#22c55e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;min-height:100vh}
+.hdr{display:flex;align-items:center;gap:12px;padding:8px 16px;background:linear-gradient(90deg,#7c2d12,#9a3412);position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.hdr h1{font-size:17px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
+.chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:9px;padding:5px 11px;font-weight:800;font-size:12px;white-space:nowrap;color:#fff;text-decoration:none;cursor:pointer}
+.barra{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:44px;z-index:15}
+.barra input[type=text]{flex:1;min-width:240px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;font-size:14px;background:#0f172a;color:var(--txt)}
+.barra label{font-size:13.5px;display:flex;align-items:center;gap:6px;cursor:pointer;font-weight:700;color:#cbd5e1}
+#cnt{font-size:13px;color:var(--muted);margin-left:auto;font-weight:700}
+.cont{padding:14px 16px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;background:var(--panel);border-radius:10px;overflow:hidden}
+th,td{padding:10px 13px;text-align:left;font-size:13.5px;border-bottom:1px solid #26344a;vertical-align:middle}
+th{background:#16233b;color:var(--muted);cursor:pointer;user-select:none;white-space:nowrap;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-weight:800}
+th.sortable:hover{color:#fff}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#23344f}
+.pill{padding:3px 10px;border-radius:20px;font-size:11.5px;background:#0f172a;color:#cbd5e1;white-space:nowrap;border:1px solid var(--line)}
+.cli{font-weight:700}
+.nn{font-weight:800;text-align:center}
+a.pdf{display:inline-block;padding:7px 13px;background:var(--azul);color:#fff;text-decoration:none;border-radius:7px;font-size:12.5px;white-space:nowrap;font-weight:700}
+a.pdf:hover{opacity:.88}
+.muted{color:var(--muted)}
+.nota{padding:6px 16px 26px;font-size:11px;color:#64748b}
+.spin{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite;margin:60px auto}
+@keyframes r{to{transform:rotate(360deg)}}
+.vacio{color:var(--muted);font-size:13px;padding:30px;text-align:center}
+.off{background:#ef4444;color:#fff;padding:6px 14px;font-weight:800;font-size:13px;display:none;text-align:center}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="lg" style="background:#fff;border-radius:10px;padding:5px 10px;display:inline-flex;align-items:center"><img src="cinzia%20logo.png" onerror="this.parentNode.style.display='none'" alt="CINZIA" style="height:24px;display:block"></span>
+  <h1>📄 CONTROLES DE CALIDAD POR CLIENTE</h1>
+  <a class="chip" href="./" style="margin-left:auto;background:rgba(255,255,255,.1)">🏠 Inicio</a>
+  <div class="chip" style="background:rgba(255,255,255,.1)" onclick="cargar()">↻</div>
+</div>
+<div class="off" id="off">⚠ SIN CONEXIÓN</div>
+<div class="barra">
+  <input type="text" id="q" placeholder="Buscar por cliente, orden (MO) o producto…">
+  <label><input type="checkbox" id="soloFinal"> Solo Control Final</label>
+  <span id="cnt">cargando…</span>
+</div>
+<div class="cont" id="cont"><div class="spin"></div></div>
+<p class="nota">Cada botón abre el "Reporte de Control de Calidad" consolidado de Odoo (PDF con fotos). Requiere estar logueado en Odoo en este navegador. Datos en vivo · refresca cada 5 min.</p>
+
+<script>
+var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
+var ODOO='http://vps-2964443-x.dattaweb.com:8069';
+var REP='sh_inventory_mrp_qc_adv.report_quality_check_detail_template';
+var DATA=[];
+var ord={k:'fecha',dir:-1};
+function cl(c){return (c||'').replace(/^[0-9A-Za-z]*S?\d+\s*-\s*/,'').trim()||c||'(sin cliente)';}
+function esc(s){return (s==null?'':s).toString().replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});}
+function render(){
+  var q=document.getElementById('q'), sf=document.getElementById('soloFinal'), cnt=document.getElementById('cnt');
+  var t=q.value.toLowerCase().trim();
+  var f=DATA.filter(function(d){
+    if(sf.checked && !/control final|qc control final/i.test(d.producto)) return false;
+    return !t || ((d.cliente||'')+' '+(d.mo||'')+' '+(d.producto||'')).toLowerCase().indexOf(t)>=0;
+  });
+  f.sort(function(a,b){
+    var x=a[ord.k], y=b[ord.k];
+    if(ord.k==='n') return ((+x)-(+y))*ord.dir;
+    x=(x||'').toString().toLowerCase(); y=(y||'').toString().toLowerCase();
+    return x<y?-ord.dir:(x>y?ord.dir:0);
+  });
+  var head='<table><thead><tr>'
+    +'<th class="sortable" data-k="cliente">Cliente</th>'
+    +'<th class="sortable" data-k="mo">Orden (MO)</th>'
+    +'<th class="sortable" data-k="producto">Producto</th>'
+    +'<th class="sortable" data-k="fecha">Fecha</th>'
+    +'<th class="sortable" data-k="estado">Estado</th>'
+    +'<th class="sortable" data-k="n">N° controles</th>'
+    +'<th>Reporte PDF</th></tr></thead><tbody>';
+  var body=f.map(function(d){
+    var url=ODOO+'/report/pdf/'+REP+'/'+(d.ids||[]).join(',');
+    return '<tr><td class="cli">'+esc(cl(d.cliente))+'</td>'
+      +'<td>'+esc(d.mo)+'</td>'
+      +'<td>'+(d.producto?esc(d.producto):'<span class="muted">—</span>')+'</td>'
+      +'<td style="white-space:nowrap">'+esc(d.fecha||'—')+'</td>'
+      +'<td><span class="pill">'+esc(d.estado||'—')+'</span></td>'
+      +'<td class="nn">'+d.n+'</td>'
+      +'<td><a class="pdf" href="'+url+'" target="_blank" rel="noopener">Descargar PDF</a></td></tr>';
+  }).join('');
+  document.getElementById('cont').innerHTML = f.length ? (head+body+'</tbody></table>') : '<div class="vacio">Sin unidades para el filtro</div>';
+  cnt.textContent=f.length+' unidades';
+  document.querySelectorAll('th[data-k]').forEach(function(th){
+    th.addEventListener('click',function(){var k=th.dataset.k; ord.dir=ord.k===k?-ord.dir:1; ord.k=k; render();});
+  });
+}
+function cargar(){
+  document.getElementById('cnt').textContent='cargando…';
+  fetch(URL_EXEC+'?view=controles&t='+Date.now(),{cache:'no-store',redirect:'follow'})
+   .then(function(r){return r.json()}).then(function(D){
+    if(!D.ok) throw new Error(D.error||'error');
+    document.getElementById('off').style.display='none';
+    DATA=D.rows||[];
+    render();
+  }).catch(function(e){
+    document.getElementById('off').style.display='block';
+    document.getElementById('cont').innerHTML='<div class="vacio">No se pudo cargar: '+esc(String(e))+'</div>';
+    document.getElementById('cnt').textContent='—';
+  });
+}
+document.getElementById('q').addEventListener('input',render);
+document.getElementById('soloFinal').addEventListener('change',render);
+cargar();
+setInterval(cargar,300000);
+</script>
+</body>
+</html>
