@@ -31,6 +31,11 @@ h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:
 .sevleg{display:flex;gap:14px;margin-top:9px;flex-wrap:wrap}
 .sevleg .sl{font-size:11.5px;color:#cbd5e1;font-weight:700;display:flex;align-items:center;gap:5px}
 .sevleg .sl i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.dtog{margin-top:15px;font-size:12px;font-weight:800;color:#fdba74;cursor:pointer;user-select:none;display:inline-block}
+.dtog:hover{color:#fed7aa}
+.dlist{display:none;margin-top:10px;max-height:300px;overflow:auto;border-radius:10px}
+.dlist .tbl{margin-top:0}
+.dlist .tbl th{background:#0f172a;position:sticky;top:0}
 /* Voz cliente */
 .vozhead{display:flex;gap:14px;flex-wrap:wrap;align-items:stretch}
 .vbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;flex:0 0 auto;min-width:150px}
@@ -73,6 +78,7 @@ h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:
   <div class="chip" style="background:rgba(255,255,255,.1)" onclick="cargar()">↻</div>
 </div>
 <div class="off" id="off">⚠ SIN CONEXIÓN</div>
+
 <div class="maxw" id="cont">
   <div class="spin"></div>
 </div>
@@ -106,9 +112,26 @@ function barHtml(v,a,r){
     +(r?'<i style="width:'+p(r)+';background:var(--rojo)"></i>':'')
     +'</div>';
 }
+function sevCss(c){return c==='rojo'?'var(--rojo)':c==='azul'?'var(--azul)':c==='verde'?'var(--verde)':'var(--otros)'}
+function sevLbl(c){return c==='rojo'?'Alto/Crítico':c==='azul'?'Normal':c==='verde'?'Bajo':'S/clasif'}
+var _dpuSeq=0;
+function toggleDpu(el,id){var e=document.getElementById(id);var on=e.style.display==='block';e.style.display=on?'none':'block';el.firstChild.nodeValue=(on?'▸ ':'▾ ')+el.getAttribute('data-lbl');}
 function dpuCard(title,icon,d){
   if(!d||d.error) return '<div class="qcard"><div class="qt">'+icon+' '+title+'</div><div class="vacio">sin datos en el período</div></div>';
   var tot=d.defectos||0,v=d.verde||0,a=d.azul||0,r=d.rojo||0;
+  var items=d.items||[], did='dpd'+(++_dpuSeq), det='';
+  if(items.length){
+    var lbl='ver detalle de alertas ('+items.length+')';
+    det='<div class="dtog" data-lbl="'+lbl+'" onclick="toggleDpu(this,\''+did+'\')">▸ '+lbl+'</div>';
+    det+='<div class="dlist" id="'+did+'"><table class="tbl"><thead><tr><th>Fecha</th><th>Vehículo</th><th>Alerta</th><th>Gravedad</th></tr></thead><tbody>';
+    items.forEach(function(it){
+      det+='<tr><td style="white-space:nowrap">'+esc(it.fecha)+'</td>'
+        +'<td style="font-weight:700">'+esc(it.veh)+'</td>'
+        +'<td>'+esc(it.desc)+'</td>'
+        +'<td><span class="gdot" style="background:'+sevCss(it.sev)+'">'+sevLbl(it.sev)+'</span></td></tr>';
+    });
+    det+='</tbody></table></div>';
+  }
   return '<div class="qcard">'
    +'<div class="qt">'+icon+' '+title+'</div>'
    +'<div class="dpu">'+(d.dpu!=null?Number(d.dpu).toFixed(2):'—')+'</div>'
@@ -116,6 +139,7 @@ function dpuCard(title,icon,d){
    +'<div class="qmeta">'+tot+' defectos · '+(d.vehiculos||0)+' vehículos inspeccionados</div>'
    +barHtml(v,a,r)
    +'<div class="sevleg"><span class="sl"><i style="background:var(--verde)"></i>Bajo '+v+'</span><span class="sl"><i style="background:var(--azul)"></i>Normal '+a+'</span><span class="sl"><i style="background:var(--rojo)"></i>Alto/Crítico '+r+'</span></div>'
+   +det
    +'</div>';
 }
 function gcolorCss(c){return c==='rojo'?'var(--rojo)':c==='azul'?'var(--azul)':c==='verde'?'var(--verde)':'var(--otros)'}
@@ -130,8 +154,10 @@ function cargar(){
     document.getElementById('off').style.display='none';
     document.getElementById('gen').textContent=esc(D.desde)+' → '+esc(D.hasta);
     var h='';
+    // DPU
     h+='<h2>DPU · DEFECTOS POR UNIDAD SEGÚN GRAVEDAD</h2>';
     h+='<div class="qrow">'+dpuCard('CONTROL FINAL','🏁',D.dpu_cf)+dpuCard('M4 · INSTALACIONES ET. 2 Y 3','🔧',D.dpu_m4)+'</div>';
+    // Voz del cliente
     var voz=D.voz||{};
     h+='<h2>📣 VOZ DEL CLIENTE · RECLAMOS EXTERNOS</h2>';
     if(voz.error){
@@ -146,13 +172,15 @@ function cargar(){
         +'<div class="gchip" style="background:var(--verde)"><div class="gn">'+(g.verde||0)+'</div><div class="gl">MENOR</div></div>'
         +((g.otros||0)?'<div class="gchip" style="background:var(--otros)"><div class="gn">'+g.otros+'</div><div class="gl">S/CLASIF</div></div>':'')
         +'</div></div>';
+      // top clientes
       var pc=voz.por_cliente||{}, arr=Object.keys(pc).map(function(k){return [k,pc[k]]}).sort(function(a,b){return b[1]-a[1]}).slice(0,5);
       if(arr.length){
-        h+='<div class="vbox" style="min-width:230px"><div class="l" style="margin-bottom:9px">CLIENTES CON MÁS RECLAMOS</div><div class="cli">';
+        h+='<div class="vbox" style="min-width:230px"><div class="l" style="margin-bottom:9px">CLIENTES CON MÁAS RECLAMOS</div><div class="cli">';
         arr.forEach(function(x){h+='<div class="clirow"><div class="cn">'+x[1]+'</div><div class="cname">'+esc(x[0])+'</div></div>'});
         h+='</div></div>';
       }
       h+='</div>';
+      // tabla
       var rows=voz.rows||[];
       if(rows.length){
         h+='<table class="tbl"><thead><tr><th>Fecha</th><th>Cliente</th><th class="hideMob">Producto</th><th>Descripción de la NC</th><th>Gravedad</th><th class="hideMob">Estado</th></tr></thead><tbody>';
