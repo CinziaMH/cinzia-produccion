@@ -123,11 +123,12 @@ function dpuCard(title,icon,d){
   if(items.length){
     var lbl='ver detalle de alertas ('+items.length+')';
     det='<div class="dtog" data-lbl="'+lbl+'" onclick="toggleDpu(this,\''+did+'\')">▸ '+lbl+'</div>';
-    det+='<div class="dlist" id="'+did+'"><table class="tbl"><thead><tr><th>Fecha</th><th>Vehículo</th><th>Alerta</th><th>Gravedad</th></tr></thead><tbody>';
+    det+='<div class="dlist" id="'+did+'"><table class="tbl"><thead><tr><th>Fecha</th><th>Cliente</th><th class="hideMob">Vehículo</th><th>Problema</th><th>Gravedad</th></tr></thead><tbody>';
     items.forEach(function(it){
       det+='<tr><td style="white-space:nowrap">'+esc(it.fecha)+'</td>'
-        +'<td style="font-weight:700">'+esc(it.veh)+'</td>'
-        +'<td>'+esc(it.desc)+'</td>'
+        +'<td style="font-weight:700">'+esc(it.cliente||'—')+'</td>'
+        +'<td class="hideMob">'+esc(it.veh)+'</td>'
+        +'<td>'+esc(it.problema||it.desc)+'</td>'
         +'<td><span class="gdot" style="background:'+sevCss(it.sev)+'">'+sevLbl(it.sev)+'</span></td></tr>';
     });
     det+='</tbody></table></div>';
@@ -175,7 +176,7 @@ function cargar(){
       // top clientes
       var pc=voz.por_cliente||{}, arr=Object.keys(pc).map(function(k){return [k,pc[k]]}).sort(function(a,b){return b[1]-a[1]}).slice(0,5);
       if(arr.length){
-        h+='<div class="vbox" style="min-width:230px"><div class="l" style="margin-bottom:9px">CLIENTES CON MÁAS RECLAMOS</div><div class="cli">';
+        h+='<div class="vbox" style="min-width:230px"><div class="l" style="margin-bottom:9px">CLIENTES CON MÁS RECLAMOS</div><div class="cli">';
         arr.forEach(function(x){h+='<div class="clirow"><div class="cn">'+x[1]+'</div><div class="cname">'+esc(x[0])+'</div></div>'});
         h+='</div></div>';
       }
