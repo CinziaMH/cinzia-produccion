@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Cinzia · Controles de Calidad por Cliente</title>
 <style>
-:root{--nar:#EA580C;--bg:#0f172a;--panel:#1e293b;--line:#334155;--txt:#f1f5f9;--muted:#94a3b8;--azul:#0891b2;--ok:#22c55e}
+:root{--nar:#EA580C;--bg:#0f172a;--panel:#1e293b;--line:#334155;--txt:#f1f5f9;--muted:#94a3b8;--azul:#0891b2;--ok:#22c55e;--bad:#ef4444}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;min-height:100vh}
 .hdr{display:flex;align-items:center;gap:12px;padding:8px 16px;background:linear-gradient(90deg,#7c2d12,#9a3412);position:sticky;top:0;z-index:20;flex-wrap:wrap}
@@ -40,6 +40,26 @@ a.pdf:hover,a.det:hover{opacity:.88}
 @keyframes r{to{transform:rotate(360deg)}}
 .vacio{color:var(--muted);font-size:13px;padding:30px;text-align:center}
 .off{background:#ef4444;color:#fff;padding:6px 14px;font-weight:800;font-size:13px;display:none;text-align:center}
+/* validacion QC */
+.bval{background:#7c3aed;color:#fff;border:none;border-radius:7px;padding:7px 12px;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap}
+.bval:hover{opacity:.9}
+.valok{display:inline-flex;flex-direction:column;gap:1px;font-size:12px;line-height:1.3}
+.valok b{color:var(--ok);font-weight:800}
+.valok .re{background:#16a34a;color:#fff;border-radius:20px;padding:1px 8px;font-size:10px;font-weight:800;display:inline-block}
+.valok .re.obs{background:#d97706}.valok .re.rech{background:#dc2626}
+.valok .fh{color:var(--muted);font-size:10.5px}
+/* modal */
+#shade{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;display:none}
+#modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:41;display:none;
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;width:92%;max-width:400px;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+#modal h3{font-size:16px;font-weight:800;margin-bottom:4px}
+#modal .mm{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+#modal label{display:block;font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.4px;margin:10px 0 5px}
+#modal select,#modal input{width:100%;border-radius:9px;border:1px solid #475569;background:#0f172a;color:var(--txt);padding:11px;font-size:15px}
+#modal .rowb{display:flex;gap:10px;margin-top:16px}
+#modal button{flex:1;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:800;cursor:pointer}
+#mCancel{background:#334155;color:#fff}#mOk{background:#16a34a;color:#fff}
+#mErr{color:#fca5a5;font-weight:800;font-size:12.5px;min-height:16px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -53,25 +73,43 @@ a.pdf:hover,a.det:hover{opacity:.88}
 <div class="barra">
   <input type="text" id="q" placeholder="Buscar por cliente, orden (MO) o producto…">
   <label><input type="checkbox" id="soloFinal"> Solo Control Final</label>
+  <label><input type="checkbox" id="soloPend"> Solo pendientes de validar</label>
   <span id="cnt">cargando…</span>
 </div>
 <div class="cont" id="cont"><div class="spin"></div></div>
-<p class="nota">"Ver detalle" muestra cada control con su mensaje, quién lo hizo y los que faltaron. "PDF" descarga el reporte oficial con fotos — lo sirve el backend, así que cualquiera puede bajarlo sin loguearse en Odoo (la primera vez tarda unos segundos). Datos en vivo · refresca cada 5 min.</p>
+<p class="nota">"Ver detalle" muestra cada control con su mensaje, quién lo hizo y los que faltaron. "PDF" descarga el reporte oficial con fotos. <b>Validar</b> registra desde este tablero quién revisó el control: se ingresa una contraseña y queda asentado el revisor y el resultado. Datos en vivo · refresca cada 5 min.</p>
+
+<div id="shade" onclick="cerrarVal()"></div>
+<div id="modal">
+  <h3>✔ Validar control de calidad</h3>
+  <div class="mm" id="mInfo"></div>
+  <label>Resultado</label>
+  <select id="mRes"><option>Aprobado</option><option>Observado</option><option>Rechazado</option></select>
+  <label>Contraseña del revisor</label>
+  <input type="password" id="mPass" inputmode="numeric" autocomplete="off" placeholder="••••">
+  <label>Nota (opcional)</label>
+  <input type="text" id="mNota" placeholder="observación…">
+  <div id="mErr"></div>
+  <div class="rowb"><button id="mCancel" onclick="cerrarVal()">Cancelar</button><button id="mOk" onclick="confirmarVal()">Confirmar</button></div>
+</div>
 
 <script>
 var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
-var ODOO='http://vps-2964443-x.dattaweb.com:8069';
-var REP='sh_inventory_mrp_qc_adv.report_quality_check_detail_template';
 var DATA=[];
+var VAL={};
 var ord={k:'fecha',dir:-1};
+var CUR=null;
+function moKey(mo){return (''+(mo||'')).replace(/\D/g,'').slice(-5);}
 function cl(c){return (c||'').replace(/^[0-9A-Za-z]*S?\d+\s*-\s*/,'').trim()||c||'(sin cliente)';}
 function esc(s){return (s==null?'':s).toString().replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});}
 function estCls(st){return st==='done'?'estok':(st==='progress'?'estprog':(st==='cancel'?'estcanc':''));}
+function reCls(r){r=(r||'').toLowerCase();return r.indexOf('rech')>=0?'rech':(r.indexOf('obs')>=0?'obs':'');}
 function render(){
-  var q=document.getElementById('q'), sf=document.getElementById('soloFinal'), cnt=document.getElementById('cnt');
+  var q=document.getElementById('q'), sf=document.getElementById('soloFinal'), sp=document.getElementById('soloPend'), cnt=document.getElementById('cnt');
   var t=q.value.toLowerCase().trim();
   var f=DATA.filter(function(d){
     if(sf.checked && !/control final|qc control final/i.test(d.producto)) return false;
+    if(sp.checked && VAL[moKey(d.mo)]) return false;
     return !t || ((d.cliente||'')+' '+(d.mo||'')+' '+(d.producto||'')).toLowerCase().indexOf(t)>=0;
   });
   f.sort(function(a,b){
@@ -87,32 +125,77 @@ function render(){
     +'<th class="sortable" data-k="fecha">Fecha</th>'
     +'<th class="sortable" data-k="estado">Estado</th>'
     +'<th class="sortable" data-k="n">N° controles</th>'
+    +'<th>Validación</th>'
     +'<th>Detalle / PDF</th></tr></thead><tbody>';
   var body=f.map(function(d){
     var idstr=(d.ids||[]).join(',');
     var url=URL_EXEC+'?view=pdf&ids='+idstr;
     var durl=URL_EXEC+'?view=detalle&ids='+idstr;
+    var v=VAL[moKey(d.mo)];
+    var valCell = v
+      ? '<div class="valok"><span class="re '+reCls(v.resultado)+'">'+esc(v.resultado||'Aprobado')+'</span><b>por '+esc(v.revisor)+'</b><span class="fh">'+esc(v.fecha||'')+(v.nota?' · '+esc(v.nota):'')+'</span></div>'
+      : '<button class="bval" onclick="abrirVal(\''+moKey(d.mo)+'\')">🔒 Validar</button>';
     return '<tr><td class="cli">'+esc(cl(d.cliente))+'</td>'
       +'<td>'+esc(d.mo)+'</td>'
       +'<td>'+(d.producto?esc(d.producto):'<span class="muted">—</span>')+'</td>'
       +'<td style="white-space:nowrap">'+esc(d.fecha||'—')+'</td>'
       +'<td><span class="pill '+estCls(d.state)+'">'+esc(d.estado||'—')+'</span></td>'
       +'<td class="nn'+((d.n_exp&&d.n<d.n_exp)?' falta':'')+'" title="'+(d.n_exp&&d.n<d.n_exp?('faltan '+(d.n_exp-d.n)+' controles'):'completo')+'">'+d.n+' <span class="exp">/ '+(d.n_exp||d.n)+'</span></td>'
+      +'<td>'+valCell+'</td>'
       +'<td><a class="det" href="'+durl+'" target="_blank" rel="noopener">Ver detalle</a><a class="pdf" href="'+url+'" target="_blank" rel="noopener">PDF</a></td></tr>';
   }).join('');
   document.getElementById('cont').innerHTML = f.length ? (head+body+'</tbody></table>') : '<div class="vacio">Sin unidades para el filtro</div>';
-  cnt.textContent=f.length+' unidades';
+  var nv=f.filter(function(d){return VAL[moKey(d.mo)]}).length;
+  cnt.textContent=f.length+' unidades · '+nv+' validadas';
   document.querySelectorAll('th[data-k]').forEach(function(th){
     th.addEventListener('click',function(){var k=th.dataset.k; ord.dir=ord.k===k?-ord.dir:1; ord.k=k; render();});
   });
 }
+function abrirVal(k){
+  var d=DATA.find(function(x){return moKey(x.mo)===k}); if(!d) return;
+  CUR=d;
+  document.getElementById('mInfo').innerHTML='<b>'+esc(d.mo)+'</b> · '+esc(cl(d.cliente))+(d.producto?'<br>'+esc(d.producto):'');
+  document.getElementById('mRes').value='Aprobado';
+  document.getElementById('mPass').value='';
+  document.getElementById('mNota').value='';
+  document.getElementById('mErr').textContent='';
+  document.getElementById('shade').style.display='block';
+  document.getElementById('modal').style.display='block';
+  setTimeout(function(){document.getElementById('mPass').focus()},100);
+}
+function cerrarVal(){document.getElementById('shade').style.display='none';document.getElementById('modal').style.display='none';CUR=null;}
+function confirmarVal(){
+  if(!CUR) return;
+  var pass=document.getElementById('mPass').value.trim();
+  var err=document.getElementById('mErr');
+  if(!pass){err.textContent='Ingresá la contraseña';return;}
+  var ok=document.getElementById('mOk');
+  ok.disabled=true; ok.textContent='validando…'; err.textContent='';
+  fetch(URL_EXEC,{method:'POST',redirect:'follow',body:JSON.stringify({
+    tipo:'qc', mo:CUR.mo, cliente:CUR.cliente,
+    resultado:document.getElementById('mRes').value,
+    nota:document.getElementById('mNota').value,
+    pass:pass
+  })}).then(function(r){return r.json()}).then(function(R){
+    ok.disabled=false; ok.textContent='Confirmar';
+    if(!R.ok){ err.textContent = R.error==='CLAVE_INVALIDA' ? '❌ Contraseña incorrecta' : ('Error: '+(R.error||'')); return; }
+    VAL[moKey(CUR.mo)]={resultado:R.resultado,revisor:R.revisor,fecha:(new Date()).toLocaleDateString('es-AR'),nota:document.getElementById('mNota').value};
+    cerrarVal();
+    render();
+  }).catch(function(e){ ok.disabled=false; ok.textContent='Confirmar'; err.textContent='Error de conexión'; });
+}
+document.getElementById('mPass').addEventListener('keydown',function(e){if(e.key==='Enter')confirmarVal();});
 function cargar(){
   document.getElementById('cnt').textContent='cargando…';
-  fetch(URL_EXEC+'?view=controles&t='+Date.now(),{cache:'no-store',redirect:'follow'})
-   .then(function(r){return r.json()}).then(function(D){
+  Promise.all([
+    fetch(URL_EXEC+'?view=controles&t='+Date.now(),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json()}),
+    fetch(URL_EXEC+'?view=qcval&t='+Date.now(),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json()}).catch(function(){return {ok:false}})
+  ]).then(function(res){
+    var D=res[0], Q=res[1];
     if(!D.ok) throw new Error(D.error||'error');
     document.getElementById('off').style.display='none';
     DATA=D.rows||[];
+    VAL=(Q&&Q.ok&&Q.val)?Q.val:{};
     render();
   }).catch(function(e){
     document.getElementById('off').style.display='block';
@@ -122,6 +205,7 @@ function cargar(){
 }
 document.getElementById('q').addEventListener('input',render);
 document.getElementById('soloFinal').addEventListener('change',render);
+document.getElementById('soloPend').addEventListener('change',render);
 cargar();
 setInterval(cargar,300000);
 </script>
