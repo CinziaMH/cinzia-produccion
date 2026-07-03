@@ -672,8 +672,9 @@ function renderManana(d){
    Asignación = quién trabajó cada orden HOY (dato real del DET). Las tareas pendientes
    se empaquetan en la jornada de mañana en orden de Odoo (tareas sin estándar = 30 min, borde rojo). */
 function renderMananaTimeline(d){
+  var moNumK=function(mo){ return (String(mo).match(/(\d{3,6})/)||[])[1]||String(mo); };
   var byMo={}, secName={};
-  (d.montajes||[]).forEach(function(sec){ secName[sec.code]=sec.name||sec.code; (sec.mos||[]).forEach(function(m){ byMo[m.mo]={code:sec.code,m:m}; }); });
+  (d.montajes||[]).forEach(function(sec){ secName[sec.code]=sec.name||sec.code; (sec.mos||[]).forEach(function(m){ byMo[moNumK(m.mo)]={code:sec.code,m:m}; }); });
   var pp=String(d.fecha_prog||'').split('-');
   var dow=pp.length===3? new Date(+pp[0],+pp[1]-1,+pp[2]).getDay() : 1;
   var sab=(dow===6);
@@ -733,10 +734,10 @@ function renderMananaTimeline(d){
     var rows='';
     lst.forEach(function(o){
       var seen={}, mos=[];
-      (o.real||[]).forEach(function(r){ if(r.mo&&!seen[r.mo]){seen[r.mo]=1; if(byMo[r.mo]) mos.push(byMo[r.mo].m);} });
+      (o.real||[]).forEach(function(r){ var k=r.mo?moNumK(r.mo):''; if(k&&!seen[k]){seen[k]=1; if(byMo[k]) mos.push(byMo[k].m);} });
       mos=mos.filter(function(m){return (m.wos||[]).length>0||m.wos_mas>0;});
       if(!mos.length) return;
-      mos.forEach(function(m){used[m.mo]=1;});
+      mos.forEach(function(m){used[moNumK(m.mo)]=1;});
       var dd=dursDe(mos);
       rows+=filaHTML(esc(o.nom), esc(mos.map(function(m){return moNum(m.mo);}).join(' · ')), dd.durs, dd.tot);
     });
@@ -749,7 +750,7 @@ function renderMananaTimeline(d){
   var restBySec={};
   (d.montajes||[]).forEach(function(sec){
     if(FILTRO && String(sec.code).toUpperCase()!==FILTRO) return;
-    (sec.mos||[]).forEach(function(m){ if(!used[m.mo] && ((m.wos||[]).length>0||m.wos_mas>0)) (restBySec[sec.code]=restBySec[sec.code]||[]).push(m); });
+    (sec.mos||[]).forEach(function(m){ if(!used[moNumK(m.mo)] && ((m.wos||[]).length>0||m.wos_mas>0)) (restBySec[sec.code]=restBySec[sec.code]||[]).push(m); });
   });
   var restCodes=ORD.filter(function(c){return restBySec[c];}).concat(Object.keys(restBySec).filter(function(c){return ORD.indexOf(c)<0;}));
   restCodes.forEach(function(code){
