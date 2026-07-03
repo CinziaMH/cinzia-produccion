@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Fallback robusto para TV: recarga la página completa cada 5 min aunque el JS falle -->
+<meta http-equiv="refresh" content="300">
+<title>Cinzia · Pie de Línea TV</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#f4f4f5;color:#1f2937;font-size:16px}
+.hdr{background:#EA580C;color:#fff;padding:10px 22px;overflow:hidden}
+.hdr .tit{font-size:24px;font-weight:bold;float:left}
+.hdr .tit .a{color:#ffd9c2}
+.hdr .sub{font-size:12px;opacity:.9;clear:left;float:left}
+.clock{float:right;font-size:28px;font-weight:bold}
+.nextref{float:right;clear:right;font-size:11px;opacity:.85}
+.wrap{padding:14px 20px}
+.alertbar{background:#dc2626;color:#fff;padding:7px 22px;font-weight:bold;font-size:14px;display:none}
+/* indicadores */
+.reunion{background:#0b1626;color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:12px}
+.reunion h3{font-size:16px;margin-bottom:10px}
+.rtag{background:#EA580C;color:#fff;font-size:11px;font-weight:bold;padding:3px 11px;border-radius:99px;letter-spacing:1px}
+.rgrid{width:100%;border-collapse:separate;border-spacing:8px 0;table-layout:fixed}
+.rcell{background:#1a2637;border:1px solid #2a3a52;border-radius:10px;padding:10px 12px;vertical-align:top}
+.rcell .k{font-size:11px;color:#94a3b8;font-weight:bold;letter-spacing:.5px}
+.hl{font-size:9px;letter-spacing:1px;color:#94a3b8;font-weight:bold;display:block;margin-top:6px}
+.hvv{font-size:32px;font-weight:bold;color:#fff;line-height:1.1}
+.avv{font-size:20px;font-weight:bold;color:#94a3b8}
+.bad .hvv{color:#f87171}
+.d{margin-top:6px;font-size:11px;color:#94a3b8}
+.plan{border-radius:10px;padding:10px 12px;color:#fff;vertical-align:top}
+.plan .k{color:#fff;opacity:.9;font-size:11px;font-weight:bold}
+.plan .v{font-size:32px;font-weight:bold}
+.plan .d{color:#fff;opacity:.92}
+/* layout planta */
+.floor{background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:14px 18px}
+.ftitle{font-size:13px;color:#374151;margin-bottom:12px}
+.frow{width:100%;border-collapse:separate;border-spacing:8px 0;table-layout:fixed;margin-bottom:10px}
+.fbox{border:2px solid #e4e4e7;border-radius:12px;padding:10px 12px;background:#fff;vertical-align:top}
+.fbox.over{border-color:#dc2626;background:#fef2f2}
+.fcode{font-weight:bold;font-size:19px;color:#1f2937}
+.f5s{display:inline-block;width:14px;height:14px;border-radius:50%;margin-left:8px;vertical-align:middle;border:1px solid rgba(0,0,0,.18)}
+.frow2{font-size:13px;padding:3px 0;border-top:1px solid #f1f1f3;overflow:hidden}
+.fcli{float:left;color:#1f2937;font-weight:bold;max-width:60%;overflow:hidden;white-space:nowrap}
+.fnums{float:right;color:#475569;font-weight:bold;font-size:12px}
+.frow2.bad .fnums{color:#dc2626}
+.fempty{font-size:11px;color:#a1a1aa;padding:3px 0}
+.faisle{text-align:center;font-size:11px;color:#a1a1aa;letter-spacing:3px;border-top:2px dashed #e4e4e7;border-bottom:2px dashed #e4e4e7;padding:5px 0;margin:8px 0}
+/* estados */
+#loading{text-align:center;padding:80px 20px;font-size:20px;font-weight:bold;color:#71717a}
+.staleband{position:fixed;bottom:0;left:0;right:0;background:#dc2626;color:#fff;text-align:center;font-weight:bold;font-size:13px;padding:4px;display:none}
+/* TV grande */
+@media (min-width:1600px){
+  body{font-size:19px}
+  .hvv{font-size:44px}.avv{font-size:26px}
+  .fcode{font-size:24px}.frow2{font-size:16px}.fnums{font-size:15px}
+  .clock{font-size:36px}
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="clock" id="clock">--:--</div>
+  <div class="nextref">actualiza cada 5 min</div>
+  <div class="tit">CINZIA · Pie de Líne<span class="a">a</span> <span style="font-size:14px;opacity:.8">TV</span></div>
+  <div class="sub">DYFSA · estado de la línea en vivo</div>
+</div>
+
+<div class="alertbar" id="alertbar"></div>
+<div id="loading">Cargando datos de planta…</div>
+<div class="wrap" id="wrap" style="display:none"></div>
+<div class="staleband" id="staleband">⚠ SIN CONEXIÓN — mostrando últimos datos recibidos</div>
+
+<script>
+/* ===== TABLERO TV — 100% ES5, apto para browsers viejos de smart TV ===== */
+var DASHBOARD_URL = "https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec?view=dashboard";
+var D = null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ var d=document.createElement('div'); d.textContent=String(s==null?'':s); return d.innerHTML; }
+function num(v,f){ return (v==null?f:v); }
+
+/* --- reloj --- */
+function p2(n){ return (n<10?'0':'')+n; }
+function tick(){ var n=new Date(); $('clock').innerHTML=p2(n.getHours())+':'+p2(n.getMinutes())+':'+p2(n.getSeconds()); }
+setInterval(tick,1000); tick();
+
+/* --- fetch con XHR (sin fetch/async) --- */
+function fetchData(){
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', DASHBOARD_URL + '&t=' + (new Date()).getTime(), true);
+  xhr.timeout = 45000;
+  xhr.onreadystatechange = function(){
+    if (xhr.readyState !== 4) return;
+    var ok = false;
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        var j = JSON.parse(xhr.responseText);
+        if (j && j.ok) {
+          D = j; ok = true;
+          try { localStorage.setItem('pdl_cache', xhr.responseText); } catch(e){}
+          $('staleband').style.display = 'none';
+          build();
+        }
+      } catch(e){}
+    }
+    if (!ok) onFail();
+  };
+  xhr.ontimeout = function(){ onFail(); };
+  xhr.onerror = function(){ onFail(); };
+  try { xhr.send(); } catch(e){ onFail(); }
+}
+function onFail(){
+  if (!D) {
+    var c = null;
+    try { c = localStorage.getItem('pdl_cache'); } catch(e){}
+    if (c) { try { D = JSON.parse(c); build(); } catch(e){} }
+  }
+  if (D) { $('staleband').style.display = 'block'; }
+  else { $('loading').innerHTML = 'No se pudo conectar al backend.<br>Reintenta en 60s…'; setTimeout(fetchData, 60000); }
+}
+
+/* --- helpers de datos --- */
+function dowOf(fecha){ // fecha 'YYYY-MM-DD' -> día de semana sin parser ISO
+  if (!fecha) return 0;
+  var p = String(fecha).split('-');
+  if (p.length < 3) return 0;
+  return new Date(+p[0], +p[1]-1, +p[2]).getDay();
+}
+function ncPctOf(horas, operarios, fecha){
+  var dow = dowOf(fecha);
+  var dispH = Math.round((operarios||0) * (dow===6?300:470) / 60 * 10) / 10;
+  return dispH > 0 ? Math.round((horas||0) * 1000 / dispH) / 10 : null;
+}
+function moNum(mo){ var m = String(mo).match(/(\d{3,6})/); return m ? m[1] : mo; }
+
+/* --- render --- */
+function dd2(k, hoy, ayer, det, bad){
+  return '<td class="rcell'+(bad?' bad':'')+'"><div class="k">'+k+'</div>'
+    + '<span class="hl">HOY</span><div class="hvv">'+hoy+'</div>'
+    + '<span class="hl">AYER</span><div class="avv">'+ayer+'</div>'
+    + (det?'<div class="d">'+det+'</div>':'') + '</td>';
+}
+
+function renderIndicadores(){
+  var ef = D.eficiencia || {};
+  var ay = D.ayer || {};
+  var cs = D.cinco_s_hoy || {};
+  var ray = ay.rondas_rodrigo || {}, yay = ay.rondas_yance || {};
+
+  var ncPctH = ncPctOf(D.nc_horas_hoy, ef.operarios, D.fecha_hoy);
+  var ncPctA = ncPctOf(ay.nc_horas, ay.operarios, ay.fecha);
+  var efH = num(D.eficiencia_hoy_pct,'—'), efA = num(ay.eficiencia_pct,'—');
+  var hospH = num(D.hospital_count,0), hospA = (ay.hospital_personas||[]).length;
+  var ausH = (D.ausentes||[]).length, ausA = num(ay.ausentes_count,0);
+
+  var hospMos = [];
+  var hm = D.hospital_mos || [];
+  for (var i=0;i<hm.length;i++) hospMos.push(moNum(hm[i].mo));
+  var ausNames = [];
+  var au = D.ausentes || [];
+  for (var j=0;j<au.length && j<6;j++) ausNames.push(esc(String(au[j].nombre||'').split(' ')[0]));
+  var ncMon = [];
+  var nm = D.nc_por_montaje || [];
+  for (var k=0;k<nm.length && k<3;k++) ncMon.push(esc(nm[k].montaje)+' '+nm[k].pct+'%');
+
+  var h = '<div class="reunion">'
+    + '<span class="rtag">REUNIÓN 11 AM</span>'
+    + '<h3 style="margin-top:8px">Indicadores · HOY vs AYER ('+esc(ay.fecha||'—')+')</h3>'
+    + '<table class="rgrid"><tr>'
+    + dd2('EFICIENCIA PARCIAL', efH+'%', efA+'%', 'prom. mes '+num(D.eficiencia_mes_pct,0)+'% ('+num(D.eficiencia_mes_dias,0)+' días)', false)
+    + dd2('NO CONFORMIDAD', num(D.nc_horas_hoy,0)+'h · '+(ncPctH==null?'—':ncPctH+'%'), num(ay.nc_horas,0)+'h · '+(ncPctA==null?'—':ncPctA+'%'), ncMon.join(' · '), ncPctH!=null && ncPctH>10)
+    + dd2('GENTE EN HOSPITAL', hospH+' p', hospA+' p', hospMos.length?('hoy: '+esc(hospMos.join(' · '))):'', hospH>num(D.hospital_target,2))
+    + dd2('GENTE AUSENTE', ausH+' p', ausA+' p', ausH?('hoy: '+ausNames.join(' · ')):'✓ sin ausentes hoy', false)
+    + '</tr></table>'
+    + '<table class="rgrid" style="margin-top:8px"><tr>'
+    + '<td class="rcell" style="width:40%"><div class="k">5S HOY TEMPRANO</div><div style="font-size:17px;font-weight:bold;margin-top:4px;color:#fff">'
+      + (cs.hora?cs.hora+' · ':'') + num(cs.sectores_ok,0)+'/'+num(cs.sectores_total,9)+' OK · '
+      + '<span style="color:#4ade80">V '+num(cs.verdes,0)+'</span> <span style="color:#60a5fa">A '+num(cs.amarillos,0)+'</span> <span style="color:#f87171">R '+num(cs.rojos,0)+'</span></div>'
+      + '<div class="d">'+(((cs.pendientes||[]).length)?('Pendientes: '+esc(cs.pendientes.join(' · '))):'Todos relevados ✓')+'</div></td>'
+    + '<td class="rcell"><div class="k">RONDAS AYER (validadas)</div><div style="font-size:17px;font-weight:bold;margin-top:4px;color:#fff">Y '+num(yay.validadas,0)+'/'+num(yay.total,0)+' · R '+num(ray.validadas,0)+'/'+num(ray.total,0)+'</div><div class="d">'+((yay.flagged||0)+(ray.flagged||0))+' a revisar</div></td>'
+    + (function(){
+        var p = D.plan_mes || {};
+        var bg = {verde:'#16a34a',amarillo:'#d97706',rojo:'#dc2626',gris:'#475569'}[p.color||'gris'] || '#475569';
+        return '<td class="plan" style="background:'+bg+'"><div class="k">CUMPLIMIENTO PLAN · '+esc(String(p.mes||'').toUpperCase())+'</div>'
+          + '<div class="v">'+(p.pct==null?'—':p.pct+'%')+'</div>'
+          + '<div class="d">'+num(p.done,0)+'/'+num(p.plan,0)+' entreg · '+num(p.enprod,0)+' en prod · '+num(p.dias_trans,0)+'/'+num(p.dias_tot,0)+' días</div></td>';
+      })()
+    + '</tr></table></div>';
+  return h;
+}
+
+function boxFor(code){
+  var m = null, ms = D.montajes || [];
+  for (var i=0;i<ms.length;i++) if (ms[i].code===code) { m = ms[i]; break; }
+  var mos = (m && m.mos) || [];
+  var overN = 0, rows = '';
+  for (var j=0;j<mos.length;j++){
+    var mo = mos[j];
+    var d = mo.dias_en_produccion;
+    var bad = (d||0) > 3;
+    if (bad) overN++;
+    var pct = (mo.total>0 ? Math.round((mo.terminadas||0)*100/mo.total) : 0);
+    var cli = String(mo.producto||mo.prod||mo.mo||'').replace(/^s?\d+\s*-?\s*/i,'') || '—';
+    rows += '<div class="frow2'+(bad?' bad':'')+'"><span class="fcli">'+esc(cli.slice(0,20))+'</span><span class="fnums">'+pct+'% · '+(d==null?'?':d)+'d</span></div>';
+  }
+  if (!rows) rows = '<div class="fempty">sin órdenes</div>';
+  var s5 = '';
+  var p5 = (D.cinco_s_hoy && D.cinco_s_hoy.por_montaje && D.cinco_s_hoy.por_montaje[code]) || null;
+  var col = p5 ? ({verde:'#16a34a',ok:'#16a34a',amarillo:'#2563eb',azul:'#2563eb',rojo:'#dc2626'}[p5.color]||'#94a3b8') : '#000';
+  s5 = '<span class="f5s" style="background:'+col+'"></span>';
+  return '<td class="fbox'+(overN?' over':'')+'"><div class="fcode">'+esc(code)+s5+'</div>'+rows+'</td>';
+}
+
+function renderLayout(){
+  var top = ['QC','M7','M6','M5','M3','M0'];
+  var bot = ['M1','M2','S1','S2','M4','S5','S6','S7'];
+  var h = '<div class="floor"><div class="ftitle">Layout de planta · órdenes activas hoy · <b>rojo = pasada del takt (3 días)</b></div><table class="frow"><tr>';
+  for (var i=0;i<top.length;i++) h += boxFor(top[i]);
+  h += '</tr></table><div class="faisle">PASILLO DE CIRCULACIÓN</div><table class="frow"><tr>';
+  for (var j=0;j<bot.length;j++) h += boxFor(bot[j]);
+  h += '</tr></table></div>';
+  return h;
+}
+
+function build(){
+  $('loading').style.display = 'none';
+  var ab = $('alertbar');
+  if (D.alertas && D.alertas.length) {
+    var t = [];
+    for (var i=0;i<D.alertas.length;i++) t.push('• ' + (D.alertas[i].msg || D.alertas[i]));
+    ab.style.display = 'block'; ab.innerHTML = esc(t.join('   '));
+  } else ab.style.display = 'none';
+  $('wrap').innerHTML = renderIndicadores() + renderLayout();
+  $('wrap').style.display = 'block';
+}
+
+fetchData();
+</script>
+</body>
+</html>
