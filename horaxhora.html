@@ -131,13 +131,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 #sheet select,#sheet input[type=text]{width:100%;border-radius:9px;border:1px solid #475569;background:#0f172a;color:#f1f5f9;padding:10px;font-size:14px;margin-bottom:8px}
 #sheet select.warn{border:2px solid #ef4444;color:#fca5a5;font-weight:700}
 #sheet .stx{font-size:13px;font-weight:800;min-height:18px}
-#sheet{position:fixed;left:0;right:0;bottom:-100%;background:#1e293b;border-top:3px solid var(--nar);border-radius:18px 18px 0 0;padding:18px 20px 26px;z-index:50;transition:bottom .2s;box-shadow:0 -8px 30px rgba(0,0,0,.6)}
+#sheet{position:fixed;left:0;right:0;bottom:-100%;background:#1e293b;border-top:3px solid var(--nar);border-radius:18px 18px 0 0;padding:18px 20px 26px;z-index:70;transition:bottom .2s;box-shadow:0 -8px 30px rgba(0,0,0,.6)}
 #sheet.on{bottom:0}
 #sheet .k{display:inline-block;font-size:11px;font-weight:800;padding:2px 10px;border-radius:99px;margin-bottom:8px}
 #sheet h2{font-size:17px;font-weight:800;line-height:1.35;margin-bottom:6px;word-break:break-word}
 #sheet .m{font-size:13px;color:var(--muted);line-height:1.6}
 #sheet .x{position:absolute;top:10px;right:14px;font-size:22px;color:var(--muted);background:none;border:none;padding:4px 10px}
-#shade{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:49;display:none}
+#shade{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:65;display:none}
 #shade.on{display:block}
 
 /* ===== PROGRAMA DE MAÑANA (panel + recordatorio 16hs) ===== */
@@ -181,7 +181,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .mp-warn .wl{display:none;margin-top:6px;font-weight:600}
 @media(max-width:700px){.mp-grid{grid-template-columns:1fr}.mp-hitos .cols{columns:1}}
 /* bloques del timeline de MAÑANA (mismo formato que el hora a hora) */
-.mblk{position:absolute;top:14px;height:36px;border-radius:6px;background:linear-gradient(180deg,#475569,#334155);border:1px solid #64748b;font-size:11px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;padding:0 7px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.mblk{position:absolute;top:14px;height:36px;border-radius:6px;background:linear-gradient(180deg,#475569,#334155);border:1px solid #64748b;font-size:11px;font-weight:700;color:#e2e8f0;display:flex;align-items:center;padding:0 7px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;box-shadow:0 1px 4px rgba(0,0,0,.45);cursor:pointer}
 .mblk.alt{background:linear-gradient(180deg,#1e3a5f,#16304f);border-color:#3b82f6}
 .mblk.szero{outline:2px dashed #ef4444;color:#fca5a5}
 </style>
@@ -280,6 +280,7 @@ var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kW
 var CUR=null;
 document.addEventListener('click',function(ev){
   ensureAudio();
+  var mb=ev.target.closest('.mblk'); if(mb){ openMblk(mb); return; }
   var pg=ev.target.closest('.pgap'); if(pg){ openPGap(pg); return; } var gp=ev.target.closest('.gap'); if(gp){ openGap(gp); return; }
   var b=ev.target.closest('.blk,.pb'); if(!b) return;
   var over=b.getAttribute('data-over')==='1';
@@ -699,7 +700,7 @@ function renderMananaTimeline(d){
     var f='<div class="fila"><div class="info"><div class="mo">'+nombre+'</div><div class="det">'+detalle+'</div></div><div class="tl">';
     for(var c=0;c<NHC;c++) f+='<div class="cell'+(c===almIdx?' alm':'')+'"></div>';
     r.ops.forEach(function(p){
-      f+='<div class="mblk'+(p.mi%2?' alt':'')+(p.szero?' szero':'')+'" style="left:'+((p.a-H0)/60*COLP)+'px;width:'+Math.max((p.b-p.a)/60*COLP,22)+'px" title="'+esc(p.n)+' · '+fmtM(p.a)+'–'+fmtM(p.b)+(p.szero?' · SIN ESTÁNDAR (30m supuesto)':'')+'">'+esc(p.n)+'</div>';
+      f+='<div class="mblk'+(p.mi%2?' alt':'')+(p.szero?' szero':'')+'" data-t="'+esc(p.n)+'" data-rng="'+fmtM(p.a)+'–'+fmtM(p.b)+'" data-dur="'+(p.b-p.a)+'" data-szero="'+(p.szero?1:0)+'" data-who="'+nombre+'" data-det="'+detalle+'" style="left:'+((p.a-H0)/60*COLP)+'px;width:'+Math.max((p.b-p.a)/60*COLP,22)+'px" title="'+esc(p.n)+' · '+fmtM(p.a)+'–'+fmtM(p.b)+(p.szero?' · SIN ESTÁNDAR (30m supuesto)':'')+'">'+esc(p.n)+'</div>';
     });
     var sobra=totMin-r.packed;
     f+='</div><div class="meta"><div class="t">CARGA '+hN(totMin/60)+' h</div>'
@@ -765,6 +766,27 @@ function renderMananaTimeline(d){
   h+='</div>';
   if(!(LASTD&&LASTD.operarios&&LASTD.operarios.length)) h+='<div style="margin-top:8px;font-size:12px;color:#f59e0b;font-weight:700">⚠ Sin datos de operarios de hoy: se muestran solo las órdenes. (El tablero de hoy tiene que cargar primero.)</div>';
   return h;
+}
+
+/* Detalle de una tarjeta del timeline de MAÑANA (bottom sheet, por encima del panel) */
+function openMblk(mb){
+  var k=document.getElementById('shK');
+  var sz=mb.getAttribute('data-szero')==='1';
+  k.textContent=sz?'📅 PLAN MAÑANA · SIN TIEMPO ESTÁNDAR':'📅 PLAN MAÑANA';
+  k.style.background=sz?'#dc2626':'#6d28d9'; k.style.color='#fff';
+  document.getElementById('shT').textContent=mb.getAttribute('data-t')||mb.textContent;
+  var dur=+(mb.getAttribute('data-dur')||0);
+  var who=mb.getAttribute('data-who')||'', det=mb.getAttribute('data-det')||'';
+  var m='🕐 '+esc(mb.getAttribute('data-rng')||'')+' · '+dur+' min'
+    +(who?' &nbsp;·&nbsp; 👤 <b>'+who+'</b>':'')
+    +(det?' &nbsp;·&nbsp; '+det:'');
+  if(sz) m+='<br><b style="color:#f87171">⚠ Esta tarea no tiene tiempo estándar cargado en Odoo (se asumen 30 min). Juan Mayer debe cargarlo antes de validar.</b>';
+  else m+='<br><span style="color:#94a3b8">Horario teórico: las tareas pendientes se acomodan en orden en la jornada de mañana.</span>';
+  document.getElementById('shM').innerHTML=m;
+  document.getElementById('shCtl').innerHTML='';
+  CUR=null;
+  document.getElementById('sheet').classList.add('on');
+  document.getElementById('shade').classList.add('on');
 }
 
 /* Vista POR MONTAJE (la anterior, como referencia/backup) */
