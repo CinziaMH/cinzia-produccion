@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+/* Redirección para TVs: este bloque es ES5 puro y corre aunque el script
+   principal (JS moderno) falle en browsers viejos. ?tv=1 → versión liviana. */
+try{
+  if(window.location.search.indexOf('tv=1')!==-1){
+    window.location.replace('tablero_tv.html');
+  }
+}catch(e){}
+</script>
 <title>Cinzia · Pie de Línea</title>
 <style>
 :root{
@@ -25,10 +34,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .supchip .lbl{font-size:10px;font-weight:800;letter-spacing:1px;opacity:.9}
 .supchip .val{font-size:15px;font-weight:800;margin-top:2px}
 .dots{display:flex;gap:8px;align-items:center}
-.dot{min-width:24px;height:16px;border-radius:99px;background:rgba(255,255,255,.22);cursor:pointer;overflow:hidden;position:relative;display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
-.dot span{position:relative;z-index:1;font-size:9px;font-weight:700;color:#fff;white-space:nowrap;letter-spacing:.2px}
-.dot.act{background:#fff}
-.dot.act span{color:#c2410c}
+.dot{width:34px;height:8px;border-radius:99px;background:rgba(255,255,255,.35);cursor:pointer;overflow:hidden;position:relative}
+.dot.act{background:rgba(255,255,255,.45)}
 .dot.act i{position:absolute;left:0;top:0;bottom:0;background:#fff;display:block;width:0%}
 .pausebtn{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:9px;padding:7px 13px;font-size:13px;font-weight:700;cursor:pointer}
 .clockbox{text-align:right}
@@ -101,35 +108,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .lista .li{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)}
 .lista .li b{font-weight:700}
 .nctotal{font-size:30px;font-weight:800;color:var(--warn)}
-/* --- panel ausentes dedicado --- */
-.auswrap{display:flex;flex-direction:column;gap:14px;flex:1;min-height:0}
-.calmes{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;flex:1;min-height:0;align-content:start;margin-top:6px}
-.calhd{text-align:center;font-weight:800;color:var(--muted);font-size:15px;padding:2px 0}
-.calcell{background:#1e293b;border-radius:8px;padding:6px 6px 7px;min-height:50px;display:flex;flex-direction:column;gap:2px;border:1px solid #2a3a52}
-.calcell.empty{background:transparent;border:none}
-.calcell.dom{opacity:.35}
-.calcell.nodata{opacity:.5}
-.calcell .cd{font-size:15px;font-weight:800;color:#cbd5e1;line-height:1}
-.calcell .cv{display:flex;gap:6px;font-size:16px;font-weight:800;flex-wrap:wrap}
-.calcell .cf{color:#f87171}
-.calcell .ct{color:#fbbf24}
-.calcell .cok{color:#475569}
-.calcell.hasf{border-color:#7f1d1d}
-.calcell.hast{box-shadow:inset 0 0 0 1px #b45309}
-.tardehoy{border-top:1px solid var(--line);padding-top:12px;margin-top:4px}
-.th-hd{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-.th-big{font-size:34px;font-weight:800;color:#fbbf24;line-height:1}
-.th-lbl{font-size:18px;font-weight:800;color:var(--muted);letter-spacing:.5px}
-.aushero{display:flex;align-items:center;gap:22px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 24px}
-.aushero .big{font-size:90px;font-weight:800;line-height:1;color:var(--bad)}
-.aushero.ok .big{color:var(--ok)}
-.aushero .lbl{font-size:20px;font-weight:800;letter-spacing:.5px}
-.aushero .sub{font-size:14px;color:var(--muted);margin-top:4px}
-.ausgrid{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-content:start;overflow:auto}
-.auscard{background:#fef2f2;border:1px solid #fecaca;border-radius:13px;padding:14px 18px;display:flex;flex-direction:column;gap:3px}
-.auscard .nom{font-size:21px;font-weight:800;color:#991b1b}
-.auscard .sec{font-size:13px;font-weight:800;color:#b91c1c;opacity:.8}
-.aus-ok{font-size:34px;font-weight:800;color:var(--ok);text-align:center;padding:40px}
 .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:var(--bg);z-index:30}
 .spin{width:46px;height:46px;border:5px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite}
 @keyframes r{to{transform:rotate(360deg)}}
@@ -144,64 +122,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
   .mo-num{font-size:22px}
   .mo-meta{font-size:16px}
   .mon-pill{font-size:21px}
-  .aushero .big{font-size:120px}
-  .auscard .nom{font-size:25px}
 }
-.mo-fren{font-size:11px;color:var(--muted);padding:5px 8px 2px;line-height:1.6;opacity:.85;border-top:1px dashed var(--line);margin-top:3px}
-.wkc{margin-top:8px}
-.wkc-h{font-size:11px;color:var(--muted);font-weight:600}
-.wkbars{display:flex;align-items:flex-end;gap:3px;height:24px;margin-top:3px}
-.wkb{width:9px;background:var(--nar);border-radius:2px 2px 0 0;display:inline-block}
-.wkrow{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:1px 0;border-bottom:1px dotted var(--line)}
-.wkrow b{font-weight:700}
-.floor{padding:14px 18px}
-.ftitle{font-size:13px;color:#374151;margin-bottom:12px}
-.frow{display:flex;gap:10px;margin-bottom:10px}
-.fbox{flex:1 1 0;min-width:0;border:2px solid #e4e4e7;border-radius:12px;padding:10px 12px;background:#fff}
-.fbox.over{border-color:#dc2626;background:#fef2f2}
-.fcode{font-weight:800;font-size:18px;color:#1f2937}
-.fname{font-size:12px;color:#71717a;margin:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fcnt{font-size:12px;font-weight:600;color:#374151}
-.fops{font-size:11px;color:#71717a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fover{font-size:12px;color:#dc2626;font-weight:800;margin-top:5px}
-.wku{font-size:10px;color:var(--muted);padding:1px 0 4px 12px;line-height:1.4}
-.faisle{text-align:center;font-size:11px;color:#a1a1aa;letter-spacing:3px;border-top:2px dashed #e4e4e7;border-bottom:2px dashed #e4e4e7;padding:5px 0;margin:8px 0}
-.rgrid2{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px}
-.ha2 .ha{display:flex;gap:16px;align-items:baseline;margin-top:4px}
-.ha2 .hcol,.ha2 .acol{display:flex;flex-direction:column}
-.ha2 .hl{font-size:9px;letter-spacing:1px;color:#94a3b8;font-weight:700}
-.ha2 .hvv{font-size:30px;font-weight:800;line-height:1;color:#fff}
-.ha2 .avv{font-size:20px;font-weight:700;line-height:1;color:#94a3b8}
-.ha2.bad .hvv{color:#f87171}
-.ha2 .d{margin-top:6px;font-size:11px;color:#94a3b8}
-.f5slbl{font-size:11px;font-weight:700;color:#71717a;margin-left:5px;vertical-align:middle}
-.f5s{display:inline-block;width:15px;height:15px;border-radius:50%;margin-left:9px;vertical-align:middle;border:1px solid rgba(0,0,0,.18)}
-.frow2{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;padding:3px 0;border-top:1px solid #f1f1f3}
-.fbox .frow2:first-of-type{border-top:none}
-.fcli{color:#1f2937;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fpct{color:#475569;font-weight:700;flex:none;font-size:11px;min-width:34px;text-align:right}
-.fdays{color:#71717a;font-weight:800;flex:none;font-size:12px}
-.frow2.bad .fdays{color:#dc2626}
-.fempty{font-size:11px;color:#a1a1aa;padding:3px 0}
-.calcell.fer{background:#0b1220;border:1px dashed #334155}
-.cfer{font-size:8px;color:#64748b;font-weight:800;letter-spacing:.5px}
-.ausuni{display:flex;flex-direction:column;gap:20px}
-.ausuni .auswrap{flex:none;min-height:auto}
-.ausuni .calmes{flex:none}
-html.movil,html.movil body{height:auto;min-height:100%;overflow-y:auto;overflow-x:hidden}
-body.movil .hdr{flex-wrap:wrap;gap:6px;padding:8px 10px;height:auto}
-body.movil .dots,body.movil .supchip,body.movil #pauseBtn{display:none}
-body.movil .stage{position:static;overflow:visible;flex:none;height:auto}
-body.movil .panel.mvp{position:static;display:flex;overflow:visible;height:auto;padding:10px 10px 40px;gap:14px}
-body.movil .rgrid2{grid-template-columns:repeat(2,1fr);gap:8px}
-body.movil .rgrid2 .hvv{font-size:22px}
-body.movil .rgrid2 .avv{font-size:15px}
-body.movil .rrow2{flex-direction:column;gap:8px}
-body.movil .floor{padding:4px 0}
-body.movil .frow{flex-wrap:wrap;gap:8px;margin-bottom:8px}
-body.movil .fbox{flex:1 1 46%;min-width:46%}
-body.movil .faisle{display:none}
-@media(max-width:520px){body.movil .rgrid2{grid-template-columns:1fr}body.movil .fbox{flex:1 1 100%;min-width:100%}}
 </style>
 </head>
 <body>
@@ -217,7 +138,6 @@ body.movil .faisle{display:none}
     <div class="val" id="supVal">— · —</div>
   </div>
   <div class="dots" id="dots"></div>
-  <a href="reporte.html" class="pausebtn" style="text-decoration:none">📊 Reporte</a>
   <a href="./" class="pausebtn" style="text-decoration:none">🏠 Inicio</a>
   <button class="pausebtn" id="pauseBtn">⏸ Pausar</button>
   <div class="clockbox">
@@ -240,9 +160,6 @@ const REFRESH_MIN = 5;
 const MAX_MOS_PER_PANEL = 4;
 
 let D = null, panels = [], cur = 0, paused = false, rotT0 = Date.now();
-const MOVIL = new URLSearchParams(location.search).get('movil') === '1';
-const TVSIMPLE = new URLSearchParams(location.search).get('tv') === '1';
-const SIMPLE = MOVIL || TVSIMPLE;
 
 const $ = id => document.getElementById(id);
 const esc = s => { const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML; };
@@ -282,13 +199,10 @@ function build() {
   if (D.alertas && D.alertas.length) { ab.style.display = 'block'; ab.textContent = D.alertas.map(a => '• ' + (a.msg || a)).join('   '); }
   else ab.style.display = 'none';
 
-  if (SIMPLE) { if(MOVIL){document.documentElement.classList.add('movil'); document.body.classList.add('movil');} var _dd=$('dots'); if(_dd)_dd.style.display='none'; var _pp=$('pauseBtn'); if(_pp)_pp.style.display='none'; $('stage').innerHTML = '<div class="panel act mvp">' + renderIndicadores() + renderLayoutPanel() + '</div>'; return; }
-
   // armar paneles de montajes (sin scroll)
   const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
-  panels = monPanels.map(function(rows){ var f = function(){ return renderMonPanel(rows); }; var m = (rows && rows[0]) || {}; f.label = (m.code || '') + (m.page ? (' ' + m.page) : ''); return f; });
-  var _pI = function(){ return renderIndicadores() + renderLayoutPanel(); }; _pI.label = 'Indic.'; panels.push(_pI);
-  var _pA = function(){ return '<div class="ausuni">' + renderAusentesPanel() + renderAusMesPanel() + '</div>'; }; _pA.label = 'Ausentismo'; panels.push(_pA);
+  panels = monPanels.map(rows => () => renderMonPanel(rows));
+  panels.push(() => renderIndicadores());
 
   renderDots();
   if (cur >= panels.length) cur = 0;
@@ -299,17 +213,22 @@ function buildLinePanels(montajes) {
   // dividir montajes grandes en páginas
   const units = [];
   montajes.forEach(m => {
-    var __act = (m.mos||[]).filter(function(x){return x.estado!=='SIN ACT';});
-    var __fren = (m.mos||[]).filter(function(x){return x.estado==='SIN ACT';});
-    if (__act.length <= MAX_MOS_PER_PANEL) units.push({ ...m, mos: __act, fren: __fren, page: null });
+    if (m.mos.length <= MAX_MOS_PER_PANEL) units.push({ ...m, page: null });
     else {
-      const npages = Math.ceil(__act.length / MAX_MOS_PER_PANEL);
+      const npages = Math.ceil(m.mos.length / MAX_MOS_PER_PANEL);
       for (let p = 0; p < npages; p++)
-        units.push({ ...m, mos: __act.slice(p * MAX_MOS_PER_PANEL, (p + 1) * MAX_MOS_PER_PANEL), fren: (p===0?__fren:[]), page: (p + 1) + '/' + npages });
+        units.push({ ...m, mos: m.mos.slice(p * MAX_MOS_PER_PANEL, (p + 1) * MAX_MOS_PER_PANEL), page: (p + 1) + '/' + npages });
     }
   });
-  // un montaje por panel (más espacio, más legible)
-  return units.map(function(u){ return [u]; });
+  // agrupar: budget de filas-mo por panel
+  const out = []; let curP = [], curRows = 0;
+  units.forEach(u => {
+    const w = Math.max(1, u.mos.length);
+    if (curP.length && (curRows + w > 7 || curP.length >= 3)) { out.push(curP); curP = []; curRows = 0; }
+    curP.push(u); curRows += w;
+  });
+  if (curP.length) out.push(curP);
+  return out;
 }
 
 function renderMonPanel(rows) {
@@ -321,14 +240,14 @@ function renderMonPanel(rows) {
       + '<div class="mon-cnt">' + m.activas + ' act · ' + (m.cola || 0) + ' cola</div>'
       + (m.sigue ? '<div class="mon-cnt" style="color:var(--nar);font-weight:700">sigue: ' + esc((String(m.sigue.mo).match(/(\d{3,6})/) || [])[1] || m.sigue.mo) + (m.sigue.cliente ? ' · ' + esc(String(m.sigue.cliente).slice(0, 18)) : '') + '</div>' : '')
       + (m.page ? '<span class="pagetag">' + m.page + '</span>' : '')
-      + (function(){ var cs=(D.cierres_semana&&D.cierres_semana.porMontaje&&D.cierres_semana.porMontaje[m.code])||null; var dd=(D.cierres_semana&&D.cierres_semana.dias)||['Lun','Mar','Mié','Jue','Vie','Sáb']; var tot=cs?cs.reduce(function(a,b){return a+(b&&b.n?b.n:0);},0):0; function isoW(s){var p=String(s).split('/');if(p.length<2)return s;var d=new Date(new Date().getFullYear(),(+p[1])-1,+p[0]);var dt=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));var day=dt.getUTCDay()||7;dt.setUTCDate(dt.getUTCDate()+4-day);var ys=new Date(Date.UTC(dt.getUTCFullYear(),0,1));return Math.ceil((((dt-ys)/86400000)+1)/7);} var rows=(cs||(dd||[]).map(function(){return {n:0,u:[]};})).map(function(v,i){var n=(v&&typeof v==='object')?(v.n||0):(v||0);var u=(v&&v.u)||[];var head='<div class="wkrow"><span>Sem '+isoW(dd[i]||'')+'</span><b'+(n?' style="color:var(--nar)"':'')+'>'+n+'</b></div>';var det=u.length?'<div class="wku">'+u.map(function(x){return '\u00b7 '+esc((x.prod||'?')+(x.cliente?(' '+x.cliente):''));}).join('<br>')+'</div>':'';return head+det;}).join(''); return '<div class="wkc"><div class="wkc-h">✓ cerradas · 10 sem <b>'+tot+'</b></div>'+rows+'</div>'; })() + '</div><div class="mon-mos">';
-    if (!m.mos.length && !(m.fren && m.fren.length)) h += '<div class="mo-item" style="color:var(--muted)">Sin MOs en este montaje' + (m.cola ? ' · ' + m.cola + ' en cola' : '') + '</div>';
+      + '</div><div class="mon-mos">';
+    if (!m.mos.length) h += '<div class="mo-item" style="color:var(--muted)">Sin MOs en este montaje' + (m.cola ? ' · ' + m.cola + ' en cola' : '') + '</div>';
     m.mos.forEach(mo => {
       const num = (String(mo.mo).match(/(\d{4,6})/) || [])[1] || mo.mo;
       const dias = mo.dias_en_produccion;
       h += '<div class="mo-item"><div class="mo-l1">'
         + '<span class="mo-num">' + esc(num) + '</span>'
-        + '<span class="mo-meta">' + esc(mo.operario || '—') + (mo.producto ? ' · ' + esc(mo.producto) : '') + (mo.prod ? ' · <b style="color:var(--nar)">' + esc(String(mo.prod).slice(0,30)) + '</b>' : '') + '</span>'
+        + '<span class="mo-meta">' + esc(mo.operario || '—') + (mo.producto ? ' · ' + esc(mo.producto) : '') + '</span>'
         + '<span class="st st-' + mo.estado.replace(/\s/g, '') + '">' + mo.estado + '</span></div>'
         + '<div class="mo-l2">'
         + (mo.actividad_hoy === false ? '<span>sin actividad hoy</span>' : '<span>avance día <b>' + mo.avance_dia_pct + '%</b></span>')
@@ -337,38 +256,9 @@ function renderMonPanel(rows) {
         + (mo.cuello ? '<span class="cuello">cuello: "' + esc(mo.cuello.wo) + '" +' + mo.cuello.delta_min + 'min (' + esc(mo.cuello.operario) + ')</span>' : '')
         + '</div></div>';
     });
-    if (m.fren && m.fren.length) { h += '<div class="mo-fren">⏸ ' + m.fren.length + ' frenada' + (m.fren.length>1?'s':'') + ': ' + m.fren.map(function(f){ var nn=(String(f.mo).match(/(\d{4,6})/)||[])[1]||f.mo; return esc(nn)+(f.producto?(' '+esc(String(f.producto).slice(0,14))):''); }).join('   ·   ') + '</div>'; }
     h += '</div></div>';
   });
   return h;
-}
-
-function renderLayoutPanel() {
-  function boxFor(code){
-    var m = (D.montajes||[]).filter(function(x){return x.code===code;})[0];
-    var mos = m ? (m.mos||[]) : [];
-    var over = mos.filter(function(mo){return (mo.dias_en_produccion||0) > 3;});
-    function cliName(mo){ var c = String(mo.producto||mo.prod||mo.mo||'').replace(/^s?\d+\s*-?\s*/i,'').trim(); return c || '—'; }
-    var rows = mos.map(function(mo){
-      var bad = (mo.dias_en_produccion||0) > 3;
-      var d = (mo.dias_en_produccion!=null ? mo.dias_en_produccion : '?');
-      var pct = (mo.total>0 ? Math.round((mo.terminadas||0)*100/mo.total) : 0);
-      return '<div class="frow2'+(bad?' bad':'')+'"><span class="fcli">'+esc(cliName(mo).slice(0,20))+'</span><span class="fpct">'+pct+'%</span><span class="fdays">'+d+'d</span></div>';
-    }).join('');
-    if(!rows) rows = '<div class="fempty">sin órdenes</div>';
-    return '<div class="fbox'+(over.length?' over':'')+'">'
-      + '<div class="fcode">'+esc(code)+(function(){var p=(D.cinco_s_hoy&&D.cinco_s_hoy.por_montaje&&D.cinco_s_hoy.por_montaje[code])||null;var col=p?({verde:'#16a34a',ok:'#16a34a',amarillo:'#2563eb',azul:'#2563eb',rojo:'#dc2626'}[p.color]||'#94a3b8'):'#000';var lbl=p?({verde:'5S Verde',ok:'5S Verde',amarillo:'5S Azul',azul:'5S Azul',rojo:'5S Rojo'}[p.color]||('5S '+p.color)):'5S pendiente';return '<span class="f5s" style="background:'+col+'" title="'+lbl+'"></span><span class="f5slbl">5S</span>';})()+'</div>'
-      + rows
-      + '</div>';
-  }
-  var top = ['QC','M7','M6','M5','M3','M0'];
-  var bot = ['M1','M2','S1','S2','M4','S5','S6','S7'];
-  return '<div class="floor">'
-    + '<div class="ftitle">Layout de planta · órdenes activas hoy · <b>rojo = pasada del takt (3 días)</b></div>'
-    + '<div class="frow">'+top.map(boxFor).join('')+'</div>'
-    + '<div class="faisle">PASILLO DE CIRCULACIÓN</div>'
-    + '<div class="frow">'+bot.map(boxFor).join('')+'</div>'
-    + '</div>';
 }
 
 function renderIndicadores() {
@@ -377,108 +267,76 @@ function renderIndicadores() {
   const cs = D.cinco_s_hoy || {};
   const ray = ay.rondas_rodrigo || {}, yay = ay.rondas_yance || {};
 
-  const dowJ = new Date(D.fecha_hoy + 'T12:00:00').getDay();
-  const dispFullH = Math.round((ef.operarios || 0) * (dowJ === 6 ? 300 : 470) / 60 * 10) / 10;
-  const ncPctH = dispFullH > 0 ? Math.round(D.nc_horas_hoy * 1000 / dispFullH) / 10 : 0;
-  const dowA = ay.fecha ? new Date(ay.fecha + 'T12:00:00').getDay() : 0;
-  const dispAyerH = Math.round((ay.operarios || 0) * (dowA === 6 ? 300 : 470) / 60 * 10) / 10;
-  const ncPctA = dispAyerH > 0 ? Math.round((ay.nc_horas || 0) * 1000 / dispAyerH) / 10 : null;
-
-  const efH = (D.eficiencia_hoy_pct != null ? D.eficiencia_hoy_pct : '—');
-  const efA = (ay.eficiencia_pct != null ? ay.eficiencia_pct : '—');
-  const hospH = (D.hospital_count != null ? D.hospital_count : 0);
-  const hospA = (ay.hospital_personas || []).length;
-  const ausH = (D.ausentes || []).length;
-  const ausA = (ay.ausentes_count != null ? ay.ausentes_count : 0);
-
-  const hospMosH = esc((D.hospital_mos || []).map(function(x){return (String(x.mo).match(/(\d{3,6})/) || [])[1] || x.mo;}).join(' · '));
-  const ausNamesH = (D.ausentes || []).map(function(a){return esc(String(a.nombre||'').split(' ')[0]);}).join(' · ');
-  const _aDia = ((D.ausentismo_mes && D.ausentismo_mes.dias) || []).filter(function(x){return x.fecha === ay.fecha;})[0];
-  const ausNamesA = esc(((_aDia && _aDia.ausentes_nombres) || []).map(function(n){return String(n).split(' ')[0];}).join(' · '));
-  const ncMonH = esc((D.nc_por_montaje || []).slice(0,3).map(function(m){return m.montaje + ' ' + m.pct + '%';}).join(' · '));
-
-  function dd2(k, hoy, ayer, det, bad){
-    return '<div class="rcell ha2' + (bad ? ' bad' : '') + '"><div class="k">' + k + '</div>'
-      + '<div class="ha"><div class="hcol"><span class="hl">HOY</span><span class="hvv">' + hoy + '</span></div>'
-      + '<div class="acol"><span class="hl">AYER</span><span class="avv">' + ayer + '</span></div></div>'
-      + (det ? '<div class="d">' + det + '</div>' : '') + '</div>';
-  }
+  const delta = (a, h, unit, invertido) => {
+    if (a == null || h == null) return '';
+    const d = h - a;
+    const good = invertido ? d < 0 : d > 0;
+    const sign = d > 0 ? '+' : '';
+    return '<span style="color:' + (d === 0 ? '#94a3b8' : good ? '#4ade80' : '#f87171') + '">' + sign + d + unit + ' hoy</span>';
+  };
 
   let h = '<div class="reunion">'
     + '<span class="rtag">REUNIÓN 11 AM</span>'
-    + '<h3>Indicadores · HOY vs AYER (' + esc(ay.fecha || '—') + ')</h3>'
-    + '<div class="rgrid2">'
-    + dd2('EFICIENCIA PARCIAL', efH + '%', efA + '%', 'prom. mes ' + (D.eficiencia_mes_pct||0) + '% (' + (D.eficiencia_mes_dias||0) + ' días)')
-    + dd2('NO CONFORMIDAD', D.nc_horas_hoy + 'h · ' + ncPctH + '%', (ay.nc_horas||0) + 'h · ' + (ncPctA==null?'—':ncPctA+'%'), ncMonH, ncPctH>10)
-    + dd2('GENTE EN HOSPITAL', hospH + ' p', hospA + ' p', (hospMosH?('hoy: '+hospMosH):''), hospH>(D.hospital_target||2))
-    + dd2('GENTE AUSENTE', ausH + ' p', ausA + ' p', (ausH?('hoy: '+ausNamesH):(ausNamesA?('ayer: '+ausNamesA):'✓ sin ausentes hoy')))
+    + '<h3>Cierre de ayer (' + esc(ay.fecha || '—') + ') + 5S de hoy</h3>'
+    + '<div class="rgrid">'
+    + '<div class="rcell"><div class="k">EFICIENCIA AYER</div><div class="v">' + (ay.eficiencia_pct ?? '—') + '%</div><div class="d">' + delta(ay.eficiencia_pct, D.eficiencia_hoy_pct, '%') + '</div></div>'
+    + '<div class="rcell"><div class="k">HOSPITAL AYER</div><div class="v">' + (ay.hospital_count ?? '—') + ' p</div><div class="d">' + esc((ay.hospital_personas || []).slice(0, 3).join(' · ') || ('hoy: ' + D.hospital_count + ' p')) + '</div></div>'
+    + '<div class="rcell"><div class="k">AUSENTES AYER</div><div class="v">' + (ay.ausentes_count ?? '—') + ' p</div><div class="d">' + delta(ay.ausentes_count, (D.ausentes || []).length, 'p', true) + '</div></div>'
+    + (function () {
+        const dowA = ay.fecha ? new Date(ay.fecha + 'T12:00:00').getDay() : 0;
+        const dispAyerH = Math.round((ay.operarios || 0) * (dowA === 6 ? 300 : 470) / 60 * 10) / 10;
+        const pctA = dispAyerH > 0 ? Math.round((ay.nc_horas || 0) * 1000 / dispAyerH) / 10 : null;
+        return '<div class="rcell"><div class="k">NC HORAS AYER</div><div class="v">' + (ay.nc_horas ?? '—') + ' h' + (pctA != null ? ' <span style="font-size:14px;color:' + (pctA > 10 ? '#f87171' : '#94a3b8') + '">· ' + pctA + '% del día (' + dispAyerH + 'h)</span>' : '') + '</div><div class="d">' + delta(ay.nc_horas, D.nc_horas_hoy, 'h', true) + '</div></div>';
+      })()
     + '</div><div class="rrow2">'
-    + '<div class="rcell"><div class="k">5S HOY TEMPRANO</div><div class="v" style="font-size:17px">' + (cs.hora ? cs.hora + ' · ' : '') + (cs.sectores_ok || 0) + '/' + (cs.sectores_total || 9) + ' OK · <span style="color:#4ade80">🟢 ' + (cs.verdes || 0) + '</span> <span style="color:#facc15">🟡 ' + (cs.amarillos || 0) + '</span> <span style="color:#f87171">🔴 ' + (cs.rojos || 0) + '</span></div><div class="d">' + ((cs.pendientes || []).length ? 'Pendientes: ' + cs.pendientes.join(' · ') : 'Todos relevados ✓') + '</div></div>'
-    + '<div class="rcell"><div class="k">RONDAS AYER (validadas)</div><div class="v" style="font-size:16px">Y ' + (yay.validadas||0) + '/' + (yay.total||0) + ' · R ' + (ray.validadas||0) + '/' + (ray.total||0) + '</div><div class="d">' + ((yay.flagged||0)+(ray.flagged||0)) + ' a revisar</div></div>'
-    + (function(){ var p = D.plan_mes || {}; var col = p.color || 'gris'; var bg = ({verde:'#16a34a',amarillo:'#d97706',rojo:'#dc2626',gris:'#475569'})[col]; var pct = (p.pct==null?'—':p.pct+'%'); return '<div class="rcell" style="background:'+bg+';border-color:'+bg+'"><div class="k" style="color:#fff;opacity:.9">CUMPLIMIENTO PLAN · ' + esc(String(p.mes||'').toUpperCase()) + '</div><div class="v" style="font-size:32px;color:#fff;font-weight:800">' + pct + '</div><div class="d" style="color:#fff;opacity:.92">' + (p.done||0) + '/' + (p.plan||0) + ' entreg · ' + (p.enprod||0) + ' en prod · ' + (p.dias_trans||0) + '/' + (p.dias_tot||0) + ' días</div></div>'; })()
+    + '<div class="rcell"><div class="k">5S HOY TEMPRANO</div><div class="v" style="font-size:17px">' + (cs.hora ? cs.hora + ' · ' : '') + (cs.sectores_ok || 0) + '/' + (cs.sectores_total || 9) + ' OK · <span style="color:#4ade80">🟢 ' + (cs.verdes || 0) + '</span> <span style="color:#facc15">🟡 ' + (cs.amarillos || 0) + '</span> <span style="color:#f87171">🔴 ' + (cs.rojos || 0) + '</span></div>'
+    + '<div class="d">' + ((cs.pendientes || []).length ? 'Pendientes: ' + cs.pendientes.join(' · ') : 'Todos relevados ✓') + '</div></div>'
+    + '<div class="rcell"><div class="k">RONDAS YANCE AYER</div><div class="v" style="font-size:17px">' + (yay.validadas||0) + '/' + (yay.total||0) + '</div><div class="d">' + (yay.flagged||0) + ' a revisar</div></div>'
+    + '<div class="rcell"><div class="k">RONDAS RODRIGO AYER</div><div class="v" style="font-size:17px">' + (ray.validadas||0) + '/' + (ray.total||0) + '</div><div class="d">' + (ray.flagged||0) + ' a revisar</div></div>'
     + '</div></div>';
-  return h;
-}
 
-function _hoyStr(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
-function _tardesHoyHTML(){
-  var m=D.ausentismo_mes; if(!m||!m.dias) return '';
-  var hoy=_hoyStr();
-  var dd=m.dias.filter(function(x){return x.fecha===hoy;})[0];
-  var nombres=(dd&&dd.tardes_nombres)||[];
-  var h='<div class="tardehoy"><div class="th-hd"><span class="th-big">'+nombres.length+'</span><span class="th-lbl">LLEGADAS TARDE HOY</span></div>';
-  if(!nombres.length){ h+='<div class="aus-ok" style="font-size:18px">✓ Sin llegadas tarde hoy</div>'; }
-  else { h+='<div class="ausgrid">'; nombres.forEach(function(t){ var p=String(t).split(' '); var hh=p.pop(); var nm=p.join(' '); h+='<div class="auscard"><div class="nom">'+esc(nm)+'</div><div class="sec" style="color:#fbbf24">⏰ '+esc(hh)+'</div></div>'; }); h+='</div>'; }
-  h+='</div>'; return h;
-}
-function renderAusMesPanel(){
-  var m=D.ausentismo_mes;
-  if(!m||!m.dias) return '<div class="auswrap"><div class="aus-ok">Sin datos del mes</div></div>';
-  var map={}; m.dias.forEach(function(x){map[x.fecha]=x;});
-  var ym=String(m.mes).split('-'), Y=+ym[0], Mo=+ym[1];
-  var daysInMonth=new Date(Y,Mo,0).getDate();
-  var firstDow=(new Date(Y,Mo-1,1).getDay()+6)%7;
-  var MN=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][Mo-1];
-  var FERIADOS=['2026-06-15']; var fAus=0,fTar=0; m.dias.forEach(function(x){ if(FERIADOS.indexOf(x.fecha)>=0) return; fAus+=(x.ausentes||0); fTar+=(x.tardes||0); }); var _n=new Date(); var _hd=(_n.getFullYear()===Y&&(_n.getMonth()+1)===Mo)?_n.getDate():daysInMonth; var diasLab=0; for(var _d=1;_d<=_hd;_d++){ var _ds=Y+'-'+String(Mo).padStart(2,'0')+'-'+String(_d).padStart(2,'0'); if(new Date(Y,Mo-1,_d).getDay()!==0 && FERIADOS.indexOf(_ds)<0) diasLab++; } var _pos=(m.roster_n||0)*diasLab; var pctAus=_pos?Math.round(fAus*1000/_pos)/10:0; var pctTar=_pos?Math.round(fTar*1000/_pos)/10:0; var h='<div class="auswrap"><div class="aushero"><div><div class="lbl">AUSENTISMO · '+MN+' '+Y+'</div><div class="sub">'+fAus+' faltas · '+fTar+' llegadas tarde · '+m.roster_n+' operarios · <b style="color:#f87171">'+pctAus+'% ausent.</b> · <b style="color:#facc15">'+pctTar+'% tarde</b> · F=falta T=tarde</div></div></div>';
-  h+='<div class="calmes">';
-  ['L','M','M','J','V','S','D'].forEach(function(w){h+='<div class="calhd">'+w+'</div>';});
-  for(var i=0;i<firstDow;i++) h+='<div class="calcell empty"></div>';
-  for(var dn=1;dn<=daysInMonth;dn++){
-    var ds=Y+'-'+String(Mo).padStart(2,'0')+'-'+String(dn).padStart(2,'0');
-    if(['2026-06-15'].indexOf(ds)>=0){ h+='<div class="calcell fer"><div class="cd">'+dn+'</div><div class="cv"><span class="cfer">FERIADO</span></div></div>'; continue; } var dd=map[ds];
-    var dow=(new Date(Y,Mo-1,dn).getDay()+6)%7;
-    var cls='calcell'+(dow===6?' dom':'');
-    if(dd){
-      var fal=dd.ausentes, tar=dd.tardes;
-      var tip=(dd.ausentes_nombres||[]).concat((dd.tardes_nombres||[]).map(function(t){return 'tarde: '+t;})).join(' · ');
-      cls+=(fal>0?' hasf':'')+(tar>0?' hast':'');
-      h+='<div class="'+cls+'" title="'+esc(tip)+'"><div class="cd">'+dn+'</div><div class="cv">'+(fal>0?'<span class="cf">'+fal+'F</span>':'')+(tar>0?'<span class="ct">'+tar+'T</span>':'')+((fal+tar)===0?'<span class="cok">·</span>':'')+'</div></div>';
-    } else {
-      h+='<div class="'+cls+' nodata"><div class="cd">'+dn+'</div></div>';
-    }
-  }
-  h+='</div></div>';
-  return h;
-}
-function renderAusentesPanel() {
-  const aus = D.ausentes || [];
-  const n = aus.length;
-  let h = '<div class="auswrap">';
-  h += '<div class="aushero' + (n ? '' : ' ok') + '">'
-    + '<div class="big">' + n + '</div>'
-    + '<div><div class="lbl">AUSENTES HOY</div><div class="sub">No ficharon asistencia en Odoo · pasantes no se cuentan</div></div>'
+  // KPIs
+  const hospBad = D.hospital_count > D.hospital_target;
+  h += '<div class="kpis">'
+    + '<div class="kpi"><div class="k">TAKT OBJETIVO</div><div class="v">' + D.takt_dias + ' días</div><div class="s">Pegasso 4d · CONFIG</div></div>'
+    + '<div class="kpi"><div class="k">EN FABRICACIÓN</div><div class="v">' + D.en_fabricacion + ' MOs</div><div class="s">con actividad hoy</div></div>'
+    + '<div class="kpi' + (hospBad ? ' bad' : ' good') + '"><div class="k">HOSPITAL / QC</div><div class="v">' + D.hospital_count + '</div><div class="s">' + esc((D.hospital_mos || []).map(h => (String(h.mo).match(/(\d{3,6})/) || [])[1] || h.mo).join(' · ') || 'sin unidades') + ' · target ≤ ' + D.hospital_target + '</div></div>'
+    + '<div class="kpi ' + efClass(D.eficiencia_hoy_pct) + '"><div class="k">EFICIENCIA HOY (PARCIAL)</div><div class="v">' + D.eficiencia_hoy_pct + '%</div><div class="s">prom. mes ' + D.eficiencia_mes_pct + '% (' + (D.eficiencia_mes_dias || 0) + ' días) · ayer ' + (ay.eficiencia_pct ?? '—') + '%</div></div>'
     + '</div>';
-  if (!n) {
-    h += '<div class="aus-ok">✓ Todos presentes hoy</div>';
-  } else {
-    h += '<div class="ausgrid">';
-    aus.forEach(a => {
-      h += '<div class="auscard"><div class="nom">' + esc(a.nombre) + '</div><div class="sec">' + esc(a.sector || '—') + '</div></div>';
-    });
-    h += '</div>';
-  }
-  h += _tardesHoyHTML();
-  h += '</div>';
+
+  // eficiencia detalle
+  h += '<div class="efgrid">'
+    + '<div class="efcell"><div class="k">EFICIENCIA HOY</div><div class="v">' + D.eficiencia_hoy_pct + '%</div><div class="s">Earned ÷ jornada transcurrida (' + (ef.jornada_min ?? 0) + ' min/op)</div></div>'
+    + '<div class="efcell"><div class="k">REAL</div><div class="v">' + (ef.real_h ?? 0) + 'h</div><div class="s">cronómetro Odoo</div></div>'
+    + '<div class="efcell"><div class="k">EARNED</div><div class="v">' + (ef.earned_h ?? 0) + 'h</div><div class="s">tiempo objetivo</div></div>'
+    + '<div class="efcell"><div class="k">DISPONIBLE</div><div class="v">' + (ef.disponible_h ?? 0) + 'h</div><div class="s">' + (ef.operarios ?? 0) + ' ops × transcurrido</div></div>'
+    + '<div class="efcell"><div class="k">PRODUCTIVIDAD</div><div class="v">' + (ef.productividad_pct ?? 0) + '%</div><div class="s">Earned/Real</div></div>'
+    + '<div class="efcell final"><div class="k">EFICIENCIA</div><div class="v">' + (ef.eficiencia_pct ?? 0) + '%</div><div class="s">parcial del día</div></div>'
+    + '</div>';
+
+  // bottom: tendencia + ausentes + NC
+  const tmax = Math.max(20, ...(D.tendencia || []).map(t => t.pct));
+  let tend = '';
+  (D.tendencia || []).forEach(t => {
+    const hpct = Math.round(t.pct / tmax * 100);
+    tend += '<div class="tcol"><div class="tbar' + (t.hoy ? ' hoy' : '') + '" style="height:' + Math.max(3, hpct) + '%"><span class="tv">' + t.pct + '</span></div><div class="tlab">' + t.day + '</div></div>';
+  });
+  let aus = '';
+  (D.ausentes || []).slice(0, 8).forEach(a => { aus += '<div class="li"><b>' + esc(a.nombre) + '</b><span>' + esc(a.sector) + '</span></div>'; });
+  if (!(D.ausentes || []).length) aus = '<div class="li">Sin ausentes hoy ✓</div>';
+  // % de NC contra las horas TOTALES del día (jornada completa × operarios): Lu-Vi 470 min · Sáb 300 min
+  const dowJ = new Date(D.fecha_hoy + 'T12:00:00').getDay();
+  const dispFullH = Math.round((ef.operarios || 0) * (dowJ === 6 ? 300 : 470) / 60 * 10) / 10;
+  const ncPct = dispFullH > 0 ? Math.round(D.nc_horas_hoy * 1000 / dispFullH) / 10 : 0;
+  let nc = '<div class="nctotal">' + D.nc_horas_hoy + ' h <span style="font-size:16px;color:' + (ncPct > 10 ? 'var(--bad)' : 'var(--muted)') + ';font-weight:800">· ' + ncPct + '% del total del día (' + dispFullH + 'h)</span></div>';
+  (D.nc_por_montaje || []).forEach(m => { nc += '<div class="li" style="background:rgba(248,113,113,.10);border-radius:6px"><b style="color:var(--bad)">' + esc(m.montaje) + '</b><span><b>' + m.pct + '%</b> · ' + m.horas + ' h</span></div>'; });
+  (D.nc_personas || []).slice(0, 4).forEach(p => { nc += '<div class="li"><b>' + esc(p.operario) + '</b><span>' + p.horas + ' h</span></div>'; });
+
+  h += '<div class="bot">'
+    + '<div class="botcard"><h4>TENDENCIA SEMANAL · EFICIENCIA DIARIA</h4><div class="tend">' + tend + '</div></div>'
+    + '<div class="botcard"><h4>AUSENTES HOY · ' + (D.ausentes || []).length + '</h4><div class="lista">' + aus + '</div></div>'
+    + '<div class="botcard"><h4>NO CONFORMIDAD HOY</h4><div class="lista">' + nc + '</div></div>'
+    + '</div>';
   return h;
 }
 
@@ -486,7 +344,7 @@ function renderAusentesPanel() {
 function renderDots() {
   let h = '';
   for (let i = 0; i < panels.length; i++)
-    h += '<div class="dot' + (i === cur ? ' act' : '') + '" data-i="' + i + '"><span>' + ((panels[i] && panels[i].label) || (i + 1)) + '</span></div>';
+    h += '<div class="dot' + (i === cur ? ' act' : '') + '" data-i="' + i + '"><i></i></div>';
   $('dots').innerHTML = h;
   document.querySelectorAll('.dot').forEach(d => d.onclick = () => { cur = Number(d.dataset.i); showPanel(cur); });
 }

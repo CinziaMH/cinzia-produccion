@@ -3,8 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Fallback robusto para TV: recarga la página completa cada 5 min aunque el JS falle -->
-<meta http-equiv="refresh" content="300">
+<!-- Fallback robusto para TV: recarga completa cada 6h aunque el JS falle.
+     La recarga normal la maneja el JS: 07:30 · 10:30 · 13:30 · 16:00 -->
+<meta http-equiv="refresh" content="21600">
 <title>Cinzia · Pie de Línea TV</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -63,7 +64,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:#f4f4f5;color:#1f2937;fon
 
 <div class="hdr">
   <div class="clock" id="clock">--:--</div>
-  <div class="nextref">actualiza cada 5 min</div>
+  <div class="nextref" id="nextref">actualiza 07:30 · 10:30 · 13:30 · 16:00</div>
   <div class="tit">CINZIA · Pie de Líne<span class="a">a</span> <span style="font-size:14px;opacity:.8">TV</span></div>
   <div class="sub">DYFSA · estado de la línea en vivo</div>
 </div>
@@ -236,6 +237,24 @@ function build(){
   $('wrap').innerHTML = renderIndicadores() + renderLayout();
   $('wrap').style.display = 'block';
 }
+
+/* --- actualización 4x/día: recarga la página en los horarios fijos --- */
+var SLOTS = [[7,30],[10,30],[13,30],[16,0]];
+function nextSlot(){
+  var n = new Date(), best = null, i, t;
+  for (i=0;i<SLOTS.length;i++){
+    t = new Date(n.getFullYear(), n.getMonth(), n.getDate(), SLOTS[i][0], SLOTS[i][1], 0);
+    if (t.getTime() > n.getTime() + 60000 && (best === null || t.getTime() < best.getTime())) best = t;
+  }
+  if (best === null) best = new Date(n.getFullYear(), n.getMonth(), n.getDate()+1, SLOTS[0][0], SLOTS[0][1], 0);
+  return best;
+}
+(function(){
+  var s = nextSlot();
+  var el = $('nextref');
+  if (el) el.innerHTML = 'próx. actualización ' + p2(s.getHours()) + ':' + p2(s.getMinutes());
+  setTimeout(function(){ try{ window.location.reload(); }catch(e){} }, s.getTime() - (new Date()).getTime());
+})();
 
 fetchData();
 </script>
