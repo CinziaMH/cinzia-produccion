@@ -10,44 +10,44 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Arial,Helvetica,sans-serif;background:#f4f4f5;color:#1f2937;font-size:16px}
-.hdr{background:#EA580C;color:#fff;padding:10px 22px;overflow:hidden}
-.hdr .tit{font-size:24px;font-weight:bold;float:left}
+.hdr{background:#EA580C;color:#fff;padding:5px 14px;overflow:hidden}
+.hdr .tit{font-size:19px;font-weight:bold;float:left}
 .hdr .tit .a{color:#ffd9c2}
-.hdr .sub{font-size:12px;opacity:.9;clear:left;float:left}
-.clock{float:right;font-size:28px;font-weight:bold}
-.nextref{float:right;clear:right;font-size:11px;opacity:.85}
-.wrap{padding:14px 20px}
-.alertbar{background:#dc2626;color:#fff;padding:7px 22px;font-weight:bold;font-size:14px;display:none}
+.hdr .sub{font-size:11px;opacity:.9;clear:left;float:left}
+.clock{float:right;font-size:22px;font-weight:bold}
+.nextref{float:right;clear:right;font-size:10px;opacity:.85}
+.wrap{padding:7px 10px}
+.alertbar{background:#dc2626;color:#fff;padding:4px 14px;font-weight:bold;font-size:13px;display:none}
 /* indicadores */
-.reunion{background:#0b1626;color:#fff;border-radius:12px;padding:14px 18px;margin-bottom:12px}
-.reunion h3{font-size:16px;margin-bottom:10px}
-.rtag{background:#EA580C;color:#fff;font-size:11px;font-weight:bold;padding:3px 11px;border-radius:99px;letter-spacing:1px}
-.rgrid{width:100%;border-collapse:separate;border-spacing:8px 0;table-layout:fixed}
-.rcell{background:#1a2637;border:1px solid #2a3a52;border-radius:10px;padding:10px 12px;vertical-align:top}
-.rcell .k{font-size:11px;color:#94a3b8;font-weight:bold;letter-spacing:.5px}
-.hl{font-size:9px;letter-spacing:1px;color:#94a3b8;font-weight:bold;display:block;margin-top:6px}
-.hvv{font-size:32px;font-weight:bold;color:#fff;line-height:1.1}
-.avv{font-size:20px;font-weight:bold;color:#94a3b8}
+.reunion{background:#0b1626;color:#fff;border-radius:10px;padding:8px 10px;margin-bottom:7px}
+.reunion h3{font-size:13px;margin-bottom:6px;display:inline;margin-left:8px;vertical-align:middle}
+.rtag{background:#EA580C;color:#fff;font-size:10px;font-weight:bold;padding:2px 9px;border-radius:99px;letter-spacing:1px;vertical-align:middle}
+.rgrid{width:100%;border-collapse:separate;border-spacing:5px 0;table-layout:fixed;margin-top:6px}
+.rcell{background:#1a2637;border:1px solid #2a3a52;border-radius:8px;padding:6px 9px;vertical-align:top}
+.rcell .k{font-size:10px;color:#94a3b8;font-weight:bold;letter-spacing:.5px}
+.hl{font-size:9px;letter-spacing:1px;color:#94a3b8;font-weight:bold;display:block;margin-top:3px}
+.hvv{font-size:25px;font-weight:bold;color:#fff;line-height:1.05}
+.avv{font-size:16px;font-weight:bold;color:#94a3b8}
 .bad .hvv{color:#f87171}
-.d{margin-top:6px;font-size:11px;color:#94a3b8}
-.plan{border-radius:10px;padding:10px 12px;color:#fff;vertical-align:top}
-.plan .k{color:#fff;opacity:.9;font-size:11px;font-weight:bold}
-.plan .v{font-size:32px;font-weight:bold}
+.d{margin-top:3px;font-size:10px;color:#94a3b8}
+.plan{border-radius:8px;padding:6px 9px;color:#fff;vertical-align:top}
+.plan .k{color:#fff;opacity:.9;font-size:10px;font-weight:bold}
+.plan .v{font-size:25px;font-weight:bold}
 .plan .d{color:#fff;opacity:.92}
 /* layout planta */
-.floor{background:#fff;border:1px solid #e4e4e7;border-radius:12px;padding:14px 18px}
-.ftitle{font-size:13px;color:#374151;margin-bottom:12px}
-.frow{width:100%;border-collapse:separate;border-spacing:8px 0;table-layout:fixed;margin-bottom:10px}
-.fbox{border:2px solid #e4e4e7;border-radius:12px;padding:10px 12px;background:#fff;vertical-align:top}
+.floor{background:#fff;border:1px solid #e4e4e7;border-radius:10px;padding:7px 9px}
+.ftitle{font-size:12px;color:#374151;margin-bottom:6px}
+.frow{width:100%;border-collapse:separate;border-spacing:5px 0;table-layout:fixed;margin-bottom:5px}
+.fbox{border:2px solid #e4e4e7;border-radius:9px;padding:5px 8px;background:#fff;vertical-align:top}
 .fbox.over{border-color:#dc2626;background:#fef2f2}
-.fcode{font-weight:bold;font-size:19px;color:#1f2937}
-.f5s{display:inline-block;width:14px;height:14px;border-radius:50%;margin-left:8px;vertical-align:middle;border:1px solid rgba(0,0,0,.18)}
-.frow2{font-size:13px;padding:3px 0;border-top:1px solid #f1f1f3;overflow:hidden}
+.fcode{font-weight:bold;font-size:16px;color:#1f2937}
+.f5s{display:inline-block;width:12px;height:12px;border-radius:50%;margin-left:7px;vertical-align:middle;border:1px solid rgba(0,0,0,.18)}
+.frow2{font-size:12px;padding:2px 0;border-top:1px solid #f1f1f3;overflow:hidden}
 .fcli{float:left;color:#1f2937;font-weight:bold;max-width:60%;overflow:hidden;white-space:nowrap}
-.fnums{float:right;color:#475569;font-weight:bold;font-size:12px}
+.fnums{float:right;color:#475569;font-weight:bold;font-size:11px}
 .frow2.bad .fnums{color:#dc2626}
-.fempty{font-size:11px;color:#a1a1aa;padding:3px 0}
-.faisle{text-align:center;font-size:11px;color:#a1a1aa;letter-spacing:3px;border-top:2px dashed #e4e4e7;border-bottom:2px dashed #e4e4e7;padding:5px 0;margin:8px 0}
+.fempty{font-size:10px;color:#a1a1aa;padding:2px 0}
+.faisle{text-align:center;font-size:10px;color:#a1a1aa;letter-spacing:3px;border-top:2px dashed #e4e4e7;border-bottom:2px dashed #e4e4e7;padding:2px 0;margin:5px 0}
 /* estados */
 #loading{text-align:center;padding:80px 20px;font-size:20px;font-weight:bold;color:#71717a}
 .staleband{position:fixed;bottom:0;left:0;right:0;background:#dc2626;color:#fff;text-align:center;font-weight:bold;font-size:13px;padding:4px;display:none}
@@ -176,12 +176,12 @@ function renderIndicadores(){
     + dd2('GENTE EN HOSPITAL', hospH+' p', hospA+' p', hospMos.length?('hoy: '+esc(hospMos.join(' · '))):'', hospH>num(D.hospital_target,2))
     + dd2('GENTE AUSENTE', ausH+' p', ausA+' p', ausH?('hoy: '+ausNames.join(' · ')):'✓ sin ausentes hoy', false)
     + '</tr></table>'
-    + '<table class="rgrid" style="margin-top:8px"><tr>'
-    + '<td class="rcell" style="width:40%"><div class="k">5S HOY TEMPRANO</div><div style="font-size:17px;font-weight:bold;margin-top:4px;color:#fff">'
+    + '<table class="rgrid" style="margin-top:5px"><tr>'
+    + '<td class="rcell" style="width:40%"><div class="k">5S HOY TEMPRANO</div><div style="font-size:14px;font-weight:bold;margin-top:2px;color:#fff">'
       + (cs.hora?cs.hora+' · ':'') + num(cs.sectores_ok,0)+'/'+num(cs.sectores_total,9)+' OK · '
       + '<span style="color:#4ade80">V '+num(cs.verdes,0)+'</span> <span style="color:#60a5fa">A '+num(cs.amarillos,0)+'</span> <span style="color:#f87171">R '+num(cs.rojos,0)+'</span></div>'
       + '<div class="d">'+(((cs.pendientes||[]).length)?('Pendientes: '+esc(cs.pendientes.join(' · '))):'Todos relevados ✓')+'</div></td>'
-    + '<td class="rcell"><div class="k">RONDAS AYER (validadas)</div><div style="font-size:17px;font-weight:bold;margin-top:4px;color:#fff">Y '+num(yay.validadas,0)+'/'+num(yay.total,0)+' · R '+num(ray.validadas,0)+'/'+num(ray.total,0)+'</div><div class="d">'+((yay.flagged||0)+(ray.flagged||0))+' a revisar</div></td>'
+    + '<td class="rcell"><div class="k">RONDAS AYER (validadas)</div><div style="font-size:14px;font-weight:bold;margin-top:2px;color:#fff">Y '+num(yay.validadas,0)+'/'+num(yay.total,0)+' · R '+num(ray.validadas,0)+'/'+num(ray.total,0)+'</div><div class="d">'+((yay.flagged||0)+(ray.flagged||0))+' a revisar</div></td>'
     + (function(){
         var p = D.plan_mes || {};
         var bg = {verde:'#16a34a',amarillo:'#d97706',rojo:'#dc2626',gris:'#475569'}[p.color||'gris'] || '#475569';
@@ -236,7 +236,23 @@ function build(){
   } else ab.style.display = 'none';
   $('wrap').innerHTML = renderIndicadores() + renderLayout();
   $('wrap').style.display = 'block';
+  fitScreen();
 }
+
+/* --- auto-ajuste: escala el contenido para que TODO entre en una pantalla --- */
+function fitScreen(){
+  try{
+    document.body.style.zoom = 1;
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    var ch = document.documentElement.scrollHeight;
+    if (ch > vh) {
+      var z = Math.floor(vh / ch * 1000) / 1000;
+      if (z < 0.5) z = 0.5;
+      document.body.style.zoom = z;
+    }
+  }catch(e){}
+}
+window.onresize = function(){ fitScreen(); };
 
 /* --- actualización 4x/día: recarga la página en los horarios fijos --- */
 var SLOTS = [[7,30],[10,30],[13,30],[16,0]];
