@@ -307,3 +307,86 @@ fetchData();
 </script>
 </body>
 </html>
+
+<!-- ============ PULSO DE CALIDAD TV (DÍA ANTERIOR) — ES5, integrado tras los indicadores ============
+     Aditivo: pegar al final de tablero_tv.html. Envuelve renderIndicadores() para sumar una tira
+     compacta DPU + Voz del Cliente (ayer). Reutiliza .reunion/.rgrid/.rcell/.hvv/.d. No toca código. -->
+<script>
+/* Pulso de Calidad (ayer) tras los indicadores en la TV (ES5 puro). */
+(function(){
+  var CAL_URL='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
+  var CAL=null, F=false, CDATE='';
+  function _e(s){ if(typeof esc==='function') return esc(s); var d=document.createElement('div'); d.textContent=String(s==null?'':s); return d.innerHTML; }
+  function _pad(n){ return (n<10?'0':'')+n; }
+  function ayerStr(){
+    try{ if(typeof D!=='undefined' && D && D.ayer && D.ayer.fecha) return D.ayer.fecha; }catch(e){}
+    var d=new Date(); d.setDate(d.getDate()-1);
+    return d.getFullYear()+'-'+_pad(d.getMonth()+1)+'-'+_pad(d.getDate());
+  }
+  function dpuCell(title,d){
+    if(!d||d.error) return '<td class="rcell"><div class="k">'+title+'</div><div class="d" style="margin-top:4px">sin datos</div></td>';
+    var v=d.verde||0,a=d.azul||0,r=d.rojo||0;
+    return '<td class="rcell"><div class="k">'+title+'</div>'
+      +'<div class="hvv">'+(d.dpu!=null?Number(d.dpu).toFixed(2):'—')+'</div>'
+      +'<div class="d">'+(d.defectos||0)+' def · '+(d.vehiculos||0)+' veh insp. · DPU</div>'
+      +'<div class="d"><span style="color:#4ade80">Bajo '+v+'</span> · <span style="color:#60a5fa">Normal '+a+'</span> · <span style="color:#f87171">Alto/Crít '+r+'</span></div></td>';
+  }
+  function vozCell(voz){
+    voz=voz||{};
+    if(voz.error) return '<td class="rcell"><div class="k">VOZ DEL CLIENTE · RECLAMOS EXT.</div><div class="d" style="margin-top:4px">sin planilla</div></td>';
+    var g=voz.por_gravedad||{};
+    return '<td class="rcell"><div class="k">VOZ DEL CLIENTE · RECLAMOS EXTERNOS</div>'
+      +'<div class="hvv">'+(voz.total||0)+'</div>'
+      +'<div class="d">reclamos externos del día anterior</div>'
+      +'<div class="d"><span style="color:#f87171">Crít '+(g.rojo||0)+'</span> · <span style="color:#60a5fa">Mayor '+(g.azul||0)+'</span> · <span style="color:#4ade80">Menor '+(g.verde||0)+'</span>'
+      +((g.otros||0)?(' · <span style="color:#94a3b8">S/clasif '+g.otros+'</span>'):'')+'</div></td>';
+  }
+  function renderStrip(){
+    var head='<span class="rtag">CALIDAD</span><h3 style="margin-top:8px">Pulso de Calidad · AYER'+(CDATE?(' ('+_e(CDATE)+')'):'')+' · DPU por gravedad + Voz del Cliente</h3>';
+    if(CAL==null) return '<div class="reunion" style="margin-top:7px">'+head+'<div class="d" style="padding:5px">cargando…</div></div>';
+    if(CAL=='ERR') return '<div class="reunion" style="margin-top:7px">'+head+'<div class="d" style="padding:5px">no se pudo cargar Calidad</div></div>';
+    return '<div class="reunion" style="margin-top:7px">'+head
+      +'<table class="rgrid" style="margin-top:6px"><tr>'
+      +dpuCell('CONTROL FINAL',CAL.dpu_cf)+dpuCell('M4 · INST. ET. 2 Y 3',CAL.dpu_m4)+vozCell(CAL.voz)
+      +'</tr></table></div>';
+  }
+  function refresh(){ try{ if(typeof build==='function') build(); }catch(e){} }
+  function fetchCal(){
+    if(F) return;
+    if(CAL!=null && CAL!='ERR') return;
+    F=true; var f=ayerStr(); CDATE=f;
+    try{
+      var xhr=new XMLHttpRequest();
+      xhr.open('GET', CAL_URL+'?view=calidad&desde='+f+'&hasta='+f+'&t='+(new Date()).getTime(), true);
+      xhr.timeout=45000;
+      xhr.onreadystatechange=function(){
+        if(xhr.readyState!==4) return; F=false;
+        if(xhr.status>=200 && xhr.status<300){ try{ CAL=JSON.parse(xhr.responseText); }catch(e){ CAL='ERR'; } } else CAL='ERR';
+        refresh();
+      };
+      xhr.ontimeout=function(){ F=false; CAL='ERR'; refresh(); };
+      xhr.onerror=function(){ F=false; CAL='ERR'; refresh(); };
+      xhr.send();
+    }catch(e){ F=false; CAL='ERR'; refresh(); }
+  }
+  function wrapIndic(){
+    if(typeof renderIndicadores==='function' && !renderIndicadores.__cal){
+      var o=renderIndicadores;
+      renderIndicadores=function(){ return o.apply(this,arguments)+renderStrip(); };
+      renderIndicadores.__cal=true;
+    }
+  }
+  function wrapBuild(){
+    if(typeof build==='function' && !build.__calI){
+      var o=build;
+      build=function(){ o.apply(this,arguments); fetchCal(); };
+      build.__calI=true;
+    }
+  }
+  function start(){ wrapIndic(); wrapBuild(); fetchCal(); refresh(); }
+  if(document.readyState==='complete') start();
+  else if(window.addEventListener) window.addEventListener('load', start);
+  else window.attachEvent('onload', start);
+})();
+</script>
+<!-- ============ FIN PULSO DE CALIDAD TV ============ -->
