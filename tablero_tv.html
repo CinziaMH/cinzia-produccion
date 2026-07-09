@@ -39,6 +39,7 @@ body{font-family:Arial,Helvetica,sans-serif;background:#f4f4f5;color:#1f2937;fon
 .ftitle{font-size:12px;color:#374151;margin-bottom:6px}
 .frow{width:100%;border-collapse:separate;border-spacing:5px 0;table-layout:fixed;margin-bottom:5px}
 .fbox{border:2px solid #e4e4e7;border-radius:9px;padding:5px 8px;background:#fff;vertical-align:top}
+.fbox.ok{border-color:#16a34a;background:#f0fdf4}
 .fbox.over{border-color:#dc2626;background:#fef2f2}
 .fcode{font-weight:bold;font-size:16px;color:#1f2937}
 .f5s{display:inline-block;width:12px;height:12px;border-radius:50%;margin-left:7px;vertical-align:middle;border:1px solid rgba(0,0,0,.18)}
@@ -177,7 +178,14 @@ function renderIndicadores(){
     + dd2('GENTE AUSENTE', ausH+' p', ausA+' p', ausH?('hoy: '+ausNames.join(' · ')):'✓ sin ausentes hoy', false)
     + '</tr></table>'
     + '<table class="rgrid" style="margin-top:5px"><tr>'
-    + '<td class="rcell" style="width:40%"><div class="k">5S HOY TEMPRANO</div><div style="font-size:14px;font-weight:bold;margin-top:2px;color:#fff">'
+    + (function(){
+        var tc = taktCounts();
+        return '<td class="rcell" style="width:16%"><div class="k">MONTAJES vs TAKT (3d)</div>'
+          + '<div style="font-size:22px;font-weight:bold;margin-top:2px;color:#fff">'
+          + '<span style="color:#4ade80">'+tc.verdes+' V</span> · <span style="color:#f87171">'+tc.rojos+' R</span></div>'
+          + '<div class="d">verde en ritmo · rojo pasado</div></td>';
+      })()
+    + '<td class="rcell" style="width:32%"><div class="k">5S HOY TEMPRANO</div><div style="font-size:14px;font-weight:bold;margin-top:2px;color:#fff">'
       + (cs.hora?cs.hora+' · ':'') + num(cs.sectores_ok,0)+'/'+num(cs.sectores_total,9)+' OK · '
       + '<span style="color:#4ade80">V '+num(cs.verdes,0)+'</span> <span style="color:#60a5fa">A '+num(cs.amarillos,0)+'</span> <span style="color:#f87171">R '+num(cs.rojos,0)+'</span></div>'
       + '<div class="d">'+(((cs.pendientes||[]).length)?('Pendientes: '+esc(cs.pendientes.join(' · '))):'Todos relevados ✓')+'</div></td>'
@@ -191,6 +199,29 @@ function renderIndicadores(){
       })()
     + '</tr></table></div>';
   return h;
+}
+
+/* codes que se muestran en el layout (fuente única para cajas y contador) */
+var CODES_TOP = ['QC','M7','M6','M5','M3','M0'];
+var CODES_BOT = ['M1','M2','S1','S2','M4','S5','S6','S7'];
+
+/* estado del montaje vs takt 3d: 'over' (algún MO pasado), 'ok' (todos en ritmo), '' (sin órdenes) */
+function montajeStatus(code){
+  var m = null, ms = D.montajes || [];
+  for (var i=0;i<ms.length;i++) if (ms[i].code===code) { m = ms[i]; break; }
+  var mos = (m && m.mos) || [];
+  if (!mos.length) return '';
+  for (var j=0;j<mos.length;j++) if ((mos[j].dias_en_produccion||0) > 3) return 'over';
+  return 'ok';
+}
+function taktCounts(){
+  var codes = CODES_TOP.concat(CODES_BOT), verdes = 0, rojos = 0;
+  for (var i=0;i<codes.length;i++){
+    var s = montajeStatus(codes[i]);
+    if (s === 'over') rojos++;
+    else if (s === 'ok') verdes++;
+  }
+  return { verdes: verdes, rojos: rojos };
 }
 
 function boxFor(code){
@@ -212,13 +243,13 @@ function boxFor(code){
   var p5 = (D.cinco_s_hoy && D.cinco_s_hoy.por_montaje && D.cinco_s_hoy.por_montaje[code]) || null;
   var col = p5 ? ({verde:'#16a34a',ok:'#16a34a',amarillo:'#2563eb',azul:'#2563eb',rojo:'#dc2626'}[p5.color]||'#94a3b8') : '#000';
   s5 = '<span class="f5s" style="background:'+col+'"></span>';
-  return '<td class="fbox'+(overN?' over':'')+'"><div class="fcode">'+esc(code)+s5+'</div>'+rows+'</td>';
+  var st = montajeStatus(code); // 'over' rojo · 'ok' verde · '' sin órdenes
+  return '<td class="fbox'+(st?' '+st:'')+'"><div class="fcode">'+esc(code)+s5+'</div>'+rows+'</td>';
 }
 
 function renderLayout(){
-  var top = ['QC','M7','M6','M5','M3','M0'];
-  var bot = ['M1','M2','S1','S2','M4','S5','S6','S7'];
-  var h = '<div class="floor"><div class="ftitle">Layout de planta · órdenes activas hoy · <b>rojo = pasada del takt (3 días)</b></div><table class="frow"><tr>';
+  var top = CODES_TOP, bot = CODES_BOT;
+  var h = '<div class="floor"><div class="ftitle">Layout de planta · órdenes activas hoy · <b style="color:#dc2626">rojo = pasada del takt (3 días)</b> · <b style="color:#16a34a">verde = en ritmo</b></div><table class="frow"><tr>';
   for (var i=0;i<top.length;i++) h += boxFor(top[i]);
   h += '</tr></table><div class="faisle">PASILLO DE CIRCULACIÓN</div><table class="frow"><tr>';
   for (var j=0;j<bot.length;j++) h += boxFor(bot[j]);
