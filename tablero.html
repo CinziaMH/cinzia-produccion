@@ -395,170 +395,94 @@ fetchData();
 </script>
 </body>
 </html>
-
-<!-- ================= PANEL CALIDAD (DÍA ANTERIOR) — DPU + Voz del Cliente =================
-     Bloque ADITIVO: pegar tal cual al final de tablero.html (después de </html> o antes de </body>).
-     No modifica ninguna línea existente. Se auto-difiere y parchea la rotación / modo SIMPLE. -->
+<!-- ============ PULSO DE CALIDAD (DÍA ANTERIOR) — integrado en el panel de Indicadores ============
+     Aditivo: pegar al final de tablero.html. Envuelve renderIndicadores() para sumar una tira
+     compacta DPU + Voz del Cliente (ayer). Cubre rotación PC y modo SIMPLE (móvil). No toca código. -->
 <style id="cal-css">
-.calpanel{background:#0f172a;color:#f1f5f9;border-radius:16px;padding:16px 18px;overflow:auto;flex:1;min-height:0}
-.calpanel .caltitle{font-size:17px;font-weight:800;color:#fdba74;margin-bottom:2px}
-.calpanel .calsub{font-size:12px;color:#94a3b8;margin-bottom:6px}
-.calpanel h2{font-size:13px;font-weight:800;color:#94a3b8;letter-spacing:.6px;margin:16px 0 10px}
-.calpanel .qrow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.calpanel .qcard{background:#1e293b;border:1px solid #334155;border-radius:15px;padding:16px}
-.calpanel .qcard .qt{font-size:13px;font-weight:800;color:#fdba74;display:flex;gap:8px;align-items:center}
-.calpanel .qcard .dpu{font-size:48px;font-weight:800;line-height:1;margin-top:8px}
-.calpanel .qcard .dpusub{font-size:12px;color:#94a3b8;margin-top:2px}
-.calpanel .qcard .qmeta{font-size:12.5px;color:#cbd5e1;margin-top:10px;font-weight:600}
-.calpanel .sevbar{display:flex;height:14px;border-radius:8px;overflow:hidden;margin-top:12px;background:#0f172a}
-.calpanel .sevbar i{display:block;height:100%}
-.calpanel .sevleg{display:flex;gap:14px;margin-top:9px;flex-wrap:wrap}
-.calpanel .sevleg .sl{font-size:11.5px;color:#cbd5e1;font-weight:700;display:flex;align-items:center;gap:5px}
-.calpanel .sevleg .sl i{width:11px;height:11px;border-radius:3px;display:inline-block}
-.calpanel .vozhead{display:flex;gap:14px;flex-wrap:wrap;align-items:stretch;margin-top:2px}
-.calpanel .vbox{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:14px 18px;min-width:150px}
-.calpanel .vbox .n{font-size:40px;font-weight:800;line-height:1}
-.calpanel .vbox .l{font-size:11.5px;color:#94a3b8;font-weight:700;margin-top:3px;letter-spacing:.4px}
-.calpanel .gchips{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.calpanel .gchip{border-radius:11px;padding:10px 16px;font-weight:800;color:#fff;text-align:center;min-width:92px}
-.calpanel .gchip .gn{font-size:24px;line-height:1}
-.calpanel .gchip .gl{font-size:10.5px;opacity:.95;font-weight:700;margin-top:2px}
-.calpanel .vacio{color:#94a3b8;font-size:13px;padding:14px;text-align:center;background:#1e293b;border-radius:11px;margin-top:4px}
-.calpanel .calspin{width:42px;height:42px;border:5px solid #334155;border-top-color:#EA580C;border-radius:50%;animation:r 1s linear infinite;margin:56px auto}
-.calpanel .tbl{width:100%;border-collapse:collapse;background:#1e293b;border-radius:12px;overflow:hidden;margin-top:12px}
-.calpanel .tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;text-align:left;padding:9px 10px;border-bottom:1px solid #334155;font-weight:800}
-.calpanel .tbl td{font-size:12.5px;padding:9px 10px;border-bottom:1px solid #26344a;vertical-align:top;color:#e2e8f0}
-.calpanel .tbl tr:last-child td{border-bottom:none}
-.calpanel .gdot{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:800;color:#fff;white-space:nowrap}
-.calpanel .cli{display:flex;flex-direction:column;gap:8px}
-.calpanel .clirow{display:flex;align-items:center;gap:8px;font-size:12.5px}
-.calpanel .clirow .cn{flex:0 0 26px;height:20px;border-radius:6px;background:#3b2410;color:#fdba74;font-weight:800;text-align:center;font-size:12px;line-height:20px}
-.calpanel .clirow .cname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-@media(max-width:760px){.calpanel .qrow{grid-template-columns:1fr}}
+.calstrip{margin-top:10px}
+.calstrip .cst-h{font-size:11px;font-weight:800;color:#94a3b8;letter-spacing:.6px;margin:0 0 6px}
+.calstrip .cst-grid{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:10px}
+.calstrip .cst-cell{background:#0b1626;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:9px 13px}
+.calstrip .cst-cell .k{font-size:10px;color:#94a3b8;font-weight:800;letter-spacing:.5px}
+.calstrip .cst-cell .v{font-size:30px;font-weight:800;color:#fff;line-height:1.05;margin-top:2px}
+.calstrip .cst-cell .d{font-size:10.5px;color:#94a3b8;margin-top:2px}
+.calstrip .cst-sev{display:flex;gap:11px;margin-top:5px;flex-wrap:wrap;font-size:10.5px;font-weight:700}
+.calstrip .gchips2{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.calstrip .gchip2{border-radius:8px;padding:5px 9px;font-weight:800;color:#fff;text-align:center;min-width:50px;font-size:9.5px;letter-spacing:.3px}
+.calstrip .gchip2 b{display:block;font-size:19px;line-height:1}
+@media(max-width:760px){.calstrip .cst-grid{grid-template-columns:1fr}}
 </style>
 <script>
-/* Panel Calidad · día anterior — se integra a la rotación (PC) y al modo SIMPLE (TV/móvil).
-   Aditivo: no depende de tocar build() en el fuente; lo parchea en caliente. */
+/* Pulso de Calidad (ayer) DENTRO del panel de Indicadores — rotación PC + móvil. */
 (function(){
   var CAL_URL='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
-  var CAL=null, CAL_FETCHING=false, CAL_DATE='';
-  function _pad(n){return String(n).length<2?('0'+n):(''+n)}
-  function _esc(s){ if(typeof esc==='function') return esc(s); var d=document.createElement('div'); d.textContent=String(s==null?'':s); return d.innerHTML; }
+  var CAL=null, F=false, CDATE='';
+  function _e(s){ if(typeof esc==='function') return esc(s); var d=document.createElement('div'); d.textContent=String(s==null?'':s); return d.innerHTML; }
+  function _pad(n){ return String(n).length<2?('0'+n):(''+n); }
   function ayerStr(){
     try{ if(typeof D!=='undefined' && D && D.ayer && D.ayer.fecha) return D.ayer.fecha; }catch(e){}
     var d=new Date(); d.setDate(d.getDate()-1);
     return d.getFullYear()+'-'+_pad(d.getMonth()+1)+'-'+_pad(d.getDate());
   }
-  function gCss(c){return c==='rojo'?'#ef4444':c==='azul'?'#3b82f6':c==='verde'?'#22c55e':'#64748b'}
-  function gLbl(c){return c==='rojo'?'Crítico':c==='azul'?'Mayor':c==='verde'?'Menor':'—'}
-  function barHtml(v,a,r){
-    var tot=v+a+r; if(!tot) return '';
-    function p(x){return (x*100/tot).toFixed(1)+'%'}
-    return '<div class="sevbar">'
-      +(v?'<i style="width:'+p(v)+';background:#22c55e"></i>':'')
-      +(a?'<i style="width:'+p(a)+';background:#3b82f6"></i>':'')
-      +(r?'<i style="width:'+p(r)+';background:#ef4444"></i>':'')+'</div>';
+  function dpuCell(title,d){
+    if(!d||d.error) return '<div class="cst-cell"><div class="k">'+title+'</div><div class="d" style="margin-top:6px">sin datos</div></div>';
+    var v=d.verde||0,a=d.azul||0,r=d.rojo||0;
+    return '<div class="cst-cell"><div class="k">'+title+'</div>'
+      +'<div class="v">'+(d.dpu!=null?Number(d.dpu).toFixed(2):'—')+'</div>'
+      +'<div class="d">'+(d.defectos||0)+' def · '+(d.vehiculos||0)+' veh insp. · DPU</div>'
+      +'<div class="cst-sev"><span style="color:#4ade80">Bajo '+v+'</span><span style="color:#60a5fa">Normal '+a+'</span><span style="color:#f87171">Alto/Crít '+r+'</span></div></div>';
   }
-  function dpuCard(title,icon,d){
-    if(!d||d.error) return '<div class="qcard"><div class="qt">'+icon+' '+title+'</div><div class="vacio">sin datos</div></div>';
-    var v=d.verde||0,a=d.azul||0,r=d.rojo||0,tot=d.defectos||0;
-    return '<div class="qcard">'
-     +'<div class="qt">'+icon+' '+title+'</div>'
-     +'<div class="dpu">'+(d.dpu!=null?Number(d.dpu).toFixed(2):'—')+'</div>'
-     +'<div class="dpusub">defectos por vehículo inspeccionado</div>'
-     +'<div class="qmeta">'+tot+' defectos · '+(d.vehiculos||0)+' vehículos inspeccionados</div>'
-     +barHtml(v,a,r)
-     +'<div class="sevleg"><span class="sl"><i style="background:#22c55e"></i>Bajo '+v+'</span>'
-     +'<span class="sl"><i style="background:#3b82f6"></i>Normal '+a+'</span>'
-     +'<span class="sl"><i style="background:#ef4444"></i>Alto/Crítico '+r+'</span></div>'
-     +'</div>';
+  function vozCell(voz){
+    voz=voz||{};
+    if(voz.error) return '<div class="cst-cell"><div class="k">📣 VOZ DEL CLIENTE</div><div class="d" style="margin-top:6px">sin planilla de reclamos</div></div>';
+    var g=voz.por_gravedad||{};
+    return '<div class="cst-cell"><div class="k">📣 VOZ DEL CLIENTE · RECLAMOS EXTERNOS</div>'
+      +'<div class="gchips2">'
+      +'<div class="gchip2" style="background:#ef4444"><b>'+(g.rojo||0)+'</b>CRÍT</div>'
+      +'<div class="gchip2" style="background:#3b82f6"><b>'+(g.azul||0)+'</b>MAYOR</div>'
+      +'<div class="gchip2" style="background:#22c55e"><b>'+(g.verde||0)+'</b>MENOR</div>'
+      +((g.otros||0)?'<div class="gchip2" style="background:#64748b"><b>'+g.otros+'</b>S/CL</div>':'')
+      +'<div class="gchip2" style="background:rgba(255,255,255,.12)"><b>'+(voz.total||0)+'</b>TOTAL</div>'
+      +'</div></div>';
   }
-  function renderCalidadPanel(){
-    if(CAL===null){ fetchCalidad(); return '<div class="calpanel"><div class="caltitle">🔬 Pulso de Calidad · Ayer</div><div class="calspin"></div></div>'; }
-    if(CAL==='ERR'){ return '<div class="calpanel"><div class="caltitle">🔬 Pulso de Calidad · Ayer</div><div class="vacio">No se pudo cargar Calidad</div></div>'; }
-    var Dc=CAL;
-    var h='<div class="calpanel">';
-    h+='<div class="caltitle">🔬 Pulso de Calidad · AYER ('+_esc(CAL_DATE)+')</div>';
-    h+='<div class="calsub">defectos y reclamos registrados el día anterior</div>';
-    h+='<h2>DPU · DEFECTOS POR UNIDAD SEGÚN GRAVEDAD</h2>';
-    h+='<div class="qrow">'+dpuCard('CONTROL FINAL','🏁',Dc.dpu_cf)+dpuCard('M4 · INSTALACIONES ET. 2 Y 3','🔧',Dc.dpu_m4)+'</div>';
-    var voz=Dc.voz||{};
-    h+='<h2>📣 VOZ DEL CLIENTE · RECLAMOS EXTERNOS</h2>';
-    if(voz.error){ h+='<div class="vacio">No se pudo leer la planilla de reclamos</div>'; }
-    else {
-      var g=voz.por_gravedad||{rojo:0,azul:0,verde:0,otros:0};
-      h+='<div class="vozhead">';
-      h+='<div class="vbox"><div class="n">'+(voz.total||0)+'</div><div class="l">RECLAMOS EN EL PERÍODO</div></div>';
-      h+='<div class="vbox" style="flex:1;min-width:260px"><div class="l" style="margin-bottom:9px">POR GRAVEDAD</div><div class="gchips">'
-        +'<div class="gchip" style="background:#ef4444"><div class="gn">'+(g.rojo||0)+'</div><div class="gl">CRÍTICO</div></div>'
-        +'<div class="gchip" style="background:#3b82f6"><div class="gn">'+(g.azul||0)+'</div><div class="gl">MAYOR</div></div>'
-        +'<div class="gchip" style="background:#22c55e"><div class="gn">'+(g.verde||0)+'</div><div class="gl">MENOR</div></div>'
-        +((g.otros||0)?'<div class="gchip" style="background:#64748b"><div class="gn">'+g.otros+'</div><div class="gl">S/CLASIF</div></div>':'')
-        +'</div></div>';
-      var pc=voz.por_cliente||{}, arr=Object.keys(pc).map(function(k){return [k,pc[k]]}).sort(function(a,b){return b[1]-a[1]}).slice(0,5);
-      if(arr.length){
-        h+='<div class="vbox" style="min-width:230px"><div class="l" style="margin-bottom:9px">CLIENTES CON MÁS RECLAMOS</div><div class="cli">';
-        arr.forEach(function(x){h+='<div class="clirow"><div class="cn">'+x[1]+'</div><div class="cname">'+_esc(x[0])+'</div></div>'});
-        h+='</div></div>';
-      }
-      h+='</div>';
-      var rows=voz.rows||[];
-      if(rows.length){
-        h+='<table class="tbl"><thead><tr><th>Cliente</th><th>Producto</th><th>Descripción de la NC</th><th>Gravedad</th></tr></thead><tbody>';
-        rows.forEach(function(x){
-          h+='<tr><td style="font-weight:700">'+_esc(x.cliente)+'</td>'
-            +'<td>'+_esc(x.prod)+'</td>'
-            +'<td>'+_esc(x.motivo)+'</td>'
-            +'<td><span class="gdot" style="background:'+gCss(x.gcolor)+'">'+gLbl(x.gcolor)+'</span></td></tr>';
-        });
-        h+='</tbody></table>';
-      } else { h+='<div class="vacio">Sin reclamos el día anterior</div>'; }
-    }
-    h+='</div>';
-    return h;
+  function renderStrip(){
+    if(CAL===null){ fetchCal(); return '<div class="calstrip"><div class="cst-h">🔬 PULSO DE CALIDAD · AYER'+(CDATE?(' ('+_e(CDATE)+')'):'')+'</div><div class="cst-cell" style="color:#94a3b8">cargando…</div></div>'; }
+    if(CAL==='ERR') return '<div class="calstrip"><div class="cst-h">🔬 PULSO DE CALIDAD · AYER</div><div class="cst-cell" style="color:#94a3b8">no se pudo cargar Calidad</div></div>';
+    return '<div class="calstrip"><div class="cst-h">🔬 PULSO DE CALIDAD · AYER ('+_e(CDATE)+') · DPU por gravedad + Voz del Cliente</div>'
+      +'<div class="cst-grid">'+dpuCell('CONTROL FINAL',CAL.dpu_cf)+dpuCell('M4 · INST. ET. 2 Y 3',CAL.dpu_m4)+vozCell(CAL.voz)+'</div></div>';
   }
-  function fetchCalidad(){
-    if(CAL_FETCHING) return; CAL_FETCHING=true;
-    var f=ayerStr(); CAL_DATE=f;
+  function refresh(){
+    try{
+      if(typeof SIMPLE!=='undefined' && SIMPLE){ if(typeof build==='function') build(); }
+      else if(typeof showPanel==='function' && typeof cur!=='undefined' && typeof panels!=='undefined' && panels[cur]){ showPanel(cur); }
+    }catch(e){}
+  }
+  function fetchCal(){
+    if(F) return;
+    if(CAL!==null && CAL!=='ERR') return;
+    F=true; var f=ayerStr(); CDATE=f;
     fetch(CAL_URL+'?view=calidad&desde='+f+'&hasta='+f+'&t='+Date.now(),{cache:'no-store',redirect:'follow'})
       .then(function(r){return r.json()})
-      .then(function(J){ CAL=J; CAL_FETCHING=false; calRerender(); })
-      .catch(function(){ CAL='ERR'; CAL_FETCHING=false; calRerender(); });
+      .then(function(J){ CAL=J; F=false; refresh(); })
+      .catch(function(){ CAL='ERR'; F=false; refresh(); });
   }
-  function calRerender(){
-    try{
-      if(typeof SIMPLE!=='undefined' && SIMPLE){
-        var st=document.getElementById('stage'); var p=st&&st.querySelector('.panel');
-        if(p){ var old=p.querySelector('.calpanel'); if(old&&old.parentNode) old.parentNode.removeChild(old); p.insertAdjacentHTML('beforeend', renderCalidadPanel()); }
-      } else if(typeof panels!=='undefined' && panels[cur] && panels[cur].label==='Calidad' && typeof showPanel==='function'){
-        showPanel(cur);
-      }
-    }catch(e){}
+  function wrapIndic(){
+    if(typeof renderIndicadores==='function' && !renderIndicadores.__cal){
+      var o=renderIndicadores;
+      renderIndicadores=function(){ return o.apply(this,arguments)+renderStrip(); };
+      renderIndicadores.__cal=true;
+    }
   }
-  function ensureCalidad(){
-    try{
-      if(typeof SIMPLE!=='undefined' && SIMPLE){
-        var st=document.getElementById('stage'); var p=st&&st.querySelector('.panel');
-        if(p && !p.querySelector('.calpanel')){ p.insertAdjacentHTML('beforeend', renderCalidadPanel()); }
-      } else if(typeof panels!=='undefined' && panels.push){
-        var has=false; for(var i=0;i<panels.length;i++){ if(panels[i]&&panels[i].label==='Calidad'){has=true;break;} }
-        if(!has){ var pc=function(){return renderCalidadPanel();}; pc.label='Calidad'; panels.push(pc); if(typeof renderDots==='function') renderDots(); }
-      }
-    }catch(e){}
+  function wrapBuild(){
+    if(typeof build==='function' && !build.__calI){
+      var o=build;
+      build=function(){ o.apply(this,arguments); fetchCal(); };
+      build.__calI=true;
+    }
   }
-  function patch(){
-    try{
-      if(typeof build==='function' && !build.__calPatched){
-        var orig=build;
-        build=function(){ orig.apply(this,arguments); ensureCalidad(); fetchCalidad(); };
-        build.__calPatched=true;
-      }
-    }catch(e){}
-    ensureCalidad();
-    fetchCalidad();
-  }
-  if(document.readyState==='complete') patch();
-  else window.addEventListener('load', patch);
+  function start(){ wrapIndic(); wrapBuild(); fetchCal(); refresh(); }
+  if(document.readyState==='complete') start();
+  else window.addEventListener('load', start);
 })();
 </script>
-<!-- ================= FIN PANEL CALIDAD ================= -->
+<!-- ============ FIN PULSO DE CALIDAD (indicadores) ============ -->
