@@ -85,6 +85,13 @@
 
   <div class="card"><h2>Detalle diario</h2><div class="scroll"><table id="tbEf"></table></div></div>
 
+  <div class="card"><h2>👷 Supervisores — 5S en término · Validación · Huecos <span class="tag" id="suprange"></span></h2>
+    <div class="row" id="supkpis" style="margin-bottom:6px"></div>
+    <div class="scroll"><table id="tbSup"></table></div>
+  </div>
+
+  <div class="card"><h2>🕳 Huecos sin operación — ranking por operario <span class="tag">min promedio por día sin registrar tarea · histórico completo</span></h2><div class="scroll"><table id="tbHue"></table></div></div>
+
   <div class="grid2">
     <div class="card"><h2>Ausentismo — ranking <span class="tag" id="ausrange"></span></h2><div class="scroll"><table id="tbAus"></table></div></div>
     <div class="card"><h2>Llegadas tarde — ranking <span class="tag" id="tardrange"></span></h2><div class="scroll"><table id="tbTar"></table></div></div>
@@ -127,7 +134,13 @@ function ingest(){
   var s=REP.ef_serie;
   ALLF=s.map(function(x){return x.fecha;});
   BYDATE={};
-  s.forEach(function(x){BYDATE[x.fecha]={ef:x.ef,prod:x.prod,cinco_pct:x.cinco_pct,cinco_verde:x.cinco_verde,cinco_amar:x.cinco_amar,cinco_rojo:x.cinco_rojo,nc_h:x.nc_h,nc_pct:(x.real_h>0?Math.round(x.nc_h*100/x.real_h):0),hosp_pers:x.hosp_pers,act:x.act,oper:x.oper,obj_h:x.obj_h,real_h:x.real_h,disp_h:x.disp_h,faltas:0,tardes:0};});
+  s.forEach(function(x){BYDATE[x.fecha]={ef:x.ef,prod:x.prod,cinco_pct:x.cinco_pct,cinco_verde:x.cinco_verde,cinco_amar:x.cinco_amar,cinco_rojo:x.cinco_rojo,nc_h:x.nc_h,nc_pct:(x.real_h>0?Math.round(x.nc_h*100/x.real_h):0),hosp_pers:x.hosp_pers,act:x.act,oper:x.oper,obj_h:x.obj_h,real_h:x.real_h,disp_h:x.disp_h,faltas:0,tardes:0,
+    sup_r_val:x.sup_r_val||0,sup_r_tot:x.sup_r_tot||0,sup_r_val_pct:x.sup_r_val_pct||0,
+    sup_y_val:x.sup_y_val||0,sup_y_tot:x.sup_y_tot||0,sup_y_val_pct:x.sup_y_val_pct||0,
+    s5_r_pct:x.s5_r_pct||0,s5_r_fin:x.s5_r_fin||null,s5_r_ok:x.s5_r_ok||0,
+    s5_y_pct:x.s5_y_pct||0,s5_y_fin:x.s5_y_fin||null,s5_y_ok:x.s5_y_ok||0,
+    hueco_r_h:x.hueco_r_h||0,hueco_y_h:x.hueco_y_h||0,hueco_r_prom:x.hueco_r_prom||0,hueco_y_prom:x.hueco_y_prom||0,
+    hueco_r_opers:x.hueco_r_opers||0,hueco_y_opers:x.hueco_y_opers||0};});
   if(DASH&&DASH.ausentismo_mes){(DASH.ausentismo_mes.dias||[]).forEach(function(x){if(BYDATE[x.fecha]){BYDATE[x.fecha].faltas=x.ausentes;BYDATE[x.fecha].tardes=x.tardes;}});}
   if(!rA.hasta && ALLF.length){ setPreset('sem',true); }
   renderPresets(); syncInputs(); renderAll();
@@ -162,7 +175,7 @@ function setPrev(silent){var sp=span(rA.desde,rA.hasta);rB={desde:dadd(rA.desde,
 function fechasIn(r){return ALLF.filter(function(f){return (!r.desde||f>=r.desde)&&(!r.hasta||f<=r.hasta);});}
 function aggFor(m,fechas){if(m.agg==='ratio'){var n=0,d=0;fechas.forEach(function(f){var x=BYDATE[f]||{};n+=x[m.num]||0;d+=x[m.den]||0;});return d>0?Math.round(n*100/d):0;}var v=fechas.map(function(f){return (BYDATE[f]||{})[m.key]||0;});if(!v.length)return 0;var s=v.reduce(function(a,b){return a+b;},0);return m.agg==='sum'?Math.round(s*10)/10:Math.round(s/v.length);}
 
-function renderAll(){renderKpis();renderMain();renderMontaje();renderTabla();}
+function renderAll(){renderKpis();renderMain();renderMontaje();renderTabla();renderSup();}
 
 function renderKpis(){
   var FA=fechasIn(rA),FB=fechasIn(rB);
@@ -212,6 +225,56 @@ function renderTabla(){
     return '<tr><td>'+dm(f)+'</td><td><span class="pill '+efClass(x.ef)+'">'+x.ef+'%</span></td><td>'+x.prod+'%</td><td>'+x.cinco_pct+'%</td><td>'+x.nc_pct+'%</td><td>'+x.faltas+'</td><td>'+x.tardes+'</td><td>'+x.hosp_pers+'</td><td>'+x.oper+'</td></tr>';
   }).join('');
   $('tbEf').innerHTML=th+rows;
+}
+
+/* ===== KPI SUPERVISORES: 5S en término · % validación · huecos ===== */
+function s5Pill(x,su){
+  var pct=x['s5_'+su+'_pct'],fin=x['s5_'+su+'_fin'],ok=x['s5_'+su+'_ok'];
+  if(!pct) return '<span class="pill r">sin 5S</span>';
+  if(ok) return '<span class="pill g">✓ '+(fin||'')+'</span>';
+  if(pct>=100) return '<span class="pill a">tarde '+(fin||'')+'</span>';
+  return '<span class="pill a">'+pct+'% '+(fin?('· '+fin):'')+'</span>';
+}
+function valPill(x,su){
+  var t=x['sup_'+su+'_tot'],v=x['sup_'+su+'_val'],p=x['sup_'+su+'_val_pct'];
+  if(!t) return '<span class="muted">—</span>';
+  return '<span class="pill '+(p>=80?'g':p>=50?'a':'r')+'">'+v+'/'+t+' · '+p+'%</span>';
+}
+function renderSup(){
+  if(!REP||!REP.ef_serie)return;
+  var FA=fechasIn(rA);
+  $('suprange').textContent=dm(rA.desde)+'–'+dm(rA.hasta);
+  // KPIs del rango
+  function agg(su){
+    var d5=0,dOk=0,vSum=0,tSum=0,hProm=0,hDias=0,hOp=0;
+    FA.forEach(function(f){var x=BYDATE[f]||{};
+      if(x['s5_'+su+'_pct']>0||x['sup_'+su+'_tot']>0){d5++;if(x['s5_'+su+'_ok'])dOk++;}
+      vSum+=x['sup_'+su+'_val']||0;tSum+=x['sup_'+su+'_tot']||0;
+      if(x['sup_'+su+'_tot']>0){hProm+=x['hueco_'+su+'_prom']||0;hOp+=x['hueco_'+su+'_opers']||0;hDias++;}
+    });
+    return {d5:d5,dOk:dOk,valp:tSum?Math.round(vSum*100/tSum):0,v:vSum,t:tSum,hprom:hDias?Math.round(hProm/hDias):0,hop:hDias?Math.round(hOp*10/hDias)/10:0};
+  }
+  var R=agg('r'),Y=agg('y');
+  function kcard(nom,color,a){
+    return '<div class="kpi" style="border-color:'+color+'"><div class="k"><span class="dot" style="background:'+color+'"></span>'+nom+'</div>'+
+      '<div class="v" style="font-size:20px">5S en término '+a.dOk+'/'+a.d5+' días</div>'+
+      '<div class="s">Validación <b style="color:'+(a.valp>=80?'#86efac':a.valp>=50?'#fcd34d':'#fca5a5')+'">'+a.valp+'%</b> ('+a.v+'/'+a.t+' ops)</div>'+
+      '<div class="s">Hueco prom/operario <b>'+a.hprom+' min/día</b> · operarios &gt;1h: <b>'+a.hop+'</b>/día</div></div>';
+  }
+  $('supkpis').innerHTML=kcard('Rodrigo · Naves M1→QC','#f59e0b',R)+kcard('Yance · M0 Soldadura','#38bdf8',Y);
+  // tabla día a día
+  var th='<tr><th>Fecha</th><th>5S Rodrigo</th><th>5S Yance</th><th>Valid. Rodrigo</th><th>Valid. Yance</th><th>Huecos R (h)</th><th>Huecos Y (h)</th><th>Op&gt;1h</th></tr>';
+  var rows=FA.slice().reverse().map(function(f){var x=BYDATE[f]||{};
+    return '<tr><td>'+dm(f)+'</td><td>'+s5Pill(x,'r')+'</td><td>'+s5Pill(x,'y')+'</td><td>'+valPill(x,'r')+'</td><td>'+valPill(x,'y')+'</td>'+
+      '<td>'+(x.hueco_r_h||0)+'</td><td>'+(x.hueco_y_h||0)+'</td><td>'+((x.hueco_r_opers||0)+(x.hueco_y_opers||0))+'</td></tr>';
+  }).join('');
+  $('tbSup').innerHTML=th+rows;
+  // ranking huecos
+  var rk=(REP.huecos_rank||[]);
+  $('tbHue').innerHTML='<tr><th>Operario</th><th>Nave</th><th>Días c/registro</th><th>Hueco prom (min/día)</th></tr>'+
+    (rk.length?rk.map(function(x){var cls=x.prom_min>120?'r':x.prom_min>60?'a':'g';
+      return '<tr><td>'+x.nombre+'</td><td>'+(x.su==='y'?'M0':'M1→QC')+'</td><td>'+x.dias+'</td><td><span class="pill '+cls+'">'+x.prom_min+'</span></td></tr>';}).join('')
+    :'<tr><td class="muted" colspan="4">Sin datos</td></tr>');
 }
 
 function nameOnly(s){return String(s).replace(/\s+\d{1,2}:\d{2}.*$/,'').trim();}
