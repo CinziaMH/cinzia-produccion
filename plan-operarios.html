@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinzia · Plan por Operario</title>
+<style>
+:root{--nar:#EA580C;--bg:#f4f4f5;--card:#fff;--line:#e4e4e7;--txt:#1f2937;--muted:#71717a;--ok:#16a34a;--bad:#dc2626}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;padding-bottom:80px}
+.hdr{background:var(--nar);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+.hdr h1{font-size:17px;font-weight:800}
+.hdr .sub{font-size:11px;opacity:.9}
+.hdr a{color:#fff;text-decoration:none;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700}
+.tabs{display:flex;gap:8px;margin-left:auto}
+.tabs button{border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 14px;font-weight:800;font-size:13px;cursor:pointer}
+.tabs button.on{background:#fff;color:var(--nar)}
+.wrap{max-width:980px;margin:0 auto;padding:14px}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.bar .st{font-size:13px;font-weight:700}
+.bar .st.ok{color:var(--ok)}.bar .st.pend{color:var(--bad)}
+button.p{background:var(--nar);border:none;color:#fff;border-radius:10px;padding:10px 18px;font-weight:800;font-size:14px;cursor:pointer}
+button.s{background:#fff;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 18px;font-weight:700;font-size:14px;cursor:pointer}
+button.ok{background:var(--ok);border:none;color:#fff;border-radius:10px;padding:10px 18px;font-weight:800;font-size:14px;cursor:pointer}
+button:disabled{opacity:.45;cursor:not-allowed}
+.gsec{margin:16px 0 6px;font-weight:800;font-size:13px;color:var(--muted);letter-spacing:.5px}
+.row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.row .l1{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row .nom{font-weight:800;font-size:15px;min-width:180px}
+.row .sect{font-size:10px;font-weight:800;background:#e4e4e7;border-radius:6px;padding:2px 8px}
+.row select{flex:1;min-width:220px;border:1px solid var(--line);border-radius:8px;padding:8px;font-size:13px;background:#fff}
+.row .tot{font-size:12px;font-weight:800;white-space:nowrap}
+.row .tot.over{color:var(--bad)}
+.row input.nota{width:100%;margin-top:8px;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:13px}
+details{margin-top:8px}
+details summary{font-size:12px;color:var(--muted);font-weight:700;cursor:pointer}
+.wo{display:flex;gap:8px;align-items:center;font-size:13px;padding:3px 0}
+.wo .m{color:var(--muted);margin-left:auto;white-space:nowrap}
+.aus{opacity:.5}
+.msg{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;border-radius:10px;padding:12px 20px;font-weight:700;display:none;z-index:50;max-width:90%}
+.spin{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite;margin:60px auto}
+@keyframes r{to{transform:rotate(360deg)}}
+/* ===== HOJAS ===== */
+#hojas{display:none}
+.sheet{background:#fff;border:1px solid var(--line);border-radius:12px;max-width:820px;margin:0 auto 18px;padding:22px 26px}
+.sheet .top{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--nar);padding-bottom:10px;margin-bottom:12px}
+.sheet .top .f{font-size:13px;color:var(--muted);text-align:right}
+.sheet h2{font-size:24px}
+.sheet .mo{font-size:15px;font-weight:700;margin:6px 0 14px}
+.sheet .mo b{color:var(--nar)}
+.sheet table{width:100%;border-collapse:collapse}
+.sheet th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:2px solid #d4d4d8;padding:6px 8px;text-align:left}
+.sheet td{border-bottom:1px solid #e4e4e7;padding:9px 8px;font-size:14px}
+.sheet td.h{font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sheet td.min{text-align:right;color:var(--muted);white-space:nowrap}
+.sheet td.chk{width:46px;text-align:center}
+.sheet td.chk span{display:inline-block;width:20px;height:20px;border:2px solid #a1a1aa;border-radius:5px}
+.sheet .nota{margin-top:12px;font-size:13px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:9px}
+.sheet .firmas{display:flex;gap:40px;margin-top:34px}
+.sheet .firmas div{flex:1;border-top:1.5px solid #a1a1aa;padding-top:5px;font-size:12px;color:var(--muted);text-align:center}
+@media print{
+  body{background:#fff;padding:0}
+  .hdr,.wrap>.bar,#asignar,.msg,.noprint{display:none!important}
+  #hojas{display:block!important}
+  .sheet{border:none;border-radius:0;page-break-after:always;margin:0;max-width:none;padding:10mm 8mm}
+}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span style="background:#fff;border-radius:8px;padding:4px 8px;display:inline-flex;align-items:center"><img src="cinzia%20logo.png" onerror="this.parentNode.style.display='none'" alt="CINZIA" style="height:22px;display:block"></span>
+  <div><h1>📋 Plan por Operario</h1><div class="sub" id="sub">cargando…</div></div>
+  <a href="./">🏠 Inicio</a>
+  <div class="tabs">
+    <button id="tM" class="on" onclick="setFecha('manana')">MAÑANA</button>
+    <button id="tH" onclick="setFecha('hoy')">HOY</button>
+  </div>
+</div>
+<div class="wrap">
+  <div class="bar">
+    <span class="st" id="ackst">—</span>
+    <span style="flex:1"></span>
+    <button class="s" onclick="verHojas()">👁 Ver hojas</button>
+    <button class="s" onclick="window.print()">🖨 Imprimir</button>
+    <button class="p" onclick="guardar()" id="btnG">💾 Guardar asignación</button>
+    <button class="ok" onclick="validar()" id="btnV">✅ Validar y enviar (Mayer)</button>
+  </div>
+  <div id="asignar"><div class="spin"></div></div>
+  <div id="hojas"></div>
+</div>
+<div class="msg" id="msg"></div>
+<script>
+var API='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
+var MANANA=null, ROSTER=null, PLAN=null, FECHA=null, MODO='manana';
+var NOMS={M0:'Soldadura',S1:'Armado Muebles',M1:'Revest. Interior',M2:'Inst. Eléctricas',S2:'Fibra',M3:'Revest. Exterior',M4:'Agua / Gas',M5:'Aberturas',S5:'Toldos / Mamparas',S6:'Slide Out',S7:'Tapicería',QC:'Control Final',HOSP:'Hospital'};
+function $(i){return document.getElementById(i)}
+function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML}
+function num(mo){return (String(mo).match(/(\d{4,6})/)||[])[1]||mo}
+function toast(t,ms){var m=$('msg');m.textContent=t;m.style.display='block';setTimeout(function(){m.style.display='none'},ms||3000)}
+function fHoy(){var d=new Date();return d.toISOString().slice(0,10)}
+function fManana(){var d=new Date();d.setDate(d.getDate()+1);if(d.getDay()===0)d.setDate(d.getDate()+1);return d.toISOString().slice(0,10)}
+function fmtF(f){var p=f.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+
+function setFecha(m){
+  MODO=m; FECHA=(m==='hoy')?fHoy():fManana();
+  $('tM').className=m==='manana'?'on':''; $('tH').className=m==='hoy'?'on':'';
+  cargar();
+}
+function cargar(){
+  if(!FECHA) FECHA=fManana();
+  $('sub').textContent='Plan del '+fmtF(FECHA)+' · cargando…';
+  Promise.all([
+    fetch(API+'?view=manana&cb='+Date.now()).then(function(r){return r.json()}),
+    fetch(API+'?view=manana_roster&cb='+Date.now()).then(function(r){return r.json()}),
+    fetch(API+'?view=plan_operarios&fecha='+FECHA+'&cb='+Date.now()).then(function(r){return r.json()})
+  ]).then(function(rs){
+    MANANA=rs[0]; ROSTER=rs[1]; PLAN=rs[2];
+    $('sub').textContent='Plan del '+fmtF(FECHA)+(PLAN.ack?' · validado por '+PLAN.ack.user+' '+PLAN.ack.ts:' · sin validar');
+    $('ackst').textContent=PLAN.ack?('✅ Validado por '+PLAN.ack.user+' ('+PLAN.ack.ts+') — mensajes de Odoo enviados'):'⏳ Pendiente de validación de Mayer';
+    $('ackst').className='st '+(PLAN.ack?'ok':'pend');
+    renderAsignar(); renderHojas();
+  }).catch(function(e){ $('asignar').innerHTML='<div class="row">Error: '+esc(String(e))+'</div>'; });
+}
+
+function opcionesMO(){
+  var out=[];
+  (MANANA&&MANANA.montajes||[]).forEach(function(sec){
+    (sec.mos||[]).forEach(function(m){
+      if(!(m.wos&&m.wos.length)) return;
+      out.push({mo:m.mo, code:sec.code, cliente:m.cliente||m.producto||'', pend:m.pend_min||0, wos:m.wos, en_cola:m.en_cola});
+    });
+  });
+  return out;
+}
+function renderAsignar(){
+  var ops=opcionesMO();
+  var saved={}; (PLAN.asignaciones||[]).forEach(function(a){saved[a.operario]=a});
+  var bySec={};
+  (ROSTER.roster||[]).forEach(function(r){ (bySec[r.sector||'—']=bySec[r.sector||'—']||[]).push(r); });
+  var h='';
+  Object.keys(bySec).sort().forEach(function(sec){
+    h+='<div class="gsec">'+esc(sec)+' · '+esc(NOMS[sec]||'')+'</div>';
+    bySec[sec].forEach(function(r){
+      var sv=saved[r.operario];
+      var pre=sv?sv.mo:(ops.some(function(o){return o.mo===r.mo_hoy})?r.mo_hoy:'');
+      var opts='<option value="">— sin asignar —</option>'+ops.map(function(o){
+        return '<option value="'+esc(o.mo)+'"'+(o.mo===pre?' selected':'')+'>'+num(o.mo)+' · '+esc(o.cliente)+' ('+o.code+') · '+Math.round(o.pend/60*10)/10+'h pend'+(o.en_cola?' · EN COLA':'')+'</option>';
+      }).join('');
+      h+='<div class="row'+(r.ausente_hoy?' aus':'')+'" data-op="'+esc(r.operario)+'" data-sec="'+esc(r.sector)+'">'
+        +'<div class="l1"><span class="nom">'+esc(r.operario)+(r.ausente_hoy?' ⚠ ausente hoy':'')+'</span><span class="sect">'+esc(r.sector||'—')+'</span>'
+        +'<select onchange="pintarWos(this)">'+opts+'</select><span class="tot"></span></div>'
+        +'<div class="wos"></div>'
+        +'<input class="nota" placeholder="Nota para el operario (opcional)" value="'+esc(sv?sv.nota:'')+'">'
+        +'</div>';
+    });
+  });
+  $('asignar').innerHTML=h||'<div class="row">Sin operarios en el roster de hoy.</div>';
+  document.querySelectorAll('#asignar .row select').forEach(function(s){pintarWos(s, saved)});
+}
+function pintarWos(sel, saved){
+  var row=sel.closest('.row'), mo=sel.value, box=row.querySelector('.wos'), tot=row.querySelector('.tot');
+  if(!mo){box.innerHTML='';tot.textContent='';return}
+  var o=opcionesMO().filter(function(x){return x.mo===mo})[0];
+  if(!o){box.innerHTML='';return}
+  var sv=(saved&&saved[row.getAttribute('data-op')])||null;
+  var selWos=sv&&sv.mo===mo?{}:null;
+  if(selWos){(sv.wos||[]).forEach(function(w){selWos[w.wo]=1})}
+  var h='<details open><summary>Tareas ('+o.wos.length+')</summary>';
+  o.wos.forEach(function(w,i){
+    var on=selWos?!!selWos[w.wo]:true;
+    h+='<label class="wo"><input type="checkbox" '+(on?'checked':'')+' data-wo="'+esc(w.wo)+'" data-min="'+(w.min||0)+'" onchange="recalc(this)"> '+esc(w.wo)+'<span class="m">'+(w.min||0)+'m</span></label>';
+  });
+  h+='</details>';
+  box.innerHTML=h;
+  recalcRow(row);
+}
+function recalc(chk){recalcRow(chk.closest('.row'))}
+function recalcRow(row){
+  var t=0;row.querySelectorAll('.wos input:checked').forEach(function(c){t+=Number(c.getAttribute('data-min'))||0});
+  var el=row.querySelector('.tot'), jor=470;
+  el.textContent=t?(Math.round(t/60*10)/10+'h asignadas'):'';
+  el.className='tot'+(t>jor?' over':'');
+}
+function juntar(){
+  var out=[];
+  document.querySelectorAll('#asignar .row').forEach(function(row){
+    var mo=row.querySelector('select').value; if(!mo) return;
+    var wos=[];row.querySelectorAll('.wos input:checked').forEach(function(c){wos.push({wo:c.getAttribute('data-wo'),min:Number(c.getAttribute('data-min'))||0})});
+    var o=opcionesMO().filter(function(x){return x.mo===mo})[0]||{};
+    out.push({operario:row.getAttribute('data-op'),sector:row.getAttribute('data-sec'),mo:mo,cliente:o.cliente||'',wos:wos,nota:row.querySelector('.nota').value||''});
+  });
+  return out;
+}
+function guardar(){
+  var asig=juntar();
+  if(!asig.length){toast('No hay operarios con orden asignada');return}
+  $('btnG').disabled=true;
+  fetch(API,{method:'POST',body:JSON.stringify({tipo:'manana_asig',fecha_prog:FECHA,asignaciones:asig}),redirect:'follow'})
+    .then(function(r){return r.json()}).then(function(d){
+      $('btnG').disabled=false;
+      if(d.ok){toast('✓ Guardado: '+d.n+' operarios para el '+fmtF(FECHA));cargar();}
+      else toast('Error: '+(d.error||'?'),5000);
+    }).catch(function(e){$('btnG').disabled=false;toast('Error: '+e,5000)});
+}
+function validar(){
+  if(PLAN&&PLAN.ack){toast('Ya estaba validado por '+PLAN.ack.user);return}
+  if(!(PLAN&&PLAN.asignaciones&&PLAN.asignaciones.length)){toast('Primero guardá la asignación');return}
+  if(!confirm('¿Validar el plan del '+fmtF(FECHA)+' y enviar el mensaje de Odoo a cada operario?')) return;
+  $('btnV').disabled=true;
+  fetch(API,{method:'POST',body:JSON.stringify({tipo:'manana_ack',fecha_prog:FECHA,user:'Juan Mayer'}),redirect:'follow'})
+    .then(function(r){return r.json()}).then(function(d){
+      $('btnV').disabled=false;
+      var n=(d.odoo_msgs&&d.odoo_msgs.enviados)||0;
+      var er=(d.odoo_msgs&&d.odoo_msgs.errores)||[];
+      toast('✅ Plan validado · '+n+' mensajes enviados'+(er.length?' · sin enviar: '+er.join(', '):''),7000);
+      cargar();
+    }).catch(function(e){$('btnV').disabled=false;toast('Error: '+e,5000)});
+}
+function verHojas(){
+  var el=$('hojas');
+  el.style.display=el.style.display==='block'?'none':'block';
+  window.scrollTo(0,el.offsetTop-80);
+}
+function renderHojas(){
+  var h='';
+  (PLAN.asignaciones||[]).forEach(function(a){
+    var filas=(a.plan&&a.plan.length)?a.plan.map(function(t){
+      var mm=(a.wos.filter(function(w){return w.wo===t.wo.replace(/^\d+ · /,'')||w.wo===t.wo})[0]||{}).min;
+      return '<tr><td class="h">'+t.ini+' – '+t.fin+'</td><td>'+esc(t.wo)+'</td><td class="min">'+(mm||'')+'</td><td class="chk"><span></span></td></tr>';
+    }).join(''):(a.wos||[]).map(function(w){return '<tr><td class="h">—</td><td>'+esc(w.wo)+'</td><td class="min">'+(w.min||0)+'m</td><td class="chk"><span></span></td></tr>'}).join('');
+    h+='<div class="sheet">'
+      +'<div class="top"><div><h2>'+esc(a.operario)+'</h2><div style="font-size:13px;color:var(--muted);font-weight:700">'+esc(a.sector)+' · '+esc(NOMS[a.sector]||'')+'</div></div>'
+      +'<div class="f"><b style="color:var(--nar);font-size:16px">'+fmtF(PLAN.fecha)+'</b><br>Plan del día · Cinzia Producción'+(PLAN.ack?'<br>Validado: '+esc(PLAN.ack.user)+' '+esc(PLAN.ack.ts):'<br>⚠ BORRADOR sin validar')+'</div></div>'
+      +'<div class="mo">Orden: <b>'+num(a.mo)+'</b>'+(a.cliente?' · '+esc(a.cliente):'')+' · total '+Math.round(a.total_min/60*10)/10+' h'+'</div>'
+      +'<table><tr><th>Horario</th><th>Tarea</th><th>Min obj</th><th>OK</th></tr>'+filas+'</table>'
+      +(a.nota?'<div class="nota">📌 '+esc(a.nota)+'</div>':'')
+      +'<div class="firmas"><div>Firma operario</div><div>Firma supervisor</div></div>'
+      +'</div>';
+  });
+  $('hojas').innerHTML=h||'<div class="row noprint">Todavía no hay asignaciones guardadas para el '+fmtF(PLAN.fecha)+'.</div>';
+}
+setFecha('manana');
+setInterval(cargar,300000);
+</script>
+</body>
+</html>
