@@ -1020,7 +1020,7 @@ var LABELS={done:'Listo',proc:'En proceso',todo:'Por hacer',over:'Vencidas',stal
 function tasksFor(d,type){
   var arr = d.t.filter(function(t){
     var b=bucket(t.s), a=age(t);
-    if(type==='done') return b==='done';
+    if(type==='done') return b==='done' && age(t)<=7;
     if(type==='proc') return b==='proc';
     if(type==='todo') return b==='todo';
     if(type==='over') return b!=='done' && t.dl && new Date(t.dl+"T12:00:00")<TODAY;
@@ -1036,7 +1036,7 @@ function renderDetail(key,type){
   var list=tasksFor(d,type), m=metrics(d);
   var head = (type==='proc')
     ? '<div class="dh">🔧 En proceso ('+list.length+') · prom. '+m.procAvg+' d · más viejo '+m.procMax+' d</div>'
-    : '<div class="dh">'+LABELS[type]+' ('+list.length+')</div>';
+    : type==='done' ? '<div class="dh">Listo · última semana ('+list.length+')</div>' : '<div class="dh">'+LABELS[type]+' ('+list.length+')</div>';
   var box=document.getElementById('detail-'+key);
   box.innerHTML = head + (list.length? list.map(trow).join('') : '<div style="color:var(--muted);font-size:12px">Sin tareas en este estado.</div>');
   var card=box.closest('.card');
