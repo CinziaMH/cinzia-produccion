@@ -82,7 +82,7 @@ a.up{color:var(--muted);text-decoration:none}
 <div class="foot" id="foot"></div>
 
 <script>
-var ODOO_KANBAN = "http://vps-2964443-x.dattaweb.com:8069/web#menu_id=171&action=316&model=project.task&view_type=kanban&cids=2&active_id=";
+var ODOO_KANBAN = "http://vps-2964443-x.dattaweb.com:8069/web#action=316&model=project.task&view_type=kanban&cids=2&active_id=";
 var ODOO_TASK   = "http://vps-2964443-x.dattaweb.com:8069/web#model=project.task&view_type=form&cids=2&id=";
 var SNAPSHOT_DATE = "2026-07-20";
 var SNAPSHOT_TIME = "15:10";
@@ -117,10 +117,10 @@ function sev(t){
 function saludColor(s){ return s>=70?"var(--green)":(s>=40?"var(--amber)":"var(--red)"); }
 
 function metrics(d){
-  var m={total:d.t.length,done:0,proc:0,todo:0,over:0,stale:0,recent:0,procDays:[],load:0,risk:0};
+  var m={total:d.t.length,done:0,done7:0,proc:0,todo:0,over:0,stale:0,recent:0,procDays:[],load:0,risk:0};
   d.t.forEach(function(t){
     var b=bucket(t.s), a=age(t);
-    if(b==="done"){m.done++; if(a<=30)m.recent++;}
+    if(b==="done"){m.done++; if(a<=30)m.recent++; if(a<=7)m.done7++;}
     else if(b==="proc"){m.proc++; m.procDays.push(a);}
     else {m.todo++;}
     if(b!=="done"){
@@ -196,7 +196,7 @@ function renderCards(){
   document.getElementById('cards').innerHTML = DES.map(function(d){
     var m=metrics(d);
     var st=[
-      ['ok',m.done,'Listo','done'],['',m.proc,'Proceso','proc'],['',m.todo,'Por hacer','todo'],
+      ['ok',m.done7,'Listo 7d','done'],['',m.proc,'Proceso','proc'],['',m.todo,'Por hacer','todo'],
       [m.over?'bad':'',m.over,'Vencidas','over'],[m.stale?'warn':'',m.stale,'Sin mov.','stale']
     ].map(function(s){return '<div class="st '+s[0]+'" data-type="'+s[3]+'" onclick="filterCard(\''+d.key+'\',\''+s[3]+'\')"><div class="n">'+s[1]+'</div><div class="k">'+s[2]+'</div></div>';}).join('');
     var recent = m.recent? m.recent+' cerradas en 30 días' : 'sin cierres recientes';
