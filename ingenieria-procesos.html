@@ -138,15 +138,15 @@ function esc(s){ return (s||'').replace(/[&<>"]/g,function(c){return{'&':'&amp;'
 function taskLink(i){ return ODOO+'/web#id='+i+'&model=project.task&view_type=form'; }
 
 function metrics(des){
-  var done=0,proc=0,todo=0,venc=0;
+  var done=0,done7=0,proc=0,todo=0,venc=0;
   des.t.forEach(function(t){
     var b=bucket(t.s);
-    if(b==='done')done++; else if(b==='proc')proc++; else todo++;
+    if(b==='done'){done++; var a=ageOf(t.d); if(a!=null && a<=7)done7++;} else if(b==='proc')proc++; else todo++;
     if(t.dl && b!=='done' && new Date(t.dl+'T00:00:00') < new Date()) venc++;
   });
   var total=des.t.length;
   var pct= total? Math.round(done/total*100):0;
-  return {done:done,proc:proc,todo:todo,venc:venc,total:total,pct:pct};
+  return {done:done,done7:done7,proc:proc,todo:todo,venc:venc,total:total,pct:pct};
 }
 
 function renderSummary(){
@@ -176,7 +176,7 @@ function renderCards(){
       {n:m.total,k:'Total',c:''},
       {n:m.proc,k:'Proceso',c:'warn'},
       {n:m.todo,k:'Espera',c:''},
-      {n:m.done,k:'Listo',c:'ok'},
+      {n:m.done7,k:'Listo 7d',c:'ok'},
       {n:m.venc,k:'Vencidas',c:m.venc?'bad':''}
     ];
     var order={proc:0,todo:1,done:2};
@@ -207,7 +207,7 @@ function renderCards(){
 
 function renderBoards(){
   document.getElementById('boards').innerHTML = DES.map(function(d){
-    var url = ODOO+'/web#menu_id=171&action=316&active_id='+d.projId+'&model=project.task&view_type=kanban';
+    var url = ODOO+'/web#action=316&active_id='+d.projId+'&model=project.task&view_type=kanban';
     return '<a class="btn" href="'+url+'" target="_blank" rel="noopener">'+
       '<div class="ic" style="background:'+d.color+'">'+d.short+'</div>'+
       '<div><div class="tt">Tablero '+esc(d.name)+'</div><div class="ss">Kanban de tareas en Odoo · acceso directo</div></div>'+
