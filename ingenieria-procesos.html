@@ -86,7 +86,7 @@ a.up{color:var(--muted);text-decoration:none}
 <script>
 /* ===== SNAPSHOT (lo reemplaza la tarea programada 11·15·17hs) ===== */
 var SNAPSHOT_DATE = "2026-07-22";
-var SNAPSHOT_TIME = "11:02";
+var SNAPSHOT_TIME = "15:03";
 
 /* Base Odoo para links de tareas y tableros */
 var ODOO = "http://vps-2964443-x.dattaweb.com:8069";
@@ -95,10 +95,10 @@ var ODOO = "http://vps-2964443-x.dattaweb.com:8069";
 var DES = [
  {"key":"leonel","name":"Leonel Lopez","short":"LL","color":"#0369a1","proj":"Leonel Lopez","projId":155,"foco":"",
   "t":[
-   {"i":5944,"s":"Proceso","d":"2026-07-20","dl":null,"p":"0","n":"Estandar Insumos C para M4"},
-   {"i":5932,"s":"Proceso","d":"2026-07-18","dl":null,"p":"0","n":"Lista de insumos tipo \"C\" - Camper CMD STD"},
    {"i":5958,"s":"Proceso","d":"2026-07-22","dl":null,"p":"0","n":"Sistema KanBan + Doble Cesta Pañol"},
-   {"i":5937,"s":"Espera","d":"2026-07-18","dl":null,"p":"0","n":"Lista de insumos tipo \"C\" - Motorhome chasis PEGASSO"},
+   {"i":5944,"s":"Listo","d":"2026-07-22","dl":null,"p":"0","n":"Estandar Insumos C para M4"},
+   {"i":5937,"s":"Proceso","d":"2026-07-22","dl":null,"p":"0","n":"Lista de insumos tipo \"C\" - Motorhome chasis PEGASSO"},
+   {"i":5932,"s":"Listo","d":"2026-07-22","dl":null,"p":"0","n":"Lista de insumos tipo \"C\" - Camper CMD STD"},
    {"i":5936,"s":"Espera","d":"2026-07-18","dl":null,"p":"0","n":"Lista de insumos tipo \"C\" - Motorhome furgon STD"},
    {"i":5935,"s":"Espera","d":"2026-07-18","dl":null,"p":"0","n":"Lista de insumos tipo \"C\" - Motorhome Chasis STD"},
    {"i":5931,"s":"Proceso","d":"2026-07-18","dl":null,"p":"0","n":"Capacitaciones de instructivos"},
@@ -112,7 +112,7 @@ var DES = [
   "t":[
    {"i":5303,"s":"Proceso","d":"2025-08-21","dl":null,"p":"0","n":"ISO 9001 - 5.3 MANTENIMIENTO - Desarrollo de procedimiento y actualizacion de planillas pertinentes"},
    {"i":5309,"s":"Proceso","d":"2025-08-21","dl":null,"p":"0","n":"Registro de NC detectadas en mes de Junio-Julio - Analisis 5 porque y llenar planillas correspondientes"},
-   {"i":5946,"s":"Espera","d":"2026-07-20","dl":null,"p":"0","n":"Control Final Liberacion (QC) Casilla CR410"},
+   {"i":5946,"s":"Listo","d":"2026-07-22","dl":null,"p":"0","n":"Control Final Liberacion (QC) Casilla CR410"},
    {"i":5943,"s":"Espera","d":"2026-07-18","dl":null,"p":"0","n":"Prueba de Rodado + Tunel de agua - Gianinni (MHC10)"},
    {"i":5942,"s":"Espera","d":"2026-07-18","dl":null,"p":"0","n":"Prueba de Rodado + Tunel de agua - Dagostino (Camper Uritorco)"},
    {"i":5941,"s":"Espera","d":"2026-07-18","dl":null,"p":"0","n":"Prueba de Rodado + Tunel de agua - Martins (MHC PEGASSO)"},
@@ -124,7 +124,7 @@ var DES = [
 ];
 
 /* dias reales en proceso para tareas cerradas: {id:dias} */
-var PROC_DONE = {"5930":0};
+var PROC_DONE = {"5932":4};
 
 /* ===== LÓGICA ===== */
 function bucket(s){
