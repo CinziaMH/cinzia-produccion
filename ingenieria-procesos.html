@@ -34,7 +34,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .bar i.proc{background:var(--amber)}
 .bar i.todo{background:#cbd5e1}
 .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;text-align:center}
-.st{border-radius:9px;padding:6px 2px;border:1px solid transparent;transition:.08s}
+.st{cursor:pointer;border-radius:9px;padding:6px 2px;border:1px solid transparent;transition:.08s}
+.st:active{transform:scale(.96)}
+.st.active{border-color:var(--nar);background:#fff7f2}
 .st .n{font-size:16px;font-weight:800;line-height:1}
 .st .k{font-size:10px;color:var(--muted);margin-top:3px}
 .st.warn .n{color:var(--amber)} .st.bad .n{color:var(--red)} .st.ok .n{color:var(--green)}
@@ -164,6 +166,45 @@ function renderSummary(){
   }).join('');
 }
 
+/* devuelve las tareas de un responsable filtradas por tipo de estado */
+function tasksFor(d,type){
+  var arr=d.t.filter(function(t){
+    var b=bucket(t.s);
+    if(type==='total') return true;
+    if(type==='proc')  return b==='proc';
+    if(type==='todo')  return b==='todo';
+    if(type==='done')  return b==='done' && (function(){var a=ageOf(t.d);return a!=null && a<=7;})();
+    if(type==='venc')  return b!=='done' && t.dl && new Date(t.dl+'T00:00:00') < new Date();
+    return false;
+  });
+  var order={proc:0,todo:1,done:2};
+  if(type==='done') arr.sort(function(a,b){ return new Date(b.d)-new Date(a.d); });
+  else arr.sort(function(a,b){ return order[bucket(a.s)]-order[bucket(b.s)] || (ageOf(b.d)||0)-(ageOf(a.d)||0); });
+  return arr;
+}
+/* fila de tarea */
+function trow(t){
+  var b=bucket(t.s), age=ageOf(t.d), pd=PROC_DONE[t.i];
+  var show = (b==='done' && pd!=null)? pd : age;
+  var acl = show==null?'':(show>30?'age hot':(show>14?'age warm':'age'));
+  var badge = show==null?'':'<span class="'+acl+'">'+show+'d</span>';
+  return '<a class="trow" href="'+taskLink(t.i)+'" target="_blank" rel="noopener">'+
+         '<span class="dot '+b+'"></span>'+
+         '<span class="tn">'+esc(t.n)+'</span>'+badge+'</a>';
+}
+var LABELS={total:'Todas las tareas',proc:'En proceso',todo:'En espera',done:'Listas (7 días)',venc:'Vencidas'};
+/* rellena el detalle de una tarjeta según el estado elegido y marca el stat activo */
+function renderDetail(key,type){
+  var d=DES.filter(function(x){return x.key===key;})[0]; if(!d) return;
+  var list=tasksFor(d,type);
+  var box=document.getElementById('detail-'+key); if(!box) return;
+  box.innerHTML='<div class="dh">'+LABELS[type]+' · '+list.length+'</div>'+
+    (list.length? list.map(trow).join('') : '<div class="pj">Sin tareas en este estado</div>');
+  var card=box.closest('.card');
+  if(card) card.querySelectorAll('.st').forEach(function(s){ s.classList.toggle('active', s.dataset.type===type); });
+}
+window.filterCard=function(key,type){ renderDetail(key,type); };
+
 function renderCards(){
   document.getElementById('cards').innerHTML = DES.map(function(d){
     var m=metrics(d);
@@ -174,23 +215,12 @@ function renderCards(){
       seg+= m.todo? '<i class="todo" style="width:'+(m.todo/m.total*100)+'%"></i>':'';
     }
     var stats=[
-      {n:m.total,k:'Total',c:''},
-      {n:m.proc,k:'Proceso',c:'warn'},
-      {n:m.todo,k:'Espera',c:''},
-      {n:m.done7,k:'Listo 7d',c:'ok'},
-      {n:m.venc,k:'Vencidas',c:m.venc?'bad':''}
+      {n:m.done7,k:'Listo 7d',c:'ok',t:'done'},
+      {n:m.total,k:'Total',c:'',t:'total'},
+      {n:m.proc,k:'Proceso',c:'warn',t:'proc'},
+      {n:m.todo,k:'Espera',c:'',t:'todo'},
+      {n:m.venc,k:'Vencidas',c:m.venc?'bad':'',t:'venc'}
     ];
-    var order={proc:0,todo:1,done:2};
-    var rows=d.t.slice().sort(function(a,b){ return order[bucket(a.s)]-order[bucket(b.s)] || (ageOf(b.d)||0)-(ageOf(a.d)||0); });
-    var list=rows.map(function(t){
-      var b=bucket(t.s), age=ageOf(t.d), pd=PROC_DONE[t.i];
-      var show = (b==='done' && pd!=null)? pd : age;
-      var acl = show==null?'':(show>30?'age hot':(show>14?'age warm':'age'));
-      var badge = show==null?'':'<span class="'+acl+'">'+show+'d</span>';
-      return '<a class="trow" href="'+taskLink(t.i)+'" target="_blank" rel="noopener">'+
-             '<span class="dot '+b+'"></span>'+
-             '<span class="tn">'+esc(t.n)+'</span>'+badge+'</a>';
-    }).join('');
     var foco = d.foco? '<div class="foco">'+d.foco+'</div>':'';
     return '<div class="card">'+
       '<div class="chead">'+
@@ -199,11 +229,12 @@ function renderCards(){
         '<div class="pctwrap"><div class="p">'+m.pct+'%</div><div class="pl">listo</div></div>'+
       '</div>'+
       '<div class="bar">'+seg+'</div>'+
-      '<div class="stats">'+ stats.map(function(s){ return '<div class="st '+s.c+'"><div class="n">'+s.n+'</div><div class="k">'+s.k+'</div></div>'; }).join('') +'</div>'+
+      '<div class="stats">'+ stats.map(function(s){ return '<div class="st '+s.c+'" data-type="'+s.t+'" onclick="filterCard(\''+d.key+'\',\''+s.t+'\')"><div class="n">'+s.n+'</div><div class="k">'+s.k+'</div></div>'; }).join('') +'</div>'+
       foco+
-      '<div class="detail"><div class="dh">Tareas · '+m.total+'</div>'+ (list||'<div class="pj">Sin tareas activas</div>') +'</div>'+
+      '<div class="detail" id="detail-'+d.key+'"></div>'+
     '</div>';
   }).join('');
+  DES.forEach(function(d){ renderDetail(d.key,'total'); });
 }
 
 function renderBoards(){
