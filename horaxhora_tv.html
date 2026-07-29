@@ -134,6 +134,11 @@ box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .spin{width:46px;height:46px;border:5px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:rot 1s linear infinite;margin:80px auto}
 @keyframes rot{to{transform:rotate(360deg)}}
 .empty{padding:60px;text-align:center;font-weight:900;color:#94a3b8;font-size:22px}
+.gm .vchip{font-size:14px;font-weight:900;padding:2px 12px;border-radius:8px;border:2px solid;background:transparent;margin-left:2px}
+.gm .vchip.g{color:#4ade80;border-color:#22c55e}
+.gm .vchip.o{color:#fdba74;border-color:#f97316}
+.gm .vchip.r{color:#fca5a5;border-color:#ef4444}
+.gm .vchip .lb{font-size:9px;font-weight:900;opacity:.85;margin-right:4px}
 </style>
 </head>
 <body>
@@ -402,6 +407,7 @@ function futurePlanGaps(planOps,nowM,SEGS,finOp){var iv=planOps.map(function(p){
 var NOMS={M0:'Soldadura',S1:'Armado Muebles',M1:'Revest. Interior',M2:'Inst. Eléctricas',S2:'Fibra',M3:'Revest. Exterior',M4:'Agua / Gas',M5:'Montaje 5',M6:'Montaje 6',S5:'Aberturas / Toldos',S6:'Slide Out',S7:'Tapicería',QC:'Control Final',HOSP:'Hospital',OTROS:'Otros',RETRAB:'Retrabajo'};
 var ORDEN=['M0','S1','M1','M2','S2','M3','M4','M5','M6','S5','S6','S7','QC','HOSP'];
 
+function valChip(tot,val){if(!tot)return '';var pct=Math.round(val*100/tot);var c=pct>=80?'g':(pct>=50?'o':'r');return '<span class="vchip '+c+'"><span class="lb">VALIDADAS</span>'+pct+'% ('+val+'/'+tot+')</span>';}
 function render(D){
   LASTD=D;
   fit(D);
@@ -503,9 +509,9 @@ function render(D){
       var lst=bySec[code]; lst.sort(function(a,b){return a.nom<b.nom?-1:1});
       var nv=naveOf(code);
       /* ---- pre-cálculo por operario + agregado del montaje ---- */
-      var rows=[], secPlanAhora=0, secReal=0, secElap=0, secReg=0;
+      var rows=[], secPlanAhora=0, secReal=0, secElap=0, secReg=0, secTerm=0, secTermV=0;
       lst.forEach(function(o){
-        o.real=mergeReal(o.real); annotateAcum(o.real);
+        o.real=mergeReal(o.real); annotateAcum(o.real); (o.real||[]).forEach(function(r){if(r.e!=='curso'){secTerm++;if(r.val)secTermV++;}});
         var reg=0, mos={}, ordenMos=[];
         (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)reg+=b-a; if(r.mo&&!mos[r.mo]){mos[r.mo]=1;ordenMos.push(r.mo)}});
         var durs=[]; ordenMos.forEach(function(mo){(moPlan[mo]||[]).forEach(function(p){durs.push({n:shortWO(p.wo),full:mo+' · '+p.wo,d:toMin(p.fin)-toMin(p.ini)})})});
@@ -513,14 +519,14 @@ function render(D){
         var planDia=0, planAhora=0, realHecho=0;
         planOps.forEach(function(p){planDia+=p.b-p.a; var v=Math.min(p.b,nowM)-p.a; if(v>0)planAhora+=v});
         (o.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)realHecho+=b-a});
-        secPlanAhora+=planAhora; secReal+=realHecho; secReg+=reg; secElap+=elapsed;
+        if(planDia>0){secPlanAhora+=planAhora; secReal+=realHecho;} secReg+=reg; secElap+=elapsed;
         rows.push({o:o,mos:mos,planOps:planOps,planDia:planDia,planAhora:planAhora,realHecho:realHecho,reg:reg});
       });
       /* eficiencia del montaje = real hecho / plan que debía estar hecho a esta hora */
       var secEff = secPlanAhora>0 ? Math.round(secReal*100/secPlanAhora) : (secElap>0?Math.round(secReg*100/secElap):null);
       var effCls = secEff==null?'m':(secEff>=80?'g':(secEff>=70?'o':'r'));
       var effTxt = secEff==null?'—':secEff+'%';
-      h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span><span class="cnt">'+lst.length+' operarios</span></span></div>';
+      h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span>'+valChip(secTerm,secTermV)+'<span class="cnt">'+lst.length+' operarios</span></span></div>';
       rows.forEach(function(R){
         var o=R.o, planOps=R.planOps, planDia=R.planDia, planAhora=R.planAhora, realHecho=R.realHecho, reg=R.reg;
         var pReg=elapsed>0?Math.round(reg*100/elapsed):0;
@@ -568,19 +574,19 @@ function render(D){
   GRUPOS.forEach(function(g){
     var nv=NAVE_DE[String(g.code).toUpperCase()]||'2';
     /* ---- pre-cálculo por orden + agregado del montaje ---- */
-    var rows=[], secPlanAhora=0, secReal=0;
+    var rows=[], secPlanAhora=0, secReal=0, secTerm=0, secTermV=0;
     (g.mos||[]).forEach(function(m){
-      m.real=mergeReal(m.real); annotateAcum(m.real);
+      m.real=mergeReal(m.real); annotateAcum(m.real); (m.real||[]).forEach(function(r){if(r.e!=='curso'){secTerm++;if(r.val)secTermV++;}});
       var planDia=0, planAhora=0, realHecho=0;
       (m.plan||[]).forEach(function(p){var a=toMin(p.ini),b=toMin(p.fin);planDia+=b-a;var v=Math.min(b,nowM)-a;if(v>0)planAhora+=v});
       (m.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)realHecho+=b-a});
-      secPlanAhora+=planAhora; secReal+=realHecho;
+      if(planDia>0){secPlanAhora+=planAhora; secReal+=realHecho;}
       rows.push({m:m,planDia:planDia,planAhora:planAhora,realHecho:realHecho});
     });
     var secEff = secPlanAhora>0 ? Math.round(secReal*100/secPlanAhora) : null;
     var effCls = secEff==null?'m':(secEff>=80?'g':(secEff>=70?'o':'r'));
     var effTxt = secEff==null?'—':secEff+'%';
-    h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span><span class="cnt">'+g.mos.length+' órdenes</span></span></div>';
+    h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span>'+valChip(secTerm,secTermV)+'<span class="cnt">'+g.mos.length+' órdenes</span></span></div>';
     rows.forEach(function(R){
       var m=R.m, planDia=R.planDia, planAhora=R.planAhora, realHecho=R.realHecho;
       var pPA=planDia>0?Math.round(planAhora*100/planDia):0;

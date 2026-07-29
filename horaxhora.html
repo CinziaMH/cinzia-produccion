@@ -203,6 +203,11 @@ verde en tiempo · naranja ef 80–100% · rojo ef < 80% */
 .gm .eff .lb{font-size:9px;font-weight:800;opacity:.85;margin-right:4px}
 .blk .vok{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#fff;color:#16a34a;font-size:10px;font-weight:900;margin-right:4px;flex:0 0 auto}
 .blk .vng{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#fff;color:#dc2626;font-size:10px;font-weight:900;margin-right:4px;flex:0 0 auto}
+.gm .vchip{font-size:14px;font-weight:900;padding:2px 12px;border-radius:8px;border:2px solid;background:transparent;margin-left:2px}
+.gm .vchip.g{color:#4ade80;border-color:#22c55e}
+.gm .vchip.o{color:#fdba74;border-color:#f97316}
+.gm .vchip.r{color:#fca5a5;border-color:#ef4444}
+.gm .vchip .lb{font-size:9px;font-weight:900;opacity:.85;margin-right:4px}
 </style>
 </head>
 <body>
@@ -471,6 +476,8 @@ function normWO(s){return String(s==null?'':s).replace(/\s+/g,' ').trim().toUppe
 function mergeReal(arr){if(arr&&arr.__merged)return arr;var src=(arr||[]).slice().sort(function(a,b){return toMin(a.ini)-toMin(b.ini)});var out=[];src.forEach(function(r){var p=out[out.length-1];var m=p&&p.mo===r.mo&&normWO(p.wo)===normWO(r.wo)&&(p.e==='nc')===(r.e==='nc');var peg=p&&(toMin(r.ini)-toMin(p.fin)<=3);if(m&&peg){if(toMin(r.fin)>toMin(p.fin))p.fin=r.fin;p.rmin=(+p.rmin||0)+(+r.rmin||0);p.obj=Math.max(+p.obj||0,+r.obj||0);if(r.e==='curso')p.e='curso';if(r.val)p.val=r.val;if(r.acum)p.acum=Math.max(+p.acum||0,+r.acum||0);}else out.push(Object.assign({},r));});out.forEach(function(r){if(r.e!=='curso'&&r.e!=='nc'){r.e=((+r.obj||0)>0&&(+r.rmin||0)>(+r.obj||0))?'ko':'ok';}});out.__merged=true;return out;}
 function effCls(e){return e==null?'m':(e>=80?'g':(e>=70?'o':'r'));}
 function effChip(sPA,sR){var e=sPA>0?Math.round(sR*100/sPA):null;return '<span class="eff '+effCls(e)+'"><span class="lb">EFIC. MONTAJE</span>'+(e==null?'—':e+'%')+'</span>';}
+function valChip(tot,val){if(!tot)return '';var pct=Math.round(val*100/tot);var c=pct>=80?'g':(pct>=50?'o':'r');return '<span class="vchip '+c+'"><span class="lb">VALIDADAS</span>'+pct+'% ('+val+'/'+tot+')</span>';}
+
 function render(D){
 LASTD=D;
 GAPACK=loadGapAck();
@@ -543,10 +550,10 @@ var secs=ORDEN.filter(function(c){return bySec[c]}).concat(Object.keys(bySec).fi
 if(FILTRO){ secs=secs.filter(function(c){return String(c).toUpperCase()===FILTRO}); if(!secs.length){ h+='<div style="padding:40px;text-align:center;font-weight:800;color:#94a3b8">Sin actividad registrada hoy en '+esc(FILTRO)+'</div>'; } }
 secs.forEach(function(code){
 var lst=bySec[code]; lst.sort(function(a,b){return a.nom<b.nom?-1:1});
-var _sPA=0,_sR=0;
+var _sPA=0,_sR=0,_tT=0,_tV=0;
 h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>@@EFF:'+code+'@@<span class="cnt" style="margin-left:8px">'+lst.length+' operarios</span></span></div>';
 lst.forEach(function(o){
-o.real=mergeReal(o.real); annotateAcum(o.real);
+o.real=mergeReal(o.real); annotateAcum(o.real); (o.real||[]).forEach(function(r){if(r.e!=='curso'){_tT++;if(r.val)_tV++;}});
 var reg=0, mos={}, ordenMos=[];
 (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)reg+=b-a; if(r.mo&&!mos[r.mo]){mos[r.mo]=1;ordenMos.push(r.mo)}});
 var durs=[]; ordenMos.forEach(function(mo){(moPlan[mo]||[]).forEach(function(p){durs.push({n:mo+' · '+shortWO(p.wo),d:toMin(p.fin)-toMin(p.ini)})})});
@@ -554,7 +561,7 @@ var planOps=packCliente(durs);
 var planDia=0, planAhora=0, realHecho=0;
 planOps.forEach(function(p){planDia+=p.b-p.a; var v=Math.min(p.b,nowM)-p.a; if(v>0)planAhora+=v});
 (o.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)realHecho+=b-a});
-_sPA+=planAhora; _sR+=realHecho;
+if(planDia>0){_sPA+=planAhora; _sR+=realHecho;}
 var pReg=elapsed>0?Math.round(reg*100/elapsed):0;
 var pPA=planDia>0?Math.round(planAhora*100/planDia):0;
 var pR=planDia>0?Math.round(realHecho*100/planDia):0;
@@ -578,7 +585,7 @@ if(!HIST && planOps.length){ futurePlanGaps(planOps,nowM,SEGS,finOperario(o.nom)
 h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
 h+='</div></div>';
 });
-h=h.replace('@@EFF:'+code+'@@', effChip(_sPA,_sR));
+h=h.replace('@@EFF:'+code+'@@', effChip(_sPA,_sR)+valChip(_tT,_tV));
 });
 document.getElementById('grid').innerHTML=h;
 recomputeAlarm();
@@ -587,14 +594,14 @@ return;
 var GRUPOS=(D.grupos||[]);
 if(FILTRO){ GRUPOS=GRUPOS.filter(function(g){return String(g.code).toUpperCase()===FILTRO}); if(!GRUPOS.length){ h+='<div style="padding:40px;text-align:center;font-weight:800;color:#94a3b8">Sin órdenes hoy en '+esc(FILTRO)+'</div>'; } }
 GRUPOS.forEach(function(g){
-var _sPA=0,_sR=0;
+var _sPA=0,_sR=0,_tT=0,_tV=0;
 h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span>@@EFFG:'+g.code+'@@<span class="cnt" style="margin-left:8px">'+g.mos.length+' órdenes</span></span></div>';
 g.mos.forEach(function(m){
-m.real=mergeReal(m.real); annotateAcum(m.real);
+m.real=mergeReal(m.real); annotateAcum(m.real); (m.real||[]).forEach(function(r){if(r.e!=='curso'){_tT++;if(r.val)_tV++;}});
 var planDia=0, planAhora=0, realHecho=0;
 (m.plan||[]).forEach(function(p){var a=toMin(p.ini),b=toMin(p.fin);planDia+=b-a;var v=Math.min(b,nowM)-a;if(v>0)planAhora+=v});
 (m.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)realHecho+=b-a});
-_sPA+=planAhora; _sR+=realHecho;
+if(planDia>0){_sPA+=planAhora; _sR+=realHecho;}
 var pPA=planDia>0?Math.round(planAhora*100/planDia):0;
 var pR=planDia>0?Math.round(realHecho*100/planDia):0;
 var alDia=pR>=pPA-5;
@@ -611,7 +618,7 @@ h+='<span class="lane-tag" style="top:10px">PLAN</span><span class="lane-tag" st
 h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
 h+='</div></div>';
 });
-h=h.replace('@@EFFG:'+g.code+'@@', effChip(_sPA,_sR));
+h=h.replace('@@EFFG:'+g.code+'@@', effChip(_sPA,_sR)+valChip(_tT,_tV));
 });
 document.getElementById('grid').innerHTML=h;
 recomputeAlarm();
