@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinzia · Hora a Hora TV</title>
+<style>
+:root{
+--nar:#EA580C; --bg:#0f172a; --panel:#1e293b; --line:#334155; --txt:#f1f5f9; --muted:#94a3b8;
+--ok:#22c55e; --bad:#ef4444; --curso:#38bdf8; --nc:#a855f7; --plan:#64748b;
+/* --rowh y --hcol se calculan por JS para llenar la TV */
+--rowh:64px; --hcol:120px; --lblw:280px; --metaw:150px;
+--fmo:19px; --fdet:13px; --fblk:13px; --fpb:11px; --fgm:17px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* ===== Header ===== */
+.hdr{display:flex;align-items:center;gap:14px;padding:10px 20px;background:linear-gradient(90deg,var(--nar),#9a3412);z-index:30;flex-wrap:wrap;flex:0 0 auto}
+.hdr h1{font-size:24px;font-weight:900;letter-spacing:.5px;white-space:nowrap}
+.hdr .sub{font-size:13px;opacity:.92}
+.reloj{font-size:32px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1}
+.chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:6px 14px;font-weight:800;font-size:15px;white-space:nowrap}
+.chip b{font-size:19px}
+/* toggle de nave */
+.navsel{display:flex;gap:8px;align-items:center;margin-left:6px}
+.navbtn{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.4);border-radius:11px;padding:7px 18px;font-weight:900;font-size:18px;color:#fff;cursor:pointer;letter-spacing:.5px}
+.navbtn.on{background:#fff;color:#9a3412;border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.4)}
+.off{background:var(--bad);color:#fff;padding:6px 14px;font-weight:800;font-size:14px;display:none;text-align:center;flex:0 0 auto}
+.alertbar{background:var(--bad);color:#fff;padding:7px 16px;font-weight:800;font-size:15px;display:none;flex:0 0 auto;line-height:1.5}
+.ausbar{display:none;background:#7f1d1d;color:#fff;padding:7px 16px;font-weight:800;font-size:15px;flex:0 0 auto;line-height:1.5}
+
+/* ===== Grid ===== */
+.wrap{flex:1;overflow:hidden;position:relative}
+.scroller{height:100%;overflow:hidden}
+.grid{min-width:100%}
+.sticky-top{position:sticky;top:0;z-index:20}
+.horas{display:flex;background:var(--bg);border-bottom:1px solid var(--line)}
+.horas .lbl{flex:0 0 var(--lblw);padding:8px 12px;font-size:14px;color:var(--muted);font-weight:900;letter-spacing:.5px;position:sticky;left:0;background:var(--bg);z-index:6}
+.horas .h{flex:0 0 var(--hcol);text-align:left;padding:8px 0 8px 6px;font-weight:900;color:var(--muted);font-size:16px;border-left:1px solid var(--line)}
+.horas .h.alm{color:#64748b;font-size:12px}
+/* la hora de almuerzo va más angosta (mapa de tiempo no lineal) */
+.horas .h.alm,.acum .c.alm,.cell.alm{flex:0 0 var(--hcolalm)}
+.horas .mlb{flex:0 0 var(--metaw);padding:8px 12px;font-size:13px;color:var(--muted);font-weight:900;border-left:2px solid var(--line)}
+.acum{display:flex;background:#152036;border-bottom:2px solid var(--line)}
+.acum .lbl{flex:0 0 var(--lblw);padding:5px 12px;font-size:12px;font-weight:900;color:var(--muted);display:flex;flex-direction:column;justify-content:center;line-height:1.5;position:sticky;left:0;background:#152036;z-index:6}
+.acum .lbl .p{color:#cbd5e1}.acum .lbl .r{color:var(--curso)}
+.acum .c{flex:0 0 var(--hcol);border-left:1px solid #1e2c47;padding:5px 8px;font-size:13px;font-weight:800;line-height:1.5}
+.acum .c .p{color:#cbd5e1}
+.acum .c .r.g{color:var(--ok)} .acum .c .r.r{color:var(--bad)} .acum .c .r.f{color:#475569;font-weight:600}
+.acum .fin{flex:0 0 var(--metaw);border-left:2px solid var(--line);padding:5px 12px;font-size:13px;font-weight:800;line-height:1.5}
+
+.gm{display:flex;align-items:center;gap:12px;padding:9px 12px;background:var(--panel);border-top:2px solid var(--line)}
+.gmL{position:sticky;left:12px;display:inline-flex;gap:12px;align-items:center}
+.gm .pill{color:#fff;font-weight:900;font-size:var(--fgm);padding:3px 15px;border-radius:9px}
+.gm .nom{font-weight:900;font-size:var(--fgm)}
+.gm .nave{font-size:12px;font-weight:900;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);border-radius:7px;padding:2px 9px}
+.gm .cnt{font-size:14px;color:var(--muted);margin-left:auto}
+.gm .eff{font-size:17px;font-weight:900;padding:3px 15px;border-radius:9px;color:#fff}
+.gm .eff.g{background:#15803d;border:1px solid #22c55e}
+.gm .eff.o{background:#c2410c;border:1px solid #f97316}
+.gm .eff.r{background:#991b1b;border:1px solid #ef4444}
+.gm .eff.m{background:#334155;border:1px solid #475569;color:#cbd5e1}
+.gm .eff .lb{font-size:11px;font-weight:900;opacity:.85;margin-right:5px}
+
+.fila{display:flex;height:var(--rowh);border-bottom:1px solid #1c2940;position:relative}
+.fila:nth-child(odd){background:rgba(255,255,255,.015)}
+.fila .info{flex:0 0 var(--lblw);padding:5px 9px;display:flex;flex-direction:row;align-items:center;gap:8px;border-right:2px solid var(--line);position:sticky;left:0;background:#101a2e;z-index:6}
+.fila .info .who{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.fila .info .mo{font-weight:900;font-size:var(--fmo);display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fila .info .det{font-size:var(--fdet);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* estado (REAL% vs PLAN% + veredicto) ahora a la IZQUIERDA, al lado del nombre */
+.fila .info .stat{flex:0 0 auto;width:140px;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.fila .info .stat .t{font-size:11px;color:var(--muted);font-weight:900;letter-spacing:.2px}
+.fila .info .stat .bar{height:10px;background:#27354f;border-radius:6px;overflow:hidden;position:relative}
+.fila .info .stat .bar i{display:block;height:100%;border-radius:6px}
+.fila .info .stat .bar em{position:absolute;top:-2px;bottom:-2px;width:2px;background:#e2e8f0}
+.fila .info .stat .v{font-size:13px;font-weight:900}
+.cola{font-size:11px;font-weight:900;background:#334155;color:#cbd5e1;border-radius:5px;padding:1px 7px}
+.dias{font-size:12px;font-weight:900;color:var(--nar)}
+.dias.alto{color:var(--bad)}
+.tl{position:relative;flex:1;display:flex}
+.cell{flex:0 0 var(--hcol);border-left:1px solid #1e2c47;height:100%}
+.cell.alm{background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(100,116,139,.12) 6px,rgba(100,116,139,.12) 12px)}
+.lane-tag{position:absolute;left:3px;font-size:9px;font-weight:900;color:#475569;letter-spacing:.5px}
+
+.pb{position:absolute;top:9px;height:15px;border-radius:4px;background:#33415588;border:1px solid var(--plan);
+font-size:var(--fpb);font-weight:700;color:#cbd5e1;display:flex;align-items:center;padding:0 6px;overflow:hidden;white-space:nowrap}
+.blk{position:absolute;top:29px;height:calc(var(--rowh) - 38px);border-radius:6px;font-size:var(--fblk);font-weight:800;color:#fff;
+display:flex;align-items:center;padding:0 8px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+box-shadow:0 1px 4px rgba(0,0,0,.45)}
+.blk.ok{background:linear-gradient(180deg,#16a34a,#15803d)}
+.blk.ko{background:linear-gradient(180deg,#dc2626,#b91c1c)}
+.blk.ko.warn{background:linear-gradient(180deg,#f97316,#ea580c)}
+.blk.curso{background:linear-gradient(180deg,#0ea5e9,#0369a1);outline:2px solid #7dd3fc}
+.blk.curso::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:sweep 2.2s infinite}
+.blk.curso.over{background:linear-gradient(180deg,#dc2626,#991b1b);outline:2px solid #fff;animation:overpulse 1s infinite}
+.blk.curso.over.warn{background:linear-gradient(180deg,#f97316,#ea580c);outline:2px solid #fdba74;animation:overpulse-warn 1.6s infinite}
+.blk.curso.over::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent)}
+@keyframes overpulse{0%,100%{outline-color:#fecaca;box-shadow:0 1px 4px rgba(0,0,0,.45)}50%{outline-color:#fff;box-shadow:0 0 14px rgba(239,68,68,.95)}}
+@keyframes overpulse-warn{0%,100%{outline-color:#fdba74;box-shadow:0 1px 4px rgba(0,0,0,.45)}50%{outline-color:#fed7aa;box-shadow:0 0 8px rgba(249,115,22,.6)}}
+@keyframes sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.blk.nc{background:repeating-linear-gradient(45deg,#16a34a,#16a34a 8px,#15803d 8px,#15803d 16px)}
+.blk.nc.warn{background:repeating-linear-gradient(45deg,#f97316,#f97316 8px,#ea580c 8px,#ea580c 16px)}
+.blk.nc.inef{background:repeating-linear-gradient(45deg,#dc2626,#dc2626 8px,#b91c1c 8px,#b91c1c 16px)}
+.blk.crit{outline:3px solid #fde047 !important;animation:critpulse .8s infinite !important;z-index:5}
+.blk.crit::before{content:'⚠';font-weight:900;color:#fde047;margin-right:5px}
+.blk.ko.crit{background:linear-gradient(180deg,#7f1d1d,#450a0a)}
+.blk.curso.over.crit{background:linear-gradient(180deg,#7f1d1d,#450a0a)}
+.blk.nc.crit{background:repeating-linear-gradient(45deg,#7f1d1d,#7f1d1d 8px,#450a0a 8px,#450a0a 16px)}
+@keyframes critpulse{0%,100%{outline-color:#fde047;box-shadow:0 0 4px rgba(0,0,0,.5)}50%{outline-color:#fff;box-shadow:0 0 18px rgba(253,224,71,1)}}
+.gap{position:absolute;top:29px;height:calc(var(--rowh) - 38px);border-radius:6px;background:#ffffff;color:#0f172a;font-size:var(--fblk);font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 7px;overflow:hidden;white-space:nowrap;z-index:4;animation:gapflash 1s infinite}
+@keyframes gapflash{0%,100%{box-shadow:0 0 0 2px #ef4444,0 0 6px rgba(255,255,255,.6)}50%{box-shadow:0 0 0 3px #fde047,0 0 18px rgba(255,255,255,1)}}
+.gap.ack{background:#cbd5e1;color:#334155;animation:none;box-shadow:none;opacity:.85}
+.pgap{position:absolute;top:29px;height:calc(var(--rowh) - 38px);border-radius:6px;background:repeating-linear-gradient(45deg,#f59e0b,#f59e0b 6px,#d97706 6px,#d97706 12px);color:#1f2937;font-size:var(--fblk);font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 7px;overflow:hidden;white-space:nowrap;z-index:3;box-shadow:0 0 0 2px #f59e0b,0 0 6px rgba(245,158,11,.55)}
+.ahora{position:absolute;top:0;bottom:0;width:3px;background:var(--bad);z-index:10}
+.ahora::before{content:'AHORA';position:absolute;top:-1px;left:5px;background:var(--bad);color:#fff;font-size:10px;font-weight:900;padding:1px 6px;border-radius:4px}
+.meta{flex:0 0 var(--metaw);border-left:2px solid var(--line);display:flex;flex-direction:column;justify-content:center;padding:5px 12px;gap:4px}
+.meta .t{font-size:11px;color:var(--muted);font-weight:900;letter-spacing:.4px}
+.meta .bar{height:11px;background:#27354f;border-radius:6px;overflow:hidden;position:relative}
+.meta .bar i{display:block;height:100%;border-radius:6px}
+.meta .bar em{position:absolute;top:-2px;bottom:-2px;width:2px;background:#e2e8f0}
+.meta .v{font-size:13px;font-weight:900}
+.v.g{color:var(--ok)}.v.r{color:var(--bad)}.v.m{color:var(--muted)}
+/* tilde de validación en los bloques REAL */
+.blk .vok{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#fff;color:#16a34a;font-size:11px;font-weight:900;margin-right:5px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.blk .vng{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#fff;color:#dc2626;font-size:11px;font-weight:900;margin-right:5px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
+.blk.valdone{outline:2px solid #f1f5f9}
+
+.leg{flex:0 0 auto;display:flex;gap:22px;align-items:center;padding:9px 20px;color:var(--muted);font-size:13px;flex-wrap:wrap;background:#0b1322;border-top:1px solid var(--line)}
+.leg span{display:flex;align-items:center;gap:7px}
+.leg i{width:20px;height:13px;border-radius:3px;display:inline-block}
+.spin{width:46px;height:46px;border:5px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:rot 1s linear infinite;margin:80px auto}
+@keyframes rot{to{transform:rotate(360deg)}}
+.empty{padding:60px;text-align:center;font-weight:900;color:#94a3b8;font-size:22px}
+</style>
+</head>
+<body>
+<div class="hdr">
+<span class="lg" style="background:#fff;border-radius:10px;padding:5px 10px;display:inline-flex;align-items:center"><img src="cinzia%20logo.png" onerror="this.parentNode.style.display='none'" alt="CINZIA" style="height:30px;display:block"></span>
+<h1 id="h1t">HORA A HORA</h1>
+<div><div class="reloj" id="reloj">--:--</div><div class="sub" id="sub">cargando…</div></div>
+<div class="navsel">
+  <span class="navbtn" data-nave="1" onclick="setNave('1')">NAVE 1</span>
+  <span class="navbtn" data-nave="2" onclick="setNave('2')">NAVE 2</span>
+  <span class="navbtn" data-nave="all" onclick="setNave('all')">TODAS</span>
+</div>
+<div class="navsel">
+  <span class="navbtn viewbtn" data-view="op" onclick="setView('op')">👷 Operario</span>
+  <span class="navbtn viewbtn" data-view="mon" onclick="setView('mon')">🏭 Montaje</span>
+</div>
+<div class="chip">PLAN HOY <b id="cPlan">—</b></div>
+<div class="chip">A ESTA HORA: plan <b id="cPa">—</b> · real <b id="cRa">—</b></div>
+<div class="chip" id="cDesv">DESVÍO <b>—</b></div>
+<div class="chip" id="cSup" style="background:rgba(255,255,255,.22)">SUPERV. <b>—</b></div>
+<div class="chip" id="cAus" style="display:none;background:#7f1d1d;color:#fecaca;border-color:#b91c1c">🚫 AUSENTES <b>0</b></div>
+<div class="chip" id="cGap" style="display:none;background:#fff;color:#b91c1c;border-color:#fff">⚠ INACTIVIDAD <b>0</b></div>
+<div class="chip" style="margin-left:auto;background:rgba(255,255,255,.1);cursor:pointer" onclick="AUTOSCROLL=!AUTOSCROLL;this.style.opacity=AUTOSCROLL?1:.5">⇅ auto</div>
+<div class="chip" style="background:rgba(255,255,255,.1);cursor:pointer" onclick="cargar()">↻ Actualizar</div>
+</div>
+<div class="off" id="off">⚠ SIN CONEXIÓN — mostrando últimos datos</div>
+<div class="alertbar" id="alertbar"></div>
+<div class="ausbar" id="ausbar"></div>
+<div class="wrap"><div class="scroller" id="scroller"><div class="grid" id="grid"><div class="spin"></div></div></div></div>
+<div class="leg">
+<span><i style="background:#33415588;border:1px solid #64748b;height:9px"></i> Plan teórico (7:45)</span>
+<span><i style="background:#16a34a"></i> En tiempo</span>
+<span><i style="background:linear-gradient(180deg,#f97316,#ea580c)"></i> Ineficiente leve</span>
+<span><i style="background:linear-gradient(180deg,#dc2626,#b91c1c)"></i> Ineficiente grave</span>
+<span><i style="background:linear-gradient(180deg,#7f1d1d,#450a0a);outline:2px solid #fde047"></i> ⚠ Crítico</span>
+<span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso</span>
+<span><i style="background:repeating-linear-gradient(45deg,#64748b,#64748b 4px,#475569 4px,#475569 8px)"></i> Retrabajo / NC</span>
+<span style="color:#fff;font-weight:900">▨ Sin tarea / inactividad</span>
+<span style="color:#ef4444;font-weight:900">│ AHORA</span>
+</div>
+<script>
+var URL_API='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec?view=horaxhora';
+
+/* ===================================================================
+   MAPA DE NAVES  ·  editá acá si algún montaje está en la nave equivocada
+   Nave 1 = fabricación / pre-línea (antes del montaje 1)
+   Nave 2 = línea de montaje, del montaje 1 al final
+   =================================================================== */
+var NAVE_DE={
+  M0:'1',  // Soldadura
+  S1:'1',  // Armado Muebles
+  S2:'1',  // Fibra
+  S7:'1',  // Tapicería
+  M1:'2',  // Revest. Interior
+  M2:'2',  // Inst. Eléctricas
+  M3:'2',  // Revest. Exterior
+  M4:'2',  // Agua / Gas
+  M5:'2',  // Montaje 5
+  M6:'2',  // (sector operario)
+  S5:'2',  // Aberturas / Toldos
+  S6:'2',  // Slide Out
+  QC:'2',  // Control Final
+  HOSP:'2',// Hospital
+  OTROS:'2', RETRAB:'2' // sin sector claro → por defecto Nave 2 (cambialo si hace falta)
+};
+function naveOf(code){ return NAVE_DE[String(code||'').toUpperCase()] || '2'; }
+
+/* ===================================================================
+   REASIGNAR OPERARIO A OTRO MONTAJE  ·  cuando el sector que trae el
+   sistema no coincide con el montaje donde realmente trabaja.
+   Clave = parte del nombre (en minúscula) → montaje correcto.
+   =================================================================== */
+var SECTOR_OVERRIDE={
+  'pradal':'M4',
+  'moreyra':'M4'
+};
+function sectorDe(o){
+  var k=String(o.nom||'').toLowerCase().replace(/\s+/g,' ').trim();
+  for(var key in SECTOR_OVERRIDE){ if(k.indexOf(key)>=0) return SECTOR_OVERRIDE[key]; }
+  return o.sector;
+}
+
+/* ===================================================================
+   OPERARIOS A EXCLUIR del tablero (por parte del nombre, en minúscula)
+   =================================================================== */
+var EXCLUIR_OPERARIO=['mayer'];
+function excluido(nom){
+  var k=String(nom||'').toLowerCase().replace(/\s+/g,' ').trim();
+  return EXCLUIR_OPERARIO.some(function(x){return k.indexOf(x)>=0;});
+}
+
+/* ===== Nombre corto: APELLIDO + inicial del nombre =====
+   Usa un diccionario de nombres para distinguir apellido de nombre
+   (los datos vienen a veces "Apellido Nombre" y otras "Nombre Apellido").
+   Si algún nombre queda mal, agregalo/quitalo de NOMBRES_PILA. */
+var NOMBRES_PILA=new Set(['lucas','mauro','ezequiel','lautaro','javier','juan','juani','fabricio','agustin','agustín','mateo','ignacio','sergio','eduardo','alejandro','enzo','felipe','mariano','mario','pablo','luis','luís','esteban','jonatan','jonathan','martin','martín','nicolas','nicolás','marcos','matias','matías','franco','tomas','tomás','santiago','gabriel','diego','emanuel','facundo','joaquin','joaquín','ramiro','rodrigo','leonel','dylan','maximiliano','cristian','german','germán','gonzalo','ivan','iván','brian','kevin','lionel','luciano','gaston','gastón','damian','damián','ariel','fernando','sebastian','sebastián','walter','pedro','jorge','carlos','miguel','angel','ángel','ana','marta','raul','raúl','oscar','ruben','rubén','hector','héctor','nahuel','thiago','bruno','elias','elías','david','daniel','david','abel','axel','uriel','ismael','joel','milton','néstor','nestor','omar','claudio','marcelo','pablo','ezequiel']);
+function formatName(nom){
+  var raw=String(nom||'').trim().replace(/\s+\d+$/,''); // saca sufijos tipo " 2"
+  if(!raw) return '';
+  var ape='', ini='';
+  if(raw.indexOf(',')>=0){
+    var pp=raw.split(','); ape=pp[0].trim(); ini=(pp[1]||'').trim().charAt(0);
+  } else {
+    var toks=raw.split(/\s+/).filter(Boolean);
+    if(toks.length<=1) return raw;
+    var names=[], others=[];
+    toks.forEach(function(t){ (NOMBRES_PILA.has(t.toLowerCase())?names:others).push(t); });
+    if(others.length && names.length){ ape=others.join(' '); ini=names[0].charAt(0); }
+    else { ape=toks[0]; ini=(toks[1]||'').charAt(0); } // fallback: Apellido Nombre
+  }
+  return ape + (ini?(' '+ini.toUpperCase()+'.'):'');
+}
+function valBadge(v){
+  if(!v) return '';
+  return /ng/i.test(v) ? '<span class="vng">✕</span>' : '<span class="vok">✓</span>';
+}
+/* acorta el título de la tarea para que se lea en la TV. El nombre completo
+   queda en el tooltip.
+   1) saca prefijos de producto/estándar (MHC, MHF, MHG, CMD, CR, CS, STD, RET…)
+      con guion, espacio o barra, repetidos.
+   2) abrevia palabras largas comunes.
+   Para agregar/quitar prefijos o abreviaturas, editá las dos listas de abajo. */
+var WO_PREFIX=/^(MH[A-Z0-9]?|CMD|CR|CS|CD|STD|RET|OPC|ESP|RES)[\s/\-–.]+/i;
+var WO_ABBR=[
+  [/\bINSTALACI[OÓ]N(ES)?\b/gi,'I.'], [/\bINSTALAR\b/gi,'I.'], [/\bINSTAL\b/gi,'I.'],
+  [/\bCOLOCACI[OÓ]N(ES)?\b/gi,'C.'],  [/\bCOLOCAR\b/gi,'C.'],
+  [/\bRUTE(O|AR|ADO)\b/gi,'R.']
+];
+function shortWO(s){
+  s=String(s==null?'':s).trim();
+  var guard=0;
+  while(WO_PREFIX.test(s) && guard++<4){ s=s.replace(WO_PREFIX,'').trim(); }
+  WO_ABBR.forEach(function(a){ s=s.replace(a[0],a[1]); });
+  return s.trim();
+}
+
+var COLORS={M0:'#dc2626',S1:'#b45309',M1:'#d97706',M2:'#f59e0b',S2:'#65a30d',M3:'#16a34a',M4:'#0891b2',M5:'#2563eb',S5:'#7c3aed',S6:'#9333ea',S7:'#c026d3',QC:'#16a34a',HOSP:'#ef4444'};
+var H0=8*60, COLP=120, NHC=9, ALMIDX=4;
+var NOWG=0, LASTD=null, AUTOSCROLL=true;
+/* mapa de tiempo no lineal: la hora de almuerzo (12–13) va comprimida */
+var LF=0.30, LUNCH0=720, LUNCH1=780, ALM=0, HASLUNCH=true;
+
+/* nave activa: ?nave=1 / 2 / all  (default 1) */
+var NAVE=((location.search.match(/[?&]nave=([12]|all)/)||[])[1]||'1');
+/* vista: por operario (default, como el hora a hora actual) o por montaje (?vista=montaje o ?por=mo) */
+var VMODE=(/[?&](vista=montaje|por=mo)/.test(location.search))?'mon':'op';
+
+function syncURL(){ try{history.replaceState(null,'','?nave='+NAVE+'&vista='+(VMODE==='mon'?'montaje':'operario'))}catch(e){} }
+function setNave(n){ NAVE=n; syncURL(); paintNavBtns(); if(LASTD) render(LASTD); }
+function setView(v){ VMODE=v; syncURL(); paintNavBtns(); if(LASTD) render(LASTD); }
+function paintNavBtns(){
+  document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-nave')===NAVE); });
+  document.querySelectorAll('.viewbtn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-view')===VMODE); });
+}
+
+function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML}
+function toMin(s){var p=String(s).split(':');return (+p[0])*60+(+p[1])}
+/* pixel de un minuto (o "HH:MM"), respetando el almuerzo comprimido */
+function px(m){ if(typeof m==='string') m=toMin(m);
+  if(!HASLUNCH) return (m-H0)/60*COLP;
+  if(m<=LUNCH0) return (m-H0)/60*COLP;
+  if(m<=LUNCH1) return 4*COLP + (m-LUNCH0)/60*ALM;
+  return 4*COLP + ALM + (m-LUNCH1)/60*COLP;
+}
+function x(s){return px(s)}
+function w(a,b){return Math.max(px(typeof b==='string'?toMin(b):b)-px(typeof a==='string'?toMin(a):a),22)}
+function hN(v){return Math.round(v*10)/10}
+function fmtM(m){var h=Math.floor(m/60),mi=m%60;return (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi}
+
+/* ===== dimensionar columnas y filas para llenar la TV ===== */
+function fit(D){
+  var sab=!!(D&&D.sab); NHC=sab?5:9; ALMIDX=sab?-1:4;
+  HASLUNCH = !sab && ALMIDX>=0;
+  var lblw=Math.max(300, Math.round(window.innerWidth*0.185));
+  var avail=window.innerWidth - lblw - 4;
+  /* la hora de almuerzo cuenta como LF de una hora normal → las demás ganan ancho */
+  var denom = HASLUNCH ? (NHC-1)+LF : NHC;
+  COLP=Math.max(70, Math.floor(avail/denom));
+  ALM = HASLUNCH ? Math.round(COLP*LF) : COLP;
+  document.documentElement.style.setProperty('--lblw', lblw+'px');
+  document.documentElement.style.setProperty('--metaw', '0px');
+  document.documentElement.style.setProperty('--hcol', COLP+'px');
+  document.documentElement.style.setProperty('--hcolalm', ALM+'px');
+}
+
+function annotateAcum(arr){
+  var by={}; (arr||[]).forEach(function(r){var k=(r.mo||'')+'|'+(r.wo||'');by[k]=(by[k]||0)+(+r.rmin||0);});
+  (arr||[]).forEach(function(r){var k=(r.mo||'')+'|'+(r.wo||'');r.acumPrev=Math.max(0,(by[k]||0)-(+r.rmin||0));});
+}
+/* Odoo parte una tarea en dos cuando pasa el tiempo estándar (el excedente lo
+   marca improductivo). Acá las volvemos a unir: tramos consecutivos de la MISMA
+   orden+tarea, pegados en el tiempo, se muestran como una sola tarjeta. */
+function normWO(s){return String(s==null?'':s).replace(/\s+/g,' ').trim().toUpperCase();}
+function mergeReal(arr){
+  if(arr && arr.__merged) return arr;
+  var src=(arr||[]).slice().sort(function(a,b){return toMin(a.ini)-toMin(b.ini)});
+  var out=[];
+  src.forEach(function(r){
+    var p=out[out.length-1];
+    var mismaTarea = p && p.mo===r.mo && normWO(p.wo)===normWO(r.wo) && (p.e==='nc')===(r.e==='nc');
+    var pegado = p && (toMin(r.ini)-toMin(p.fin) <= 3);
+    if(mismaTarea && pegado){
+      if(toMin(r.fin)>toMin(p.fin)) p.fin=r.fin;
+      p.rmin=(+p.rmin||0)+(+r.rmin||0);
+      p.obj=Math.max(+p.obj||0,+r.obj||0);
+      if(r.e==='curso') p.e='curso';
+      if(r.val) p.val=r.val;
+      if(r.acum) p.acum=Math.max(+p.acum||0,+r.acum||0);
+    } else {
+      out.push(Object.assign({},r));
+    }
+  });
+  /* recalcular el estado de los terminados fusionados (ok / ko según total vs estándar) */
+  out.forEach(function(r){ if(r.e!=='curso' && r.e!=='nc'){ r.e=((+r.obj||0)>0 && (+r.rmin||0)>(+r.obj||0))?'ko':'ok'; } });
+  out.__merged=true;
+  return out;
+}
+function overInfo(r){
+  if(r.e!=='curso') return {over:false,warn:false,ef:null,elap:0};
+  var obj=+(r.obj||0), ini=toMin(r.ini);
+  if(!(NOWG>0)) return {over:false,warn:false,ef:null,elap:0};
+  var elap=Math.max((NOWG-ini)+(+(r.acumPrev||0)), +(r.acum||0));
+  if(obj<=0||elap<=obj) return {over:false,warn:false,ef:(obj>0&&elap>0?Math.round(obj*100/elap):null),elap:elap};
+  var ef=Math.round(obj*100/elap);
+  return {over:true,warn:ef>=80,crit:ef<50,ef:ef,elap:elap};
+}
+function ovAttrs(r){
+  var cls='', crit=0, warn=0;
+  if(r.e==='curso'){
+    var info=overInfo(r);
+    if(info.over){ cls=' over'; if(info.crit){cls+=' crit';crit=1;} else if(info.warn){cls+=' warn';warn=1;} }
+  } else if(r.e==='ko'){
+    var o=+(r.obj||0), rm=+(r.rmin||0), ef=(o>0&&rm>0)?Math.round(o*100/rm):0;
+    if(o>0&&rm>0){ if(ef<50){cls=' crit';crit=1;} else if(ef>=80){cls=' warn';warn=1;} }
+  } else if(r.e==='nc'){
+    var o2=+(r.obj||0), rm2=+(r.rmin||0);
+    if(o2>0&&rm2>o2){ var ef2=Math.round(o2*100/rm2); if(ef2<50){cls=' inef crit';crit=1;} else if(ef2>=80){cls=' warn';warn=1;} else cls=' inef'; }
+  }
+  return cls;
+}
+
+/* huecos de inactividad (>15 min) — solo visual */
+var HORARIO_FIN={'dylan mansilla':720};
+function finOperario(nom){ var k=String(nom||'').toLowerCase().replace(/\s+/g,' ').trim(); return HORARIO_FIN[k]||9999; }
+function gapsDe(o,nowM,SEGS){
+  var iv=[]; (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=toMin(r.fin);if(b>a)iv.push([a,b]);});
+  iv.sort(function(a,b){return a[0]-b[0]});
+  var ciMin=(o.ci&&/^\d/.test(o.ci))?toMin(o.ci):0;
+  var leadStart=Math.max(500, ciMin);
+  var fin=finOperario(o.nom);
+  var gaps=[];
+  SEGS.forEach(function(sg,si){
+    var segEnd=Math.min(sg[1],nowM,fin); if(segEnd<=sg[0]) return;
+    var cur=(si===0)?Math.max(sg[0],leadStart):sg[0];
+    if(cur>=segEnd) return;
+    iv.forEach(function(p){
+      var a=Math.max(p[0],sg[0]), b=Math.min(p[1],segEnd); if(b<=a) return;
+      if(a-cur>15) gaps.push([cur,a]);
+      if(b>cur) cur=b;
+    });
+    if(segEnd-cur>15) gaps.push([cur,segEnd]);
+  });
+  return gaps;
+}
+function futurePlanGaps(planOps,nowM,SEGS,finOp){var iv=planOps.map(function(p){return [p.a,p.b];}).sort(function(a,b){return a[0]-b[0]});var gaps=[];SEGS.forEach(function(sg){var start=Math.max(sg[0],nowM);var end=Math.min(sg[1],finOp===9999?sg[1]:finOp);if(end<=start)return;var cur=start;iv.forEach(function(p){var a=Math.max(p[0],start),b=Math.min(p[1],end);if(b<=a)return;if(a-cur>15)gaps.push([cur,a]);if(b>cur)cur=b;});if(end-cur>15)gaps.push([cur,end]);});return gaps;}
+var NOMS={M0:'Soldadura',S1:'Armado Muebles',M1:'Revest. Interior',M2:'Inst. Eléctricas',S2:'Fibra',M3:'Revest. Exterior',M4:'Agua / Gas',M5:'Montaje 5',M6:'Montaje 6',S5:'Aberturas / Toldos',S6:'Slide Out',S7:'Tapicería',QC:'Control Final',HOSP:'Hospital',OTROS:'Otros',RETRAB:'Retrabajo'};
+var ORDEN=['M0','S1','M1','M2','S2','M3','M4','M5','M6','S5','S6','S7','QC','HOSP'];
+
+function render(D){
+  LASTD=D;
+  fit(D);
+  paintNavBtns();
+  NHC = D.sab?5:9; ALMIDX = D.sab?-1:4;
+
+  /* ausentes */
+  var aus=D.ausentes||[];
+  var cAus=document.getElementById('cAus'), ausbar=document.getElementById('ausbar');
+  if(aus.length){ cAus.style.display='';cAus.innerHTML='🚫 AUSENTES <b>'+aus.length+'</b>'; ausbar.style.display='block';ausbar.innerHTML='🚫 AUSENTES HOY ('+aus.length+'): '+aus.map(function(a){return esc(a.nombre)+(a.sector?' <span style="opacity:.7">('+esc(a.sector)+')</span>':'')}).join(' · '); }
+  else { cAus.style.display='none'; ausbar.style.display='none'; }
+
+  /* supervisores */
+  var rs=D.rondas_sup;
+  var _st=function(o){ if(!o||o.gap_min==null) return ''; var g=o.gap_min; return g>60?'red':(g>=40?'yellow':''); };
+  var SR={rodrigo:_st(rs&&rs.rodrigo),yance:_st(rs&&rs.yance)};
+  if(rs&&rs.rodrigo){var _sg=function(l,o,st){var xx=l+' '+((o&&o.validadas)||0)+'/'+((o&&o.total)||0);var g=(o&&o.gap_min!=null)?(' '+o.gap_min+'m'):'';if(st==='red')return '<span style="background:#dc2626;color:#fff;padding:0 6px;border-radius:6px">'+xx+g+' ⚠</span>';if(st==='yellow')return '<span style="background:#f59e0b;color:#1a1a1a;padding:0 6px;border-radius:6px">'+xx+g+'</span>';return xx;};var _cs=document.getElementById('cSup');_cs.innerHTML='SUPERV. <b>'+_sg('R',rs.rodrigo,SR.rodrigo)+' · '+_sg('Y',rs.yance,SR.yance)+'</b>';_cs.style.background=(SR.rodrigo==='red'||SR.yance==='red')?'rgba(220,38,38,.30)':((SR.rodrigo==='yellow'||SR.yance==='yellow')?'rgba(245,158,11,.25)':'rgba(255,255,255,.22)');}
+
+  /* alertas */
+  var ab=document.getElementById('alertbar');
+  var _av=(D.alertas||[]).filter(function(a){var tp=(a.tipo||'');return tp!=='5S'&&tp!=='RONDA'});
+  if(_av.length){ab.style.display='block';ab.innerHTML=_av.map(function(a){return '• '+esc(a.msg||a)}).join(' &nbsp; ')}else ab.style.display='none';
+
+  var HIST=!!D.hist;
+  document.getElementById('reloj').textContent = D.hora;
+  var navtxt = NAVE==='all'?'TODAS LAS NAVES':('NAVE '+NAVE);
+  document.getElementById('h1t').textContent='HORA A HORA · '+navtxt;
+  document.title='Cinzia · Hora a Hora · '+navtxt;
+  document.getElementById('sub').textContent = D.fecha+' · jornada '+(D.sab?'8–13':'8:10–12 / 13–17')+(D.congelado?' · plan 7:45':'')+' · refresca c/1 min';
+
+  var nowM0=toMin(D.hora);
+  var GRUPOS=(D.grupos||[]).filter(function(g){
+    if(NAVE==='all') return true;
+    var nv=NAVE_DE[String(g.code).toUpperCase()]||'2';
+    return nv===NAVE;
+  });
+
+  /* KPIs: por nave se recalculan desde las órdenes visibles; en TODAS usa el total de planta */
+  var planH, paH, raH;
+  if(NAVE==='all'){
+    planH=hN(D.plan_total_min/60); paH=hN(D.plan_ahora_min/60); raH=hN(D.real_ahora_min/60);
+  } else {
+    var sPlan=0,sPa=0,sReal=0;
+    GRUPOS.forEach(function(g){ (g.mos||[]).forEach(function(m){
+      (m.plan||[]).forEach(function(p){var a=toMin(p.ini),b=toMin(p.fin);sPlan+=b-a;var v=Math.min(b,nowM0)-a;if(v>0)sPa+=v});
+      (m.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM0);if(b>a)sReal+=b-a});
+    }); });
+    planH=hN(sPlan/60); paH=hN(sPa/60); raH=hN(sReal/60);
+  }
+  document.getElementById('cPlan').textContent=planH+' h';
+  document.getElementById('cPa').textContent=paH+' h';
+  document.getElementById('cRa').textContent=raH+' h';
+  var dv=hN(raH-paH), dvp=paH>0?Math.round(dv*100/paH):0;
+  var cD=document.getElementById('cDesv');
+  cD.innerHTML='DESVÍO <b>'+(dv>=0?'+':'')+dv+' h ('+(dvp>=0?'+':'')+dvp+'%)</b>';
+  cD.style.background=dv>=0?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)';
+
+  var hrs=[]; for(var i=0;i<NHC;i++) hrs.push(8+i);
+  var h='';
+  h+='<div class="sticky-top">';
+  h+='<div class="horas"><div class="lbl">'+(VMODE==='op'?'OPERARIO · AVANCE':'ORDEN · AVANCE')+'</div>';
+  hrs.forEach(function(hr,i){h+='<div class="h'+(i===ALMIDX?' alm':'')+'">'+(i===ALMIDX?'alm':((hr<10?'0':'')+hr))+'</div>'});
+  h+='</div>';
+  if(NAVE==='all'){
+    h+='<div class="acum"><div class="lbl"><span class="p">▭ PLAN acum (h)</span><span class="r">▮ REAL acum (h)</span></div>';
+    for(var i=0;i<NHC;i++){
+      var p=D.acum_plan_h[i]!=null?D.acum_plan_h[i]:'—', r=D.acum_real_h[i];
+      var cls=r==null?'f':(r>=(D.acum_plan_h[i]||0)*0.9?'g':'r');
+      h+='<div class="c'+(i===ALMIDX?' alm':'')+'">'+(i===ALMIDX?'':('<span class="p">'+p+'</span><br><span class="r '+cls+'">'+(r==null?'—':r+(cls==='r'?' ▼':''))+'</span>'))+'</div>';
+    }
+    h+='</div>'; /* cierra .acum */
+  }
+  h+='</div>'; /* cierra .sticky-top */
+
+  var nowM=toMin(D.hora); NOWG=nowM;
+  var SEGS=D.sab?[[480,780]]:[[490,720],[780,1020]];
+  var elapsed=0; SEGS.forEach(function(sg){var v=Math.min(nowM,sg[1])-sg[0]; if(v>0)elapsed+=v});
+
+  /* =============== VISTA POR OPERARIO (como el hora a hora actual) =============== */
+  if(VMODE==='op' && D.operarios && D.operarios.length){
+    var moPlan={}; (D.grupos||[]).forEach(function(g){(g.mos||[]).forEach(function(m){moPlan[m.mo]=m.plan||[]})});
+    function packCliente(durs){
+      var out=[],si=0,cur=SEGS[0][0];
+      for(var i=0;i<durs.length&&si<SEGS.length;i++){
+        var rem=durs[i].d>0?durs[i].d:30;
+        while(rem>0&&si<SEGS.length){
+          var finc=Math.min(cur+rem,SEGS[si][1]);
+          if(finc>cur){out.push({wo:durs[i].n,a:cur,b:finc});rem-=(finc-cur);cur=finc}
+          if(cur>=SEGS[si][1]){si++;if(si<SEGS.length)cur=SEGS[si][0]}
+        }
+      }
+      return out;
+    }
+    var bySec={}; D.operarios.forEach(function(o){if(excluido(o.nom))return;var sc=sectorDe(o);(bySec[sc]=bySec[sc]||[]).push(o)});
+    var secs=ORDEN.filter(function(c){return bySec[c]}).concat(Object.keys(bySec).filter(function(c){return ORDEN.indexOf(c)<0}));
+    secs=secs.filter(function(c){ return NAVE==='all' || naveOf(c)===NAVE; });
+    if(!secs.length){ h+='<div class="empty">Sin operarios en '+(NAVE==='all'?'ninguna nave':'la Nave '+NAVE)+' hoy</div>'; }
+    secs.forEach(function(code){
+      var lst=bySec[code]; lst.sort(function(a,b){return a.nom<b.nom?-1:1});
+      var nv=naveOf(code);
+      /* ---- pre-cálculo por operario + agregado del montaje ---- */
+      var rows=[], secPlanAhora=0, secReal=0, secElap=0, secReg=0;
+      lst.forEach(function(o){
+        o.real=mergeReal(o.real); annotateAcum(o.real);
+        var reg=0, mos={}, ordenMos=[];
+        (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)reg+=b-a; if(r.mo&&!mos[r.mo]){mos[r.mo]=1;ordenMos.push(r.mo)}});
+        var durs=[]; ordenMos.forEach(function(mo){(moPlan[mo]||[]).forEach(function(p){durs.push({n:shortWO(p.wo),full:mo+' · '+p.wo,d:toMin(p.fin)-toMin(p.ini)})})});
+        var planOps=packCliente(durs);
+        var planDia=0, planAhora=0, realHecho=0;
+        planOps.forEach(function(p){planDia+=p.b-p.a; var v=Math.min(p.b,nowM)-p.a; if(v>0)planAhora+=v});
+        (o.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)realHecho+=b-a});
+        secPlanAhora+=planAhora; secReal+=realHecho; secReg+=reg; secElap+=elapsed;
+        rows.push({o:o,mos:mos,planOps:planOps,planDia:planDia,planAhora:planAhora,realHecho:realHecho,reg:reg});
+      });
+      /* eficiencia del montaje = real hecho / plan que debía estar hecho a esta hora */
+      var secEff = secPlanAhora>0 ? Math.round(secReal*100/secPlanAhora) : (secElap>0?Math.round(secReg*100/secElap):null);
+      var effCls = secEff==null?'m':(secEff>=80?'g':(secEff>=70?'o':'r'));
+      var effTxt = secEff==null?'—':secEff+'%';
+      h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span><span class="cnt">'+lst.length+' operarios</span></span></div>';
+      rows.forEach(function(R){
+        var o=R.o, planOps=R.planOps, planDia=R.planDia, planAhora=R.planAhora, realHecho=R.realHecho, reg=R.reg;
+        var pReg=elapsed>0?Math.round(reg*100/elapsed):0;
+        var pPA=planDia>0?Math.round(planAhora*100/planDia):0;
+        var pR=planDia>0?Math.round(realHecho*100/planDia):0;
+        var ok=planDia>0?(pR>=pPA-5):(pReg>=75);
+        var stat;
+        if(planDia>0){
+          stat='<div class="stat"><div class="t">REAL '+pR+'% vs PLAN '+pPA+'%</div>'
+            +'<div class="bar"><i style="width:'+Math.min(pR,100)+'%;background:'+(ok?'#22c55e':'#ef4444')+'"></i><em style="left:'+Math.min(pPA,100)+'%"></em></div>'
+            +'<div class="v '+(ok?'g':'r')+'">'+(ok?'✓ al día':'✗ atrasado '+(pPA-pR)+'pts')+'</div></div>';
+        }else{
+          stat='<div class="stat"><div class="t">REGISTRADO</div>'
+            +'<div class="bar"><i style="width:'+Math.min(pReg,100)+'%;background:'+(ok?'#22c55e':'#ef4444')+'"></i></div>'
+            +'<div class="v '+(ok?'g':'r')+'">'+pReg+'% del tiempo'+(reg===0?' · ⚠ s/registro':'')+'</div></div>';
+        }
+        h+='<div class="fila"><div class="info"><div class="who"><div class="mo" title="'+esc(o.nom)+'">'+esc(formatName(o.nom))+'</div><div class="det">'+esc(Object.keys(R.mos).join(' · ')||'sin órdenes')+'</div></div>'+stat+'</div><div class="tl">';
+        for(var c=0;c<NHC;c++) h+='<div class="cell'+(c===ALMIDX?' alm':'')+'"></div>';
+        h+='<span class="lane-tag" style="top:11px">ESP</span><span class="lane-tag" style="top:31px">REAL</span>';
+        if(planOps.length){
+          planOps.forEach(function(p){h+='<div class="pb" style="left:'+px(p.a)+'px;width:'+Math.max(px(p.b)-px(p.a),22)+'px" title="ESPERADO: '+esc(p.wo)+'">'+esc(p.wo)+'</div>'});
+        }else{
+          SEGS.forEach(function(sg){h+='<div class="pb" style="left:'+px(sg[0])+'px;width:'+(px(sg[1])-px(sg[0]))+'px" title="sin plan pendiente">sin plan · jornada</div>'});
+        }
+        (o.real||[]).forEach(function(r){var cls=ovAttrs(r);h+='<div class="blk '+r.e+cls+(r.val?' valdone':'')+'" style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo?r.mo+' · ':'')+esc(r.wo)+' ('+esc(r.ini)+'–'+esc(r.fin)+')'+(r.val?' · validada '+esc(r.val):'')+'">'+valBadge(r.val)+esc(shortWO(r.wo))+'</div>'});
+        if((o.real||[]).length){ gapsDe(o,nowM,SEGS).forEach(function(g){
+          var L=px(g[0]), W=Math.max(px(g[1])-px(g[0]),26);
+          h+='<div class="gap" title="Sin actividad '+fmtM(g[0])+'–'+fmtM(g[1])+' ('+(g[1]-g[0])+'m)" style="left:'+L+'px;width:'+W+'px">⚠ '+(g[1]-g[0])+'m</div>';
+        }); }
+        if(planOps.length){ futurePlanGaps(planOps,nowM,SEGS,finOperario(o.nom)).forEach(function(g){ var L=px(g[0]), W=Math.max(px(g[1])-px(g[0]),26); h+='<div class="pgap" title="Sin tarea cargada '+fmtM(g[0])+'–'+fmtM(g[1])+'" style="left:'+L+'px;width:'+W+'px">▦ '+(g[1]-g[0])+'m</div>'; }); }
+        h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
+        h+='</div></div>';
+      });
+    });
+    document.getElementById('grid').innerHTML=h;
+    var gc=document.getElementById('cGap'); var ng=document.querySelectorAll('.gap:not(.ack)').length;
+    if(ng>0){gc.style.display='';gc.innerHTML='⚠ INACTIVIDAD <b>'+ng+'</b>';}else gc.style.display='none';
+    return;
+  }
+
+  if(!GRUPOS.length){
+    h+='<div class="empty">Sin órdenes en '+(NAVE==='all'?'ninguna nave':'la Nave '+NAVE)+' hoy</div>';
+  }
+
+  GRUPOS.forEach(function(g){
+    var nv=NAVE_DE[String(g.code).toUpperCase()]||'2';
+    /* ---- pre-cálculo por orden + agregado del montaje ---- */
+    var rows=[], secPlanAhora=0, secReal=0;
+    (g.mos||[]).forEach(function(m){
+      m.real=mergeReal(m.real); annotateAcum(m.real);
+      var planDia=0, planAhora=0, realHecho=0;
+      (m.plan||[]).forEach(function(p){var a=toMin(p.ini),b=toMin(p.fin);planDia+=b-a;var v=Math.min(b,nowM)-a;if(v>0)planAhora+=v});
+      (m.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)realHecho+=b-a});
+      secPlanAhora+=planAhora; secReal+=realHecho;
+      rows.push({m:m,planDia:planDia,planAhora:planAhora,realHecho:realHecho});
+    });
+    var secEff = secPlanAhora>0 ? Math.round(secReal*100/secPlanAhora) : null;
+    var effCls = secEff==null?'m':(secEff>=80?'g':(secEff>=70?'o':'r'));
+    var effTxt = secEff==null?'—':secEff+'%';
+    h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span><span class="cnt">'+g.mos.length+' órdenes</span></span></div>';
+    rows.forEach(function(R){
+      var m=R.m, planDia=R.planDia, planAhora=R.planAhora, realHecho=R.realHecho;
+      var pPA=planDia>0?Math.round(planAhora*100/planDia):0;
+      var pR=planDia>0?Math.round(realHecho*100/planDia):0;
+      var alDia=pR>=pPA-5;
+      var sinPlan=planDia===0;
+      var stat;
+      if(sinPlan){
+        stat='<div class="stat"><div class="t">SIN PLAN PENDIENTE</div><div class="v m">'+((m.real||[]).length?'solo real':'—')+'</div></div>';
+      }else{
+        stat='<div class="stat"><div class="t">REAL '+pR+'% vs PLAN '+pPA+'%</div>'
+          +'<div class="bar"><i style="width:'+Math.min(pR,100)+'%;background:'+(alDia?'#22c55e':'#ef4444')+'"></i><em style="left:'+Math.min(pPA,100)+'%"></em></div>'
+          +'<div class="v '+(alDia?'g':'r')+'">'+(alDia?'✓ al día':'✗ atrasado '+(pPA-pR)+'pts')+'</div></div>';
+      }
+      h+='<div class="fila"><div class="info"><div class="who"><div class="mo">'+esc(m.mo)
+        +(m.en_cola?'<span class="cola">EN COLA</span>':'')
+        +(m.dias!=null?'<span class="dias'+(m.dias>5?' alto':'')+'">📅 '+m.dias+'d</span>':'')
+        +'</div><div class="det">'+esc(m.cliente||m.producto||'—')+'</div></div>'+stat+'</div><div class="tl">';
+      for(var c=0;c<NHC;c++) h+='<div class="cell'+(c===ALMIDX?' alm':'')+'"></div>';
+      h+='<span class="lane-tag" style="top:11px">PLAN</span><span class="lane-tag" style="top:31px">REAL</span>';
+      (m.plan||[]).forEach(function(p){h+='<div class="pb" data-h="'+esc(p.ini)+'–'+esc(p.fin)+'" style="left:'+x(p.ini)+'px;width:'+w(p.ini,p.fin)+'px" title="PLAN: '+esc(p.wo)+'">'+esc(shortWO(p.wo))+'</div>'});
+      (m.real||[]).forEach(function(r){var cls=ovAttrs(r);h+='<div class="blk '+r.e+cls+(r.val?' valdone':'')+'" style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.wo)+' · '+esc(r.op)+' ('+esc(r.ini)+'–'+esc(r.fin)+')'+(r.val?' · validada '+esc(r.val):'')+'">'+valBadge(r.val)+esc(shortWO(r.wo))+'</div>'});
+      h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
+      h+='</div></div>';
+    });
+  });
+
+  document.getElementById('grid').innerHTML=h;
+
+  /* inactividad (chip) */
+  var gapChip=document.getElementById('cGap');
+  var ng=document.querySelectorAll('.gap:not(.ack)').length;
+  if(ng>0){gapChip.style.display='';gapChip.innerHTML='⚠ INACTIVIDAD <b>'+ng+'</b>';}else gapChip.style.display='none';
+}
+
+/* ================= carga + auto-refresh ================= */
+function cargar(){
+  var off=document.getElementById('off');
+  fetch(URL_API,{cache:'no-store'}).then(function(r){return r.json()}).then(function(D){
+    off.style.display='none';
+    render(D);
+  }).catch(function(e){
+    off.style.display='block';
+  });
+}
+
+/* ================= auto-scroll vertical para TV ================= */
+var scDir=1;
+setInterval(function(){
+  if(!AUTOSCROLL) return;
+  var sc=document.getElementById('scroller');
+  if(!sc) return;
+  var max=sc.scrollHeight - sc.clientHeight;
+  if(max<=4) return;
+  var next=sc.scrollTop + scDir*1;
+  if(next>=max){ next=max; scDir=-1; }
+  else if(next<=0){ next=0; scDir=1; }
+  sc.scrollTop=next;
+}, 40);
+/* pausa breve arriba y abajo se logra con el rebote suave anterior */
+
+window.addEventListener('resize', function(){ if(LASTD) render(LASTD); });
+
+paintNavBtns();
+cargar();
+setInterval(cargar, 60000);
+</script>
+</body>
+</html>
