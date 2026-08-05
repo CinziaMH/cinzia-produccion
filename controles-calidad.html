@@ -48,8 +48,36 @@ a.pdf:hover,a.det:hover{opacity:.88}
 .valok .re{background:#16a34a;color:#fff;border-radius:20px;padding:1px 8px;font-size:10px;font-weight:800;display:inline-block}
 .valok .re.obs{background:#d97706}.valok .re.rech{background:#dc2626}
 .valok .fh{color:var(--muted);font-size:10.5px}
+/* alertas de calidad */
+.alrt{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.abtn{cursor:pointer;border:none;border-radius:20px;padding:4px 11px;font-size:11.5px;font-weight:800;white-space:nowrap;color:#fff}
+.abtn.libre{background:#166534;border:1px solid #22c55e}
+.abtn.trab{background:#7f1d1d;border:1px solid #ef4444}
+.abtn.sin{background:#0f172a;border:1px solid var(--line);color:var(--muted);cursor:default}
+.abtn:hover{opacity:.88}
+.amini{font-size:10.5px;color:var(--muted);font-weight:700}
+.stg{display:inline-block;border-radius:20px;padding:2px 9px;font-size:10.5px;font-weight:800;white-space:nowrap;color:#fff}
+.stg.snew{background:#475569}
+.stg.ssin{background:#334155;border:1px dashed #94a3b8;color:#e2e8f0}
+.stg.spend{background:#d97706}
+.stg.srech{background:#dc2626}
+.stg.sok{background:#16a34a}
+.bval[disabled]{background:#3f2937;color:#fca5a5;cursor:not-allowed;opacity:.85;border:1px solid #7f1d1d}
+.lockmsg{font-size:10.5px;color:#fca5a5;font-weight:700;margin-top:3px;display:block}
 /* modal */
-#shade{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;display:none}
+#shade,#shadeA{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:40;display:none}
+#shadeA{z-index:42}
+#modalA{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:43;display:none;
+  background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;width:94%;max-width:780px;max-height:82vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+#modalA h3{font-size:16px;font-weight:800;margin-bottom:4px}
+#modalA .mm{font-size:12.5px;color:var(--muted);margin-bottom:12px}
+#modalA table{width:100%;border-collapse:collapse;background:transparent}
+#modalA th,#modalA td{padding:8px 9px;font-size:12.5px;border-bottom:1px solid #26344a}
+#modalA th{background:#16233b;font-size:10.5px}
+#modalA .cerr{opacity:.6}
+.resbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.resbar .rb{border:1px solid var(--line);border-radius:9px;padding:6px 11px;font-size:11.5px;font-weight:800;background:#0f172a}
+.resbar .rb b{font-size:15px;display:block}
 #modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:41;display:none;
   background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;width:92%;max-width:400px;box-shadow:0 12px 40px rgba(0,0,0,.6)}
 #modal h3{font-size:16px;font-weight:800;margin-bottom:4px}
@@ -74,10 +102,19 @@ a.pdf:hover,a.det:hover{opacity:.88}
   <input type="text" id="q" placeholder="Buscar por cliente, orden (MO) o producto…">
   <label><input type="checkbox" id="soloFinal"> Solo Control Final</label>
   <label><input type="checkbox" id="soloPend"> Solo pendientes de validar</label>
+  <label><input type="checkbox" id="soloAlert"> Solo con alertas abiertas</label>
   <span id="cnt">cargando…</span>
 </div>
 <div class="cont" id="cont"><div class="spin"></div></div>
-<p class="nota">"Ver detalle" muestra cada control con su mensaje, quién lo hizo y los que faltaron. "PDF" descarga el reporte oficial con fotos. <b>Validar</b> registra desde este tablero quién revisó el control: se ingresa una contraseña y queda asentado el revisor y el resultado. Datos en vivo · refresca cada 5 min.</p>
+<p class="nota">"Ver detalle" muestra cada control con su mensaje, quién lo hizo y los que faltaron. "PDF" descarga el reporte oficial con fotos. <b>Validar</b> registra desde este tablero quién revisó el control: se ingresa una contraseña y queda asentado el revisor y el resultado. <b>No se puede validar</b> una orden que tenga alertas de calidad sin cerrar: solo se habilita cuando todas están en <b>Control Ok (Acción Cerrada)</b> — el botón de la columna "Alertas de calidad" muestra el detalle de cada una y su etapa. Datos en vivo · refresca cada 5 min.</p>
+
+<div id="shadeA" onclick="cerrarAl()"></div>
+<div id="modalA">
+  <h3>🚨 Alertas de calidad</h3>
+  <div class="mm" id="aInfo"></div>
+  <div id="aBody"></div>
+  <div class="rowb" style="display:flex;margin-top:16px"><button id="mCancel" style="border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:800;cursor:pointer;flex:1;background:#334155;color:#fff" onclick="cerrarAl()">Cerrar</button></div>
+</div>
 
 <div id="shade" onclick="cerrarVal()"></div>
 <div id="modal">
@@ -97,6 +134,8 @@ a.pdf:hover,a.det:hover{opacity:.88}
 var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
 var DATA=[];
 var VAL={};
+var ALR={};              // alertas de calidad por MO: {abiertas,cerradas,items:[...]}
+var ALR_OK=false;        // true si el backend respondió bien la vista de alertas
 var ord={k:'fecha',dir:-1};
 var CUR=null;
 function moKey(mo){return (''+(mo||'')).replace(/\D/g,'').slice(-5);}
@@ -104,12 +143,25 @@ function cl(c){return (c||'').replace(/^[0-9A-Za-z]*S?\d+\s*-\s*/,'').trim()||c|
 function esc(s){return (s==null?'':s).toString().replace(/[&<>"]/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m];});}
 function estCls(st){return st==='done'?'estok':(st==='progress'?'estprog':(st==='cancel'?'estcanc':''));}
 function reCls(r){r=(r||'').toLowerCase();return r.indexOf('rech')>=0?'rech':(r.indexOf('obs')>=0?'obs':'');}
+/* ---- alertas de calidad ---- */
+/* Etapas Odoo (módulo sh.quality.alert): NEW · Pendiente ( Tarea Cargada ) ·
+   Rechazado · Control Ok ( Accion Cerrrada). Solo "Control Ok" cuenta como CERRADA.
+   Las alertas sin etapa asignada cuentan como ABIERTAS. */
+function stgCls(s){s=(s||'').toLowerCase();
+  if(s.indexOf('sin etapa')>=0) return 'ssin';
+  if(s.indexOf('rechaz')>=0) return 'srech';
+  if(s.indexOf('control ok')>=0||s.indexOf('cerrad')>=0||s.indexOf('cerrrad')>=0) return 'sok';
+  if(s.indexOf('pend')>=0||s.indexOf('tarea')>=0) return 'spend';
+  return 'snew';}
+function alDe(mo){var a=ALR[moKey(mo)]; return a||{abiertas:0,cerradas:0,items:[]};}
+function bloqueada(mo){ if(!ALR_OK) return false; return alDe(mo).abiertas>0; }
 function render(){
-  var q=document.getElementById('q'), sf=document.getElementById('soloFinal'), sp=document.getElementById('soloPend'), cnt=document.getElementById('cnt');
+  var q=document.getElementById('q'), sf=document.getElementById('soloFinal'), sp=document.getElementById('soloPend'), sa=document.getElementById('soloAlert'), cnt=document.getElementById('cnt');
   var t=q.value.toLowerCase().trim();
   var f=DATA.filter(function(d){
     if(sf.checked && !/control final|qc control final/i.test(d.producto)) return false;
     if(sp.checked && VAL[moKey(d.mo)]) return false;
+    if(sa.checked && alDe(d.mo).abiertas===0) return false;
     return !t || ((d.cliente||'')+' '+(d.mo||'')+' '+(d.producto||'')).toLowerCase().indexOf(t)>=0;
   });
   f.sort(function(a,b){
@@ -125,6 +177,7 @@ function render(){
     +'<th class="sortable" data-k="fecha">Fecha</th>'
     +'<th class="sortable" data-k="estado">Estado</th>'
     +'<th class="sortable" data-k="n">N° controles</th>'
+    +'<th>Alertas de calidad</th>'
     +'<th>Validación</th>'
     +'<th>Detalle / PDF</th></tr></thead><tbody>';
   var body=f.map(function(d){
@@ -132,27 +185,71 @@ function render(){
     var url=URL_EXEC+'?view=pdf&ids='+idstr;
     var durl=URL_EXEC+'?view=detalle&ids='+idstr;
     var v=VAL[moKey(d.mo)];
+    var a=alDe(d.mo), tot=a.abiertas+a.cerradas, blk=bloqueada(d.mo);
+    var alCell = !ALR_OK
+      ? '<span class="amini">—</span>'
+      : (tot===0
+          ? '<span class="abtn sin">sin alertas</span>'
+          : '<div class="alrt"><button class="abtn '+(a.abiertas?'trab':'libre')+'" onclick="abrirAl(\''+moKey(d.mo)+'\')">'
+            +(a.abiertas? '⛔ '+a.abiertas+' abierta'+(a.abiertas>1?'s':'') : '✔ todas cerradas')
+            +'</button><span class="amini">'+a.cerradas+'/'+tot+' en Control Ok · ver detalle</span></div>');
     var valCell = v
       ? '<div class="valok"><span class="re '+reCls(v.resultado)+'">'+esc(v.resultado||'Aprobado')+'</span><b>por '+esc(v.revisor)+'</b><span class="fh">'+esc(v.fecha||'')+(v.nota?' · '+esc(v.nota):'')+'</span></div>'
-      : '<button class="bval" onclick="abrirVal(\''+moKey(d.mo)+'\')">🔒 Validar</button>';
+      : (blk
+          ? '<button class="bval" disabled title="No se puede validar: hay alertas de calidad sin cerrar">🚫 Validar</button><span class="lockmsg">'+a.abiertas+' alerta'+(a.abiertas>1?'s':'')+' sin cerrar</span>'
+          : '<button class="bval" onclick="abrirVal(\''+moKey(d.mo)+'\')">🔒 Validar</button>');
     return '<tr><td class="cli">'+esc(cl(d.cliente))+'</td>'
       +'<td>'+esc(d.mo)+'</td>'
       +'<td>'+(d.producto?esc(d.producto):'<span class="muted">—</span>')+'</td>'
       +'<td style="white-space:nowrap">'+esc(d.fecha||'—')+'</td>'
       +'<td><span class="pill '+estCls(d.state)+'">'+esc(d.estado||'—')+'</span></td>'
       +'<td class="nn'+((d.n_exp&&d.n<d.n_exp)?' falta':'')+'" title="'+(d.n_exp&&d.n<d.n_exp?('faltan '+(d.n_exp-d.n)+' controles'):'completo')+'">'+d.n+' <span class="exp">/ '+(d.n_exp||d.n)+'</span></td>'
+      +'<td>'+alCell+'</td>'
       +'<td>'+valCell+'</td>'
       +'<td><a class="det" href="'+durl+'" target="_blank" rel="noopener">Ver detalle</a><a class="pdf" href="'+url+'" target="_blank" rel="noopener">PDF</a></td></tr>';
   }).join('');
   document.getElementById('cont').innerHTML = f.length ? (head+body+'</tbody></table>') : '<div class="vacio">Sin unidades para el filtro</div>';
   var nv=f.filter(function(d){return VAL[moKey(d.mo)]}).length;
-  cnt.textContent=f.length+' unidades · '+nv+' validadas';
+  var nb=f.filter(function(d){return bloqueada(d.mo)}).length;
+  cnt.textContent=f.length+' unidades · '+nv+' validadas'+(ALR_OK?' · '+nb+' bloqueadas por alertas':'');
   document.querySelectorAll('th[data-k]').forEach(function(th){
     th.addEventListener('click',function(){var k=th.dataset.k; ord.dir=ord.k===k?-ord.dir:1; ord.k=k; render();});
   });
 }
+function abrirAl(k){
+  var d=DATA.find(function(x){return moKey(x.mo)===k}); if(!d) return;
+  var a=alDe(d.mo), tot=a.abiertas+a.cerradas;
+  document.getElementById('aInfo').innerHTML='<b>'+esc(d.mo)+'</b> · '+esc(cl(d.cliente))+(d.producto?'<br>'+esc(d.producto):'');
+  var h='<div class="resbar">'
+    +'<div class="rb" style="color:#94a3b8"><b>'+tot+'</b>TOTAL</div>'
+    +'<div class="rb" style="color:#f87171;border-color:#7f1d1d"><b>'+a.abiertas+'</b>SIN CERRAR</div>'
+    +'<div class="rb" style="color:#4ade80;border-color:#166534"><b>'+a.cerradas+'</b>CONTROL OK</div>'
+    +'</div>';
+  var nsin=(a.items||[]).filter(function(x){return /sin etapa/i.test(x.stage||'')}).length;
+  if(a.abiertas>0) h+='<div style="background:#3f1d1d;border:1px solid #7f1d1d;border-radius:9px;padding:9px 12px;font-size:12.5px;font-weight:700;color:#fca5a5;margin-bottom:12px">⛔ No se puede validar el control final hasta que todas las alertas queden en <b>Control Ok (Acción Cerrada)</b>.'
+    +(nsin?'<br><span style="font-weight:600">'+nsin+' de estas alertas no tienen etapa asignada en Odoo — hay que clasificarlas y cerrarlas.</span>':'')+'</div>';
+  if(!tot){ h+='<div class="vacio">Esta orden no tiene alertas de calidad cargadas</div>'; }
+  else{
+    var its=(a.items||[]).slice().sort(function(x,y){return (x.cerrada?1:0)-(y.cerrada?1:0)});
+    h+='<table><thead><tr><th>Estado</th><th>Alerta</th><th>Etapa / equipo</th><th>Responsable</th><th>Fecha</th></tr></thead><tbody>';
+    its.forEach(function(it){
+      h+='<tr class="'+(it.cerrada?'cerr':'')+'">'
+        +'<td><span class="stg '+stgCls(it.stage)+'">'+esc(it.stage||'—')+'</span></td>'
+        +'<td style="font-weight:700">'+esc(it.titulo||it.desc||'—')+(it.desc&&it.titulo?'<div class="amini" style="font-weight:600;margin-top:3px">'+esc(it.desc)+'</div>':'')+'</td>'
+        +'<td>'+esc(it.equipo||it.etapa||'—')+'</td>'
+        +'<td>'+esc(it.responsable||'—')+'</td>'
+        +'<td style="white-space:nowrap">'+esc(it.fecha||'—')+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  document.getElementById('aBody').innerHTML=h;
+  document.getElementById('shadeA').style.display='block';
+  document.getElementById('modalA').style.display='block';
+}
+function cerrarAl(){document.getElementById('shadeA').style.display='none';document.getElementById('modalA').style.display='none';}
 function abrirVal(k){
   var d=DATA.find(function(x){return moKey(x.mo)===k}); if(!d) return;
+  if(bloqueada(d.mo)){ abrirAl(k); return; }   // guarda: nunca abrir el validador con alertas abiertas
   CUR=d;
   document.getElementById('mInfo').innerHTML='<b>'+esc(d.mo)+'</b> · '+esc(cl(d.cliente))+(d.producto?'<br>'+esc(d.producto):'');
   document.getElementById('mRes').value='Aprobado';
@@ -168,6 +265,7 @@ function confirmarVal(){
   if(!CUR) return;
   var pass=document.getElementById('mPass').value.trim();
   var err=document.getElementById('mErr');
+  if(bloqueada(CUR.mo)){ err.textContent='⛔ Hay '+alDe(CUR.mo).abiertas+' alerta(s) de calidad sin cerrar'; return; }
   if(!pass){err.textContent='Ingresá la contraseña';return;}
   var ok=document.getElementById('mOk');
   ok.disabled=true; ok.textContent='validando…'; err.textContent='';
@@ -189,13 +287,16 @@ function cargar(){
   document.getElementById('cnt').textContent='cargando…';
   Promise.all([
     fetch(URL_EXEC+'?view=controles&t='+Date.now(),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json()}),
-    fetch(URL_EXEC+'?view=qcval&t='+Date.now(),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json()}).catch(function(){return {ok:false}})
+    fetch(URL_EXEC+'?view=qcval&t='+Date.now(),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json()}).catch(function(){return {ok:false}}),
+    fetch(URL_EXEC+'?view=alertas&t='+Date.now(),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json()}).catch(function(){return {ok:false}})
   ]).then(function(res){
-    var D=res[0], Q=res[1];
+    var D=res[0], Q=res[1], A=res[2];
     if(!D.ok) throw new Error(D.error||'error');
     document.getElementById('off').style.display='none';
     DATA=D.rows||[];
     VAL=(Q&&Q.ok&&Q.val)?Q.val:{};
+    ALR_OK=!!(A&&A.ok&&A.alertas);
+    ALR=ALR_OK?A.alertas:{};
     render();
   }).catch(function(e){
     document.getElementById('off').style.display='block';
@@ -206,6 +307,8 @@ function cargar(){
 document.getElementById('q').addEventListener('input',render);
 document.getElementById('soloFinal').addEventListener('change',render);
 document.getElementById('soloPend').addEventListener('change',render);
+document.getElementById('soloAlert').addEventListener('change',render);
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){cerrarAl();cerrarVal();}});
 cargar();
 setInterval(cargar,300000);
 </script>
