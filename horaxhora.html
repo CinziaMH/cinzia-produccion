@@ -414,6 +414,19 @@ if(segEnd-cur>15) gaps.push([cur,segEnd]);
 });
 return gaps;
 }
+// minutos EN PLANTA del operario (misma ventana que gapsDe) — denominador del % inactividad
+function plantaMinDe(o,nowM,SEGS){
+var ciMin=(o.ci&&/^\d/.test(o.ci))?toMin(o.ci):0;
+var leadStart=Math.max(500, ciMin);
+var fin=finOperario(o.nom);
+var tot=0;
+SEGS.forEach(function(sg,si){
+var segEnd=Math.min(sg[1],nowM,fin); if(segEnd<=sg[0]) return;
+var cur=(si===0)?Math.max(sg[0],leadStart):sg[0];
+if(cur<segEnd) tot+=segEnd-cur;
+});
+return tot;
+}
 function futurePlanGaps(planOps,nowM,SEGS,finOp){var iv=planOps.map(function(p){return [p.a,p.b];}).sort(function(a,b){return a[0]-b[0]});var gaps=[];SEGS.forEach(function(sg){var start=Math.max(sg[0],nowM);var end=Math.min(sg[1],finOp===9999?sg[1]:finOp);if(end<=start)return;var cur=start;iv.forEach(function(p){var a=Math.max(p[0],start),b=Math.min(p[1],end);if(b<=a)return;if(a-cur>15)gaps.push([cur,a]);if(b>cur)cur=b;});if(end-cur>15)gaps.push([cur,end]);});return gaps;}
 function openPGap(pg){var k=document.getElementById('shK');if(k){k.textContent='▦ SIN TAREA CARGADA';k.style.background='#f59e0b';k.style.color='#1f2937';}document.getElementById('shT').textContent=(pg.getAttribute('data-op')||'')+' · '+(pg.getAttribute('data-rng')||'');document.getElementById('shM').innerHTML='<b>'+pg.getAttribute('data-min')+' min sin tarea cargada hacia adelante.</b> Cargá la operación en Odoo para este operario.';document.getElementById('shCtl').innerHTML='<div class="stx" style="color:#94a3b8;font-size:13px">No suena alarma · no pasa a Operaciones Críticas.</div>';document.getElementById('sheet').classList.add('on');document.getElementById('shade').classList.add('on');}
 var actx=null,alarmTimer=null,pendingGaps=0,CURGAP=null;
@@ -464,8 +477,11 @@ cerrarDet(); CURGAP=null; recomputeAlarm();
 /* ===== helpers agregados (nombres, tareas, eficiencia, fusión Odoo) ===== */
 var SECTOR_OVERRIDE={'pradal':'M4','moreyra':'M4'};
 function sectorDe(o){var k=String(o.nom||'').toLowerCase().replace(/\s+/g,' ').trim();for(var key in SECTOR_OVERRIDE){if(k.indexOf(key)>=0)return SECTOR_OVERRIDE[key];}return o.sector;}
-var EXCLUIR_OPERARIO=['mayer'];
-function excluido(nom){var k=String(nom||'').toLowerCase().replace(/\s+/g,' ').trim();return EXCLUIR_OPERARIO.some(function(x){return k.indexOf(x)>=0;});}
+// Mayer y Yance son supervisores (no se cargan como operarios). Lopez Agustin ya no trabaja en la empresa.
+// Cada entrada puede tener varias palabras: se excluye si el nombre las contiene TODAS (en cualquier orden, sin acentos).
+var EXCLUIR_OPERARIO=['mayer','yance','lopez agustin'];
+function _foldNom(s){return String(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
+function excluido(nom){var k=_foldNom(nom);return EXCLUIR_OPERARIO.some(function(x){return _foldNom(x).split(' ').every(function(tok){return tok && k.indexOf(tok)>=0;});});}
 var NOMBRES_PILA=new Set(['lucas','mauro','ezequiel','lautaro','javier','juan','juani','fabricio','agustin','agustín','mateo','ignacio','sergio','eduardo','alejandro','enzo','felipe','mariano','mario','pablo','luis','luís','esteban','jonatan','jonathan','martin','martín','nicolas','nicolás','marcos','matias','matías','franco','tomas','tomás','santiago','gabriel','diego','emanuel','facundo','joaquin','joaquín','ramiro','rodrigo','leonel','dylan','maximiliano','cristian','german','germán','gonzalo','ivan','iván','brian','kevin','lionel','luciano','gaston','gastón','damian','damián','ariel','fernando','sebastian','sebastián','walter','pedro','jorge','carlos','miguel','angel','ángel','ana','marta','raul','raúl','oscar','ruben','rubén','hector','héctor','nahuel','thiago','bruno','elias','elías','david','daniel','abel','axel','uriel','ismael','joel','milton','nestor','néstor','omar','claudio','marcelo']);
 function formatName(nom){var raw=String(nom||'').trim().replace(/\s+\d+$/,'');if(!raw)return '';var ape='',ini='';if(raw.indexOf(',')>=0){var pp=raw.split(',');ape=pp[0].trim();ini=(pp[1]||'').trim().charAt(0);}else{var toks=raw.split(/\s+/).filter(Boolean);if(toks.length<=1)return raw;var names=[],others=[];toks.forEach(function(t){(NOMBRES_PILA.has(t.toLowerCase())?names:others).push(t);});if(others.length&&names.length){ape=others.join(' ');ini=names[0].charAt(0);}else{ape=toks[0];ini=(toks[1]||'').charAt(0);}}return ape+(ini?(' '+ini.toUpperCase()+'.'):'');}
 function valBadge(v){if(!v)return '';return /ng/i.test(v)?'<span class="vng">✕</span>':'<span class="vok">✓</span>';}
@@ -476,13 +492,32 @@ function normWO(s){return String(s==null?'':s).replace(/\s+/g,' ').trim().toUppe
 function mergeReal(arr){if(arr&&arr.__merged)return arr;var src=(arr||[]).slice().sort(function(a,b){return toMin(a.ini)-toMin(b.ini)});var out=[];src.forEach(function(r){var p=out[out.length-1];var m=p&&p.mo===r.mo&&normWO(p.wo)===normWO(r.wo)&&(p.e==='nc')===(r.e==='nc');var peg=p&&(toMin(r.ini)-toMin(p.fin)<=3);if(m&&peg){if(toMin(r.fin)>toMin(p.fin))p.fin=r.fin;p.rmin=(+p.rmin||0)+(+r.rmin||0);p.obj=Math.max(+p.obj||0,+r.obj||0);if(r.e==='curso')p.e='curso';if(r.val)p.val=r.val;if(r.acum)p.acum=Math.max(+p.acum||0,+r.acum||0);}else out.push(Object.assign({},r));});out.forEach(function(r){if(r.e!=='curso'&&r.e!=='nc'){r.e=((+r.obj||0)>0&&(+r.rmin||0)>(+r.obj||0))?'ko':'ok';}});out.__merged=true;return out;}
 function effCls(e){return e==null?'m':(e>=80?'g':(e>=70?'o':'r'));}
 function effChip(sPA,sR){var e=sPA>0?Math.round(sR*100/sPA):null;return '<span class="eff '+effCls(e)+'"><span class="lb">EFIC. MONTAJE</span>'+(e==null?'—':e+'%')+'</span>';}
+// EFIC. MONTAJE = eficiencia estándar/real por montaje, calculada en el front sobre las tareas mostradas.
+// Cuenta terminadas (ok/ko) + en curso YA pasadas del estándar (curso_inef, las rojas) para que las lentas
+// bajen el %. NO cuenta las 'curso' que todavía van dentro del estándar (aún no ganaron su obj) ni las 'nc'.
+// TOPE 100% (nunca muestra >100). Mismo cálculo en el pie de línea → coinciden. Editá el tope/estados acá.
+var EFMON=null; // mapa {code: pct} recalculado en cada render desde D.grupos
+function efMontajeMap(D){
+  var m={};
+  (D.grupos||[]).forEach(function(g){
+    var o=0,r=0;
+    (g.mos||[]).forEach(function(mm){(mm.real||[]).forEach(function(t){ if(t.e!=='nc' && t.e!=='curso'){ o+=(+t.obj||0); r+=(+t.rmin||0); } });});
+    m[g.code] = r>0 ? Math.min(100, Math.round(o*100/r)) : null;
+  });
+  return m;
+}
+function effChipMon(code){ var e=(EFMON && EFMON[code]!=null)?EFMON[code]:null; return '<span class="eff '+effCls(e)+'"><span class="lb">EFIC. MONTAJE</span>'+(e==null?'—':e+'%')+'</span>'; }
+// chip INACTIVIDAD = hs sin actividad (huecos >15min) / hs en planta. Verde ≤10%, naranja ≤20%, rojo >20%
+function inactCls(p){return p==null?'m':(p<=1?'g':(p<=3?'o':'r'));}
+function inactChip(inact,planta){var p=planta>0?Math.round(inact*100/planta):null;var t=planta>0?(hN(inact/60)+' h sin actividad / '+hN(planta/60)+' h en planta'):'sin datos';return '<span class="eff inactv '+inactCls(p)+'" title="'+t+'"><span class="lb">INACTIV.</span>'+(p==null?'—':p+'%')+'</span>';}
 function valChip(tot,val){if(!tot)return '';var pct=Math.round(val*100/tot);var c=pct>=80?'g':(pct>=50?'o':'r');return '<span class="vchip '+c+'"><span class="lb">VALIDADAS</span>'+pct+'% ('+val+'/'+tot+')</span>';}
 
 function render(D){
 LASTD=D;
+EFMON=efMontajeMap(D);
 GAPACK=loadGapAck();
 var _ga=D.gaps_ack||{}; Object.keys(_ga).forEach(function(k){ GAPACK[k]=(typeof _ga[k]==='string')?{accion:_ga[k]}:_ga[k]; }); // confirmaciones compartidas (backend)
-var aus=D.ausentes||[];
+var aus=(D.ausentes||[]).filter(function(a){return !excluido(a.nombre);});
 var cAus=document.getElementById('cAus'), ausbar=document.getElementById('ausbar');
 if(aus.length){ if(cAus){cAus.style.display='';cAus.innerHTML='🚫 AUSENTES <b>'+aus.length+'</b>';} if(ausbar){ausbar.style.display='block';ausbar.innerHTML='🚫 AUSENTES HOY ('+aus.length+'): '+aus.map(function(a){return esc(a.nombre)+(a.sector?' <span style="opacity:.7">('+esc(a.sector)+')</span>':'')}).join(' · ');} }
 else { if(cAus)cAus.style.display='none'; if(ausbar)ausbar.style.display='none'; }
@@ -550,7 +585,7 @@ var secs=ORDEN.filter(function(c){return bySec[c]}).concat(Object.keys(bySec).fi
 if(FILTRO){ secs=secs.filter(function(c){return String(c).toUpperCase()===FILTRO}); if(!secs.length){ h+='<div style="padding:40px;text-align:center;font-weight:800;color:#94a3b8">Sin actividad registrada hoy en '+esc(FILTRO)+'</div>'; } }
 secs.forEach(function(code){
 var lst=bySec[code]; lst.sort(function(a,b){return a.nom<b.nom?-1:1});
-var _sPA=0,_sR=0,_tT=0,_tV=0;
+var _sPA=0,_sR=0,_tT=0,_tV=0,_inact=0,_planta=0;
 h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>@@EFF:'+code+'@@<span class="cnt" style="margin-left:8px">'+lst.length+' operarios</span></span></div>';
 lst.forEach(function(o){
 o.real=mergeReal(o.real); annotateAcum(o.real); (o.real||[]).forEach(function(r){if(r.e!=='curso'){_tT++;if(r.val)_tV++;}});
@@ -576,7 +611,8 @@ planOps.forEach(function(p){h+='<div class="pb" data-k="plan" data-h="'+fmtM(p.a
 SEGS.forEach(function(sg){h+='<div class="pb" style="left:'+((sg[0]-480)/60*COLP)+'px;width:'+((sg[1]-sg[0])/60*COLP)+'px" title="sin plan pendiente — jornada esperada">sin plan pendiente · jornada</div>'});
 }
 (o.real||[]).forEach(function(r){var ov=ovAttrs(r);h+='<div class="blk '+r.e+ov.cls+(r.val?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||o.nom)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(code)+'"'+ov.attr+' style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo)+' · '+esc(r.wo)+'">'+valBadge(r.val)+esc(shortWO(r.wo))+'</div>'});
-if((o.real||[]).length){ gapsDe(o,nowM,SEGS).forEach(function(g){
+if((o.real||[]).length){ _planta+=plantaMinDe(o,nowM,SEGS); gapsDe(o,nowM,SEGS).forEach(function(g){
+_inact+=(g[1]-g[0]);
 var gk=D.fecha+'|'+o.nom+'|'+g[0], ak=GAPACK[gk];
 var L=(g[0]-H0)/60*COLP, W=Math.max((g[1]-g[0])/60*COLP,26);
 h+='<div class="gap'+(ak?' ack':'')+'" data-gk="'+esc(gk)+'" data-op="'+esc(o.nom)+'" data-sec="'+esc(code)+'" data-rng="'+fmtM(g[0])+'–'+fmtM(g[1])+'" data-min="'+(g[1]-g[0])+'" style="left:'+L+'px;width:'+W+'px" title="Sin actividad '+fmtM(g[0])+'–'+fmtM(g[1])+' ('+(g[1]-g[0])+'m)">'+(ak?('✓ '+esc(ak.accion)):('⚠ '+(g[1]-g[0])+'m'))+'</div>';
@@ -585,7 +621,7 @@ if(!HIST && planOps.length){ futurePlanGaps(planOps,nowM,SEGS,finOperario(o.nom)
 h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
 h+='</div></div>';
 });
-h=h.replace('@@EFF:'+code+'@@', effChip(_sPA,_sR)+valChip(_tT,_tV));
+h=h.replace('@@EFF:'+code+'@@', effChipMon(code)+inactChip(_inact,_planta)+valChip(_tT,_tV));
 });
 document.getElementById('grid').innerHTML=h;
 recomputeAlarm();
@@ -594,7 +630,8 @@ return;
 var GRUPOS=(D.grupos||[]);
 if(FILTRO){ GRUPOS=GRUPOS.filter(function(g){return String(g.code).toUpperCase()===FILTRO}); if(!GRUPOS.length){ h+='<div style="padding:40px;text-align:center;font-weight:800;color:#94a3b8">Sin órdenes hoy en '+esc(FILTRO)+'</div>'; } }
 GRUPOS.forEach(function(g){
-var _sPA=0,_sR=0,_tT=0,_tV=0;
+var _sPA=0,_sR=0,_tT=0,_tV=0,_inact=0,_planta=0;
+(D.operarios||[]).forEach(function(o){ if(excluido(o.nom)||sectorDe(o)!==g.code) return; if(!(o.real&&o.real.length)) return; o.real=mergeReal(o.real); _planta+=plantaMinDe(o,nowM,SEGS); gapsDe(o,nowM,SEGS).forEach(function(gg){_inact+=(gg[1]-gg[0]);}); });
 h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span>@@EFFG:'+g.code+'@@<span class="cnt" style="margin-left:8px">'+g.mos.length+' órdenes</span></span></div>';
 g.mos.forEach(function(m){
 m.real=mergeReal(m.real); annotateAcum(m.real); (m.real||[]).forEach(function(r){if(r.e!=='curso'){_tT++;if(r.val)_tV++;}});
@@ -618,7 +655,7 @@ h+='<span class="lane-tag" style="top:10px">PLAN</span><span class="lane-tag" st
 h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
 h+='</div></div>';
 });
-h=h.replace('@@EFFG:'+g.code+'@@', effChip(_sPA,_sR)+valChip(_tT,_tV));
+h=h.replace('@@EFFG:'+g.code+'@@', effChipMon(g.code)+inactChip(_inact,_planta)+valChip(_tT,_tV));
 });
 document.getElementById('grid').innerHTML=h;
 recomputeAlarm();

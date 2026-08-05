@@ -224,10 +224,13 @@ function sectorDe(o){
 /* ===================================================================
    OPERARIOS A EXCLUIR del tablero (por parte del nombre, en minúscula)
    =================================================================== */
-var EXCLUIR_OPERARIO=['mayer'];
+// Mayer y Yance son supervisores (no se cargan como operarios). Lopez Agustin ya no trabaja en la empresa.
+// Cada entrada puede tener varias palabras: se excluye si el nombre las contiene TODAS (en cualquier orden, sin acentos).
+var EXCLUIR_OPERARIO=['mayer','yance','lopez agustin'];
+function _foldNom(s){return String(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function excluido(nom){
-  var k=String(nom||'').toLowerCase().replace(/\s+/g,' ').trim();
-  return EXCLUIR_OPERARIO.some(function(x){return k.indexOf(x)>=0;});
+  var k=_foldNom(nom);
+  return EXCLUIR_OPERARIO.some(function(x){return _foldNom(x).split(' ').every(function(tok){return tok && k.indexOf(tok)>=0;});});
 }
 
 /* ===== Nombre corto: APELLIDO + inicial del nombre =====
@@ -278,6 +281,19 @@ function shortWO(s){
 var COLORS={M0:'#dc2626',S1:'#b45309',M1:'#d97706',M2:'#f59e0b',S2:'#65a30d',M3:'#16a34a',M4:'#0891b2',M5:'#2563eb',S5:'#7c3aed',S6:'#9333ea',S7:'#c026d3',QC:'#16a34a',HOSP:'#ef4444'};
 var H0=8*60, COLP=120, NHC=9, ALMIDX=4;
 var NOWG=0, LASTD=null, AUTOSCROLL=true;
+// EFIC. MONTAJE = eficiencia estándar/real por montaje, calculada en el front sobre las tareas mostradas.
+// Cuenta terminadas (ok/ko) + en curso ya pasadas del estándar (curso_inef, las rojas); NO cuenta 'curso'
+// (van dentro del estándar) ni 'nc'. TOPE 100%. Mismo cálculo que el pie de línea → coinciden.
+var EFMON=null; // mapa {code: pct} recalculado en cada render desde D.grupos
+function efMontajeMap(D){
+  var m={};
+  (D.grupos||[]).forEach(function(g){
+    var o=0,r=0;
+    (g.mos||[]).forEach(function(mm){(mm.real||[]).forEach(function(t){ if(t.e!=='nc' && t.e!=='curso'){ o+=(+t.obj||0); r+=(+t.rmin||0); } });});
+    m[g.code] = r>0 ? Math.min(100, Math.round(o*100/r)) : null;
+  });
+  return m;
+}
 /* mapa de tiempo no lineal: la hora de almuerzo (12–13) va comprimida */
 var LF=0.30, LUNCH0=720, LUNCH1=780, ALM=0, HASLUNCH=true;
 
@@ -403,6 +419,25 @@ function gapsDe(o,nowM,SEGS){
   });
   return gaps;
 }
+/* minutos que el operario estuvo EN PLANTA (misma ventana que gapsDe:
+   arranca 8:20 o su fichada, corta en ahora / fin de turno). Denominador
+   del % de inactividad. */
+function plantaMinDe(o,nowM,SEGS){
+  var ciMin=(o.ci&&/^\d/.test(o.ci))?toMin(o.ci):0;
+  var leadStart=Math.max(500, ciMin);
+  var fin=finOperario(o.nom);
+  var tot=0;
+  SEGS.forEach(function(sg,si){
+    var segEnd=Math.min(sg[1],nowM,fin); if(segEnd<=sg[0]) return;
+    var cur=(si===0)?Math.max(sg[0],leadStart):sg[0];
+    if(cur<segEnd) tot+=segEnd-cur;
+  });
+  return tot;
+}
+/* chip de INACTIVIDAD = hs sin actividad (huecos >15min) / hs en planta.
+   Verde ≤10%, naranja ≤20%, rojo >20% (editá los umbrales acá). */
+function inactCls(p){return p==null?'m':(p<=1?'g':(p<=3?'o':'r'));}
+function inactChip(inact,planta){var p=planta>0?Math.round(inact*100/planta):null;var t=planta>0?(hN(inact/60)+' h sin actividad / '+hN(planta/60)+' h en planta'):'sin datos';return '<span class="eff inactv '+inactCls(p)+'" title="'+t+'"><span class="lb">INACTIV.</span>'+(p==null?'—':p+'%')+'</span>';}
 function futurePlanGaps(planOps,nowM,SEGS,finOp){var iv=planOps.map(function(p){return [p.a,p.b];}).sort(function(a,b){return a[0]-b[0]});var gaps=[];SEGS.forEach(function(sg){var start=Math.max(sg[0],nowM);var end=Math.min(sg[1],finOp===9999?sg[1]:finOp);if(end<=start)return;var cur=start;iv.forEach(function(p){var a=Math.max(p[0],start),b=Math.min(p[1],end);if(b<=a)return;if(a-cur>15)gaps.push([cur,a]);if(b>cur)cur=b;});if(end-cur>15)gaps.push([cur,end]);});return gaps;}
 var NOMS={M0:'Soldadura',S1:'Armado Muebles',M1:'Revest. Interior',M2:'Inst. Eléctricas',S2:'Fibra',M3:'Revest. Exterior',M4:'Agua / Gas',M5:'Montaje 5',M6:'Montaje 6',S5:'Aberturas / Toldos',S6:'Slide Out',S7:'Tapicería',QC:'Control Final',HOSP:'Hospital',OTROS:'Otros',RETRAB:'Retrabajo'};
 var ORDEN=['M0','S1','M1','M2','S2','M3','M4','M5','M6','S5','S6','S7','QC','HOSP'];
@@ -410,12 +445,13 @@ var ORDEN=['M0','S1','M1','M2','S2','M3','M4','M5','M6','S5','S6','S7','QC','HOS
 function valChip(tot,val){if(!tot)return '';var pct=Math.round(val*100/tot);var c=pct>=80?'g':(pct>=50?'o':'r');return '<span class="vchip '+c+'"><span class="lb">VALIDADAS</span>'+pct+'% ('+val+'/'+tot+')</span>';}
 function render(D){
   LASTD=D;
+  EFMON=efMontajeMap(D);
   fit(D);
   paintNavBtns();
   NHC = D.sab?5:9; ALMIDX = D.sab?-1:4;
 
   /* ausentes */
-  var aus=D.ausentes||[];
+  var aus=(D.ausentes||[]).filter(function(a){return !excluido(a.nombre);});
   var cAus=document.getElementById('cAus'), ausbar=document.getElementById('ausbar');
   if(aus.length){ cAus.style.display='';cAus.innerHTML='🚫 AUSENTES <b>'+aus.length+'</b>'; ausbar.style.display='block';ausbar.innerHTML='🚫 AUSENTES HOY ('+aus.length+'): '+aus.map(function(a){return esc(a.nombre)+(a.sector?' <span style="opacity:.7">('+esc(a.sector)+')</span>':'')}).join(' · '); }
   else { cAus.style.display='none'; ausbar.style.display='none'; }
@@ -509,9 +545,10 @@ function render(D){
       var lst=bySec[code]; lst.sort(function(a,b){return a.nom<b.nom?-1:1});
       var nv=naveOf(code);
       /* ---- pre-cálculo por operario + agregado del montaje ---- */
-      var rows=[], secPlanAhora=0, secReal=0, secElap=0, secReg=0, secTerm=0, secTermV=0;
+      var rows=[], secPlanAhora=0, secReal=0, secElap=0, secReg=0, secTerm=0, secTermV=0, secInact=0, secPlanta=0;
       lst.forEach(function(o){
         o.real=mergeReal(o.real); annotateAcum(o.real); (o.real||[]).forEach(function(r){if(r.e!=='curso'){secTerm++;if(r.val)secTermV++;}});
+        if((o.real||[]).length){ secPlanta+=plantaMinDe(o,nowM,SEGS); gapsDe(o,nowM,SEGS).forEach(function(g){secInact+=(g[1]-g[0]);}); }
         var reg=0, mos={}, ordenMos=[];
         (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)reg+=b-a; if(r.mo&&!mos[r.mo]){mos[r.mo]=1;ordenMos.push(r.mo)}});
         var durs=[]; ordenMos.forEach(function(mo){(moPlan[mo]||[]).forEach(function(p){durs.push({n:shortWO(p.wo),full:mo+' · '+p.wo,d:toMin(p.fin)-toMin(p.ini)})})});
@@ -523,10 +560,10 @@ function render(D){
         rows.push({o:o,mos:mos,planOps:planOps,planDia:planDia,planAhora:planAhora,realHecho:realHecho,reg:reg});
       });
       /* eficiencia del montaje = real hecho / plan que debía estar hecho a esta hora */
-      var secEff = secPlanAhora>0 ? Math.round(secReal*100/secPlanAhora) : (secElap>0?Math.round(secReg*100/secElap):null);
-      var effCls = secEff==null?'m':(secEff>=80?'g':(secEff>=70?'o':'r'));
-      var effTxt = secEff==null?'—':secEff+'%';
-      h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span>'+valChip(secTerm,secTermV)+'<span class="cnt">'+lst.length+' operarios</span></span></div>';
+      var _em=(EFMON && EFMON[code]!=null)?EFMON[code]:null;
+      var effCls = _em==null?'m':(_em>=80?'g':(_em>=70?'o':'r'));
+      var effTxt = _em==null?'—':_em+'%';
+      h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span>'+inactChip(secInact,secPlanta)+valChip(secTerm,secTermV)+'<span class="cnt">'+lst.length+' operarios</span></span></div>';
       rows.forEach(function(R){
         var o=R.o, planOps=R.planOps, planDia=R.planDia, planAhora=R.planAhora, realHecho=R.realHecho, reg=R.reg;
         var pReg=elapsed>0?Math.round(reg*100/elapsed):0;
@@ -574,7 +611,8 @@ function render(D){
   GRUPOS.forEach(function(g){
     var nv=NAVE_DE[String(g.code).toUpperCase()]||'2';
     /* ---- pre-cálculo por orden + agregado del montaje ---- */
-    var rows=[], secPlanAhora=0, secReal=0, secTerm=0, secTermV=0;
+    var rows=[], secPlanAhora=0, secReal=0, secTerm=0, secTermV=0, secInact=0, secPlanta=0;
+    (D.operarios||[]).forEach(function(o){ if(excluido(o.nom)||sectorDe(o)!==g.code) return; if(!(o.real&&o.real.length)) return; o.real=mergeReal(o.real); secPlanta+=plantaMinDe(o,nowM,SEGS); gapsDe(o,nowM,SEGS).forEach(function(gg){secInact+=(gg[1]-gg[0]);}); });
     (g.mos||[]).forEach(function(m){
       m.real=mergeReal(m.real); annotateAcum(m.real); (m.real||[]).forEach(function(r){if(r.e!=='curso'){secTerm++;if(r.val)secTermV++;}});
       var planDia=0, planAhora=0, realHecho=0;
@@ -583,10 +621,10 @@ function render(D){
       if(planDia>0){secPlanAhora+=planAhora; secReal+=realHecho;}
       rows.push({m:m,planDia:planDia,planAhora:planAhora,realHecho:realHecho});
     });
-    var secEff = secPlanAhora>0 ? Math.round(secReal*100/secPlanAhora) : null;
-    var effCls = secEff==null?'m':(secEff>=80?'g':(secEff>=70?'o':'r'));
-    var effTxt = secEff==null?'—':secEff+'%';
-    h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span>'+valChip(secTerm,secTermV)+'<span class="cnt">'+g.mos.length+' órdenes</span></span></div>';
+    var _em=(EFMON && EFMON[g.code]!=null)?EFMON[g.code]:null;
+    var effCls = _em==null?'m':(_em>=80?'g':(_em>=70?'o':'r'));
+    var effTxt = _em==null?'—':_em+'%';
+    h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span>'+inactChip(secInact,secPlanta)+valChip(secTerm,secTermV)+'<span class="cnt">'+g.mos.length+' órdenes</span></span></div>';
     rows.forEach(function(R){
       var m=R.m, planDia=R.planDia, planAhora=R.planAhora, realHecho=R.realHecho;
       var pPA=planDia>0?Math.round(planAhora*100/planDia):0;
@@ -634,17 +672,21 @@ function cargar(){
 }
 
 /* ================= auto-scroll vertical para TV ================= */
-var scDir=1;
+var scDir=1, scPos=null, scPause=0;
+var SC_STEP=1.1;    // px por tick (antes 1) → 10% más rápido
+var SC_PAUSA=50;    // ticks de pausa en cada extremo (50 * 40ms = 2s) para leer bien arriba/abajo
 setInterval(function(){
   if(!AUTOSCROLL) return;
   var sc=document.getElementById('scroller');
   if(!sc) return;
   var max=sc.scrollHeight - sc.clientHeight;
   if(max<=4) return;
-  var next=sc.scrollTop + scDir*1;
-  if(next>=max){ next=max; scDir=-1; }
-  else if(next<=0){ next=0; scDir=1; }
-  sc.scrollTop=next;
+  if(scPos===null) scPos=sc.scrollTop;
+  if(scPause>0){ scPause--; return; }          // se frena un poco en los extremos
+  scPos += scDir*SC_STEP;
+  if(scPos>=max){ scPos=max; scDir=-1; scPause=SC_PAUSA; }
+  else if(scPos<=0){ scPos=0; scDir=1; scPause=SC_PAUSA; }
+  sc.scrollTop=scPos;
 }, 40);
 /* pausa breve arriba y abajo se logra con el rebote suave anterior */
 
