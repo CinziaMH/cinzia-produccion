@@ -131,6 +131,15 @@ box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .blk .vok{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#fff;color:#16a34a;font-size:11px;font-weight:900;margin-right:5px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .blk .vng{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#fff;color:#dc2626;font-size:11px;font-weight:900;margin-right:5px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .blk.valdone{outline:2px solid #f1f5f9}
+/* fondo del operador según su eficiencia del día (estándar/real de tareas terminadas):
+   rojo si <80%, verde si >=80%. El umbral se edita en EF_UMBRAL (JS). */
+.fila.effred{background:rgba(239,68,68,.10)}
+.fila.effred .info{background:#3a1114}
+.fila.effgreen{background:rgba(34,197,94,.07)}
+.fila.effgreen .info{background:#0e2b1a}
+.efb{font-size:12px;font-weight:900;border-radius:6px;padding:1px 8px;margin-left:4px;flex:0 0 auto}
+.efb.r{background:#991b1b;color:#fecaca;border:1px solid #ef4444}
+.efb.g{background:#15803d;color:#bbf7d0;border:1px solid #22c55e}
 /* filas altas (montaje filtrado): el texto de las tarjetas se parte en hasta 2 renglones
    con letra más chica, para que entre la palabra completa */
 body.bigrows .blk{white-space:normal;line-height:1.2;text-overflow:clip;word-break:break-word}
@@ -294,6 +303,8 @@ function shortWO(s){
 }
 
 var COLORS={M0:'#dc2626',S1:'#b45309',M1:'#d97706',M2:'#f59e0b',S2:'#65a30d',M3:'#16a34a',M4:'#0891b2',M5:'#2563eb',S5:'#7c3aed',S6:'#9333ea',S7:'#c026d3',QC:'#16a34a',HOSP:'#ef4444'};
+/* umbral de eficiencia por operario: >=80 fondo verde, <80 fondo rojo */
+var EF_UMBRAL=80;
 var H0=8*60, COLP=120, NHC=9, ALMIDX=4;
 var NOWG=0, LASTD=null, AUTOSCROLL=true;
 // EFIC. MONTAJE = eficiencia estándar/real por montaje, calculada en el front sobre las tareas mostradas.
@@ -605,11 +616,19 @@ function render(D){
         (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)reg+=b-a; if(r.mo&&!mos[r.mo]){mos[r.mo]=1;ordenMos.push(r.mo)}});
         var durs=[]; ordenMos.forEach(function(mo){(moPlan[mo]||[]).forEach(function(p){durs.push({n:shortWO(p.wo),full:mo+' · '+p.wo,d:toMin(p.fin)-toMin(p.ini)})})});
         var planOps=packCliente(durs);
-        var planDia=0, planAhora=0, realHecho=0;
+        var planDia=0, planAhora=0, realHecho=0, avance=0;
         planOps.forEach(function(p){planDia+=p.b-p.a; var v=Math.min(p.b,nowM)-p.a; if(v>0)planAhora+=v});
         (o.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)realHecho+=b-a});
+        /* AVANCE ganado: cada tarea acredita su tiempo ESTÁNDAR (obj), no lo que tardó.
+           Terminada = estándar completo; en curso = tope al estándar; sin estándar = tiempo real.
+           Así un operario ineficiente (mucho tiempo en pocas tareas) ya no aparece "al día". */
+        (o.real||[]).forEach(function(r){if(r.e==='nc')return;var obj=+r.obj||0, rm=+r.rmin||0; if(r.e==='curso'){avance+=obj>0?Math.min(rm,obj):rm;} else {avance+=obj>0?obj:rm;}});
+        /* eficiencia del operario = estándar/real de sus tareas TERMINADAS (mismo criterio que EFIC. MONTAJE) */
+        var eOb=0,eRe=0;
+        (o.real||[]).forEach(function(r){if(r.e!=='nc'&&r.e!=='curso'){eOb+=(+r.obj||0);eRe+=(+r.rmin||0);}});
+        var efOp=eRe>0?Math.min(100,Math.round(eOb*100/eRe)):null;
         if(planDia>0){secPlanAhora+=planAhora; secReal+=realHecho;} secReg+=reg; secElap+=elapsed;
-        rows.push({o:o,mos:mos,planOps:planOps,planDia:planDia,planAhora:planAhora,realHecho:realHecho,reg:reg});
+        rows.push({o:o,mos:mos,planOps:planOps,planDia:planDia,planAhora:planAhora,realHecho:realHecho,avance:avance,reg:reg,efOp:efOp});
       });
       /* eficiencia del montaje = real hecho / plan que debía estar hecho a esta hora */
       var _em=(EFMON && EFMON[code]!=null)?EFMON[code]:null;
@@ -617,14 +636,15 @@ function render(D){
       var effTxt = _em==null?'—':_em+'%';
       h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span>'+inactChip(secInact,secPlanta)+valChip(secTerm,secTermV)+'<span class="cnt">'+lst.length+' operarios</span></span></div>';
       rows.forEach(function(R){
-        var o=R.o, planOps=R.planOps, planDia=R.planDia, planAhora=R.planAhora, realHecho=R.realHecho, reg=R.reg;
+        var o=R.o, planOps=R.planOps, planDia=R.planDia, planAhora=R.planAhora, reg=R.reg;
         var pReg=elapsed>0?Math.round(reg*100/elapsed):0;
         var pPA=planDia>0?Math.round(planAhora*100/planDia):0;
-        var pR=planDia>0?Math.round(realHecho*100/planDia):0;
+        /* % de avance del plan medido en tiempo ESTÁNDAR ganado, no en tiempo gastado */
+        var pR=planDia>0?Math.round(R.avance*100/planDia):0;
         var ok=planDia>0?(pR>=pPA-5):(pReg>=75);
         var stat;
         if(planDia>0){
-          stat='<div class="stat"><div class="t">REAL '+pR+'% vs PLAN '+pPA+'%</div>'
+          stat='<div class="stat"><div class="t">AVANCE '+pR+'% vs PLAN '+pPA+'%</div>'
             +'<div class="bar"><i style="width:'+Math.min(pR,100)+'%;background:'+(ok?'#22c55e':'#ef4444')+'"></i><em style="left:'+Math.min(pPA,100)+'%"></em></div>'
             +'<div class="v '+(ok?'g':'r')+'">'+(ok?'✓ al día':'✗ atrasado '+(pPA-pR)+'pts')+'</div></div>';
         }else{
@@ -632,7 +652,9 @@ function render(D){
             +'<div class="bar"><i style="width:'+Math.min(pReg,100)+'%;background:'+(ok?'#22c55e':'#ef4444')+'"></i></div>'
             +'<div class="v '+(ok?'g':'r')+'">'+pReg+'% del tiempo'+(reg===0?' · ⚠ s/registro':'')+'</div></div>';
         }
-        h+='<div class="fila"><div class="info"><div class="who"><div class="mo" title="'+esc(o.nom)+'">'+esc(formatName(o.nom))+'</div><div class="det">'+esc(Object.keys(R.mos).join(' · ')||'sin órdenes')+'</div></div>'+stat+'</div><div class="tl">';
+        var efCls=R.efOp==null?'':(R.efOp>=EF_UMBRAL?' effgreen':' effred');
+        var efBadge=R.efOp==null?'':'<span class="efb '+(R.efOp>=EF_UMBRAL?'g':'r')+'" title="eficiencia del día: estándar/real de tareas terminadas">EF '+R.efOp+'%</span>';
+        h+='<div class="fila'+efCls+'"><div class="info"><div class="who"><div class="mo" title="'+esc(o.nom)+'">'+esc(formatName(o.nom))+efBadge+'</div><div class="det">'+esc(Object.keys(R.mos).join(' · ')||'sin órdenes')+'</div></div>'+stat+'</div><div class="tl">';
         for(var c=0;c<NHC;c++) h+='<div class="cell'+(c===ALMIDX?' alm':'')+'"></div>';
         h+='<span class="lane-tag esp">ESP</span><span class="lane-tag real">REAL</span>';
         if(planOps.length){
