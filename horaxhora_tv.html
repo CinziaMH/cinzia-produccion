@@ -315,7 +315,9 @@ function efMontajeMap(D){
   var m={};
   (D.grupos||[]).forEach(function(g){
     var o=0,r=0;
-    (g.mos||[]).forEach(function(mm){(mm.real||[]).forEach(function(t){ if(t.e!=='nc' && t.e!=='curso'){ o+=(+t.obj||0); r+=(+t.rmin||0); } });});
+    /* TOPE 100% POR TAREA: una tarea más rápida que el estándar acredita como máximo su tiempo real
+       (min(obj,rmin)), así NO compensa a las pasadas de tiempo ni infla el promedio del montaje. */
+    (g.mos||[]).forEach(function(mm){(mm.real||[]).forEach(function(t){ if(t.e!=='nc' && t.e!=='curso'){ var ob=+t.obj||0, rm=+t.rmin||0; o+=Math.min(ob,rm); r+=rm; } });});
     m[g.code] = r>0 ? Math.min(100, Math.round(o*100/r)) : null;
   });
   return m;
@@ -623,9 +625,10 @@ function render(D){
            Terminada = estándar completo; en curso = tope al estándar; sin estándar = tiempo real.
            Así un operario ineficiente (mucho tiempo en pocas tareas) ya no aparece "al día". */
         (o.real||[]).forEach(function(r){if(r.e==='nc')return;var obj=+r.obj||0, rm=+r.rmin||0; if(r.e==='curso'){avance+=obj>0?Math.min(rm,obj):rm;} else {avance+=obj>0?obj:rm;}});
-        /* eficiencia del operario = estándar/real de sus tareas TERMINADAS (mismo criterio que EFIC. MONTAJE) */
+        /* eficiencia del operario = estándar/real de sus tareas TERMINADAS (mismo criterio que EFIC. MONTAJE),
+           con tope 100% POR TAREA (min(obj,rmin)) para que una tarea rápida no compense a una pasada de tiempo */
         var eOb=0,eRe=0;
-        (o.real||[]).forEach(function(r){if(r.e!=='nc'&&r.e!=='curso'){eOb+=(+r.obj||0);eRe+=(+r.rmin||0);}});
+        (o.real||[]).forEach(function(r){if(r.e!=='nc'&&r.e!=='curso'){var ob=+r.obj||0, rm=+r.rmin||0; eOb+=Math.min(ob,rm); eRe+=rm;}});
         var efOp=eRe>0?Math.min(100,Math.round(eOb*100/eRe)):null;
         if(planDia>0){secPlanAhora+=planAhora; secReal+=realHecho;} secReg+=reg; secElap+=elapsed;
         rows.push({o:o,mos:mos,planOps:planOps,planDia:planDia,planAhora:planAhora,realHecho:realHecho,avance:avance,reg:reg,efOp:efOp});
