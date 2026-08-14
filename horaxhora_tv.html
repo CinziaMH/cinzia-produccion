@@ -133,9 +133,9 @@ box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .blk.valdone{outline:2px solid #f1f5f9}
 /* filas altas (montaje filtrado): el texto de las tarjetas se parte en hasta 2 renglones
    con letra más chica, para que entre la palabra completa */
-body.bigrows .blk{white-space:normal;line-height:1.2;text-overflow:clip}
-body.bigrows .blk,body.bigrows .pb{word-break:break-word}
-body.bigrows .pb{white-space:normal;line-height:1.15}
+body.bigrows .blk{white-space:normal;line-height:1.2;text-overflow:clip;word-break:break-word}
+/* plan teórico (ESP) más legible: fondo más claro, texto más blanco y sin partir palabras */
+body.bigrows .pb{white-space:normal;line-height:1.15;background:#42546f;border-color:#8aa0c4;color:#f8fafc;font-weight:800}
 
 .leg{flex:0 0 auto;display:flex;gap:22px;align-items:center;padding:9px 20px;color:var(--muted);font-size:13px;flex-wrap:wrap;background:#0b1322;border-top:1px solid var(--line)}
 .leg span{display:flex;align-items:center;gap:7px}
@@ -167,6 +167,7 @@ body.bigrows .pb{white-space:normal;line-height:1.15}
 <div class="navsel">
   <span class="navbtn mbtn" data-mont="M1" onclick="setMont('M1')">M1</span>
   <span class="navbtn mbtn" data-mont="M4" onclick="setMont('M4')">M4</span>
+  <span class="navbtn mbtn" data-mont="QC" onclick="setMont('QC')">QC</span>
   <span class="navbtn mbtn" data-mont="all" onclick="setMont('all')">TODOS</span>
 </div>
 <div class="chip">PLAN HOY <b id="cPlan">—</b></div>
@@ -381,7 +382,7 @@ function fitRows(nGroups,nRows){
   var big=R>=100;
   document.body.classList.toggle('bigrows',big);
   /* letra más chica en modo grande: el texto se parte en 2 renglones y entra la palabra completa */
-  rt.setProperty('--fpb',(big?Math.max(11,Math.min(15,Math.round(pbh*0.28))):Math.max(11,Math.min(24,Math.round(pbh*0.62))))+'px');
+  rt.setProperty('--fpb',(big?Math.max(12,Math.min(17,Math.round(pbh*0.30))):Math.max(11,Math.min(24,Math.round(pbh*0.62))))+'px');
   rt.setProperty('--fblk',(big?Math.max(13,Math.min(20,Math.round(blkh*0.20))):Math.max(13,Math.min(28,Math.round(blkh*0.42))))+'px');
   rt.setProperty('--fmo',Math.max(19,Math.min(30,Math.round(R*0.30)))+'px');
   rt.setProperty('--fdet',Math.max(13,Math.min(20,Math.round(R*0.21)))+'px');
