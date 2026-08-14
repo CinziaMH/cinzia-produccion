@@ -242,6 +242,8 @@ var SECTOR_OVERRIDE={
 function sectorDe(o){
   var k=String(o.nom||'').toLowerCase().replace(/\s+/g,' ').trim();
   for(var key in SECTOR_OVERRIDE){ if(k.indexOf(key)>=0) return SECTOR_OVERRIDE[key]; }
+  /* OTROS se junta con QC (pedido Riki 14/8): los operarios sin sector claro van dentro de Control Final */
+  if(String(o.sector||'').toUpperCase()==='OTROS') return 'QC';
   return o.sector;
 }
 
@@ -537,9 +539,10 @@ function render(D){
 
   var nowM0=toMin(D.hora);
   var GRUPOS=(D.grupos||[]).filter(function(g){
-    if(MONT!=='all' && String(g.code).toUpperCase()!==MONT) return false;
+    var gc=String(g.code).toUpperCase(); if(gc==='OTROS') gc='QC'; /* OTROS se junta con QC */
+    if(MONT!=='all' && gc!==MONT) return false;
     if(NAVE==='all') return true;
-    var nv=NAVE_DE[String(g.code).toUpperCase()]||'2';
+    var nv=NAVE_DE[gc]||'2';
     return nv===NAVE;
   });
 
