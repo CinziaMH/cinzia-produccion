@@ -318,8 +318,9 @@ function efMontajeMap(D){
   (D.grupos||[]).forEach(function(g){
     var o=0,r=0;
     /* TOPE 100% POR TAREA: una tarea más rápida que el estándar acredita como máximo su tiempo real
-       (min(obj,rmin)), así NO compensa a las pasadas de tiempo ni infla el promedio del montaje. */
-    (g.mos||[]).forEach(function(mm){(mm.real||[]).forEach(function(t){ if(t.e!=='nc' && t.e!=='curso'){ var ob=+t.obj||0, rm=+t.rmin||0; o+=Math.min(ob,rm); r+=rm; } });});
+       (min(obj,rmin)), así NO compensa a las pasadas de tiempo ni infla el promedio del montaje.
+       Los retrabajos/NC SÍ cuentan (pedido Riki 14/8): el tiempo comido en retrabajo baja la eficiencia. */
+    (g.mos||[]).forEach(function(mm){(mm.real||[]).forEach(function(t){ if(t.e!=='curso'){ var ob=+t.obj||0, rm=+t.rmin||0; o+=Math.min(ob,rm); r+=rm; } });});
     m[g.code] = r>0 ? Math.min(100, Math.round(o*100/r)) : null;
   });
   return m;
@@ -613,7 +614,7 @@ function render(D){
       totRows+=lst.length;
       var nv=naveOf(code);
       /* ---- pre-cálculo por operario + agregado del montaje ---- */
-      var rows=[], secPlanAhora=0, secReal=0, secElap=0, secReg=0, secTerm=0, secTermV=0, secInact=0, secPlanta=0;
+      var rows=[], secPlanAhora=0, secReal=0, secElap=0, secReg=0, secTerm=0, secTermV=0, secInact=0, secPlanta=0, secEfOb=0, secEfRe=0;
       lst.forEach(function(o){
         o.real=mergeReal(o.real); annotateAcum(o.real); (o.real||[]).forEach(function(r){if(r.e!=='curso'){secTerm++;if(r.val)secTermV++;}});
         if((o.real||[]).length){ secPlanta+=plantaMinDe(o,nowM,SEGS); gapsDe(o,nowM,SEGS).forEach(function(g){secInact+=(g[1]-g[0]);}); }
@@ -629,15 +630,18 @@ function render(D){
            Así un operario ineficiente (mucho tiempo en pocas tareas) ya no aparece "al día". */
         (o.real||[]).forEach(function(r){if(r.e==='nc')return;var obj=+r.obj||0, rm=+r.rmin||0; if(r.e==='curso'){avance+=obj>0?Math.min(rm,obj):rm;} else {avance+=obj>0?obj:rm;}});
         /* eficiencia del operario = estándar/real de sus tareas TERMINADAS (mismo criterio que EFIC. MONTAJE),
-           con tope 100% POR TAREA (min(obj,rmin)) para que una tarea rápida no compense a una pasada de tiempo */
+           con tope 100% POR TAREA (min(obj,rmin)) para que una tarea rápida no compense a una pasada de tiempo.
+           Los retrabajos/NC SÍ cuentan: registrar horas en retrabajo no es eficiencia 100. */
         var eOb=0,eRe=0;
-        (o.real||[]).forEach(function(r){if(r.e!=='nc'&&r.e!=='curso'){var ob=+r.obj||0, rm=+r.rmin||0; eOb+=Math.min(ob,rm); eRe+=rm;}});
+        (o.real||[]).forEach(function(r){if(r.e!=='curso'){var ob=+r.obj||0, rm=+r.rmin||0; eOb+=Math.min(ob,rm); eRe+=rm;}});
         var efOp=eRe>0?Math.min(100,Math.round(eOb*100/eRe)):null;
+        secEfOb+=eOb; secEfRe+=eRe;
         if(planDia>0){secPlanAhora+=planAhora; secReal+=realHecho;} secReg+=reg; secElap+=elapsed;
         rows.push({o:o,mos:mos,planOps:planOps,planDia:planDia,planAhora:planAhora,realHecho:realHecho,avance:avance,reg:reg,efOp:efOp});
       });
-      /* eficiencia del montaje = real hecho / plan que debía estar hecho a esta hora */
-      var _em=(EFMON && EFMON[code]!=null)?EFMON[code]:null;
+      /* eficiencia del montaje EN VISTA OPERARIO = promedio ponderado de los operarios mostrados
+         (mismo criterio por tarea: tope 100%, retrabajos incluidos) → coincide con los EF de las filas */
+      var _em = secEfRe>0 ? Math.min(100, Math.round(secEfOb*100/secEfRe)) : ((EFMON && EFMON[code]!=null)?EFMON[code]:null);
       var effCls = _em==null?'m':(_em>=80?'g':(_em>=70?'o':'r'));
       var effTxt = _em==null?'—':_em+'%';
       h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span>'+inactChip(secInact,secPlanta)+valChip(secTerm,secTermV)+'<span class="cnt">'+lst.length+' operarios</span></span></div>';
