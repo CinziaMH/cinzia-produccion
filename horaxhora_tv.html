@@ -131,6 +131,11 @@ box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .blk .vok{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#fff;color:#16a34a;font-size:11px;font-weight:900;margin-right:5px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .blk .vng{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#fff;color:#dc2626;font-size:11px;font-weight:900;margin-right:5px;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
 .blk.valdone{outline:2px solid #f1f5f9}
+/* filas altas (montaje filtrado): el texto de las tarjetas se parte en hasta 2 renglones
+   con letra más chica, para que entre la palabra completa */
+body.bigrows .blk{white-space:normal;line-height:1.2;text-overflow:clip}
+body.bigrows .blk,body.bigrows .pb{word-break:break-word}
+body.bigrows .pb{white-space:normal;line-height:1.15}
 
 .leg{flex:0 0 auto;display:flex;gap:22px;align-items:center;padding:9px 20px;color:var(--muted);font-size:13px;flex-wrap:wrap;background:#0b1322;border-top:1px solid var(--line)}
 .leg span{display:flex;align-items:center;gap:7px}
@@ -373,8 +378,11 @@ function fitRows(nGroups,nRows){
   rt.setProperty('--rowh',R+'px');
   rt.setProperty('--pbtop',pbtop+'px'); rt.setProperty('--pbh',pbh+'px');
   rt.setProperty('--blktop',blktop+'px'); rt.setProperty('--blkh',blkh+'px');
-  rt.setProperty('--fpb',Math.max(11,Math.min(24,Math.round(pbh*0.62)))+'px');
-  rt.setProperty('--fblk',Math.max(13,Math.min(28,Math.round(blkh*0.42)))+'px');
+  var big=R>=100;
+  document.body.classList.toggle('bigrows',big);
+  /* letra más chica en modo grande: el texto se parte en 2 renglones y entra la palabra completa */
+  rt.setProperty('--fpb',(big?Math.max(11,Math.min(15,Math.round(pbh*0.28))):Math.max(11,Math.min(24,Math.round(pbh*0.62))))+'px');
+  rt.setProperty('--fblk',(big?Math.max(13,Math.min(20,Math.round(blkh*0.20))):Math.max(13,Math.min(28,Math.round(blkh*0.42))))+'px');
   rt.setProperty('--fmo',Math.max(19,Math.min(30,Math.round(R*0.30)))+'px');
   rt.setProperty('--fdet',Math.max(13,Math.min(20,Math.round(R*0.21)))+'px');
 }
