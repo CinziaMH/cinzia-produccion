@@ -16,6 +16,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
+html{background:var(--bg)}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
 /* ===== Header ===== */
@@ -185,7 +186,8 @@ body.bigrows .pb{white-space:normal;line-height:1.15;background:#42546f;border-c
 <div class="chip" id="cSup" style="background:rgba(255,255,255,.22)">SUPERV. <b>—</b></div>
 <div class="chip" id="cAus" style="display:none;background:#7f1d1d;color:#fecaca;border-color:#b91c1c">🚫 AUSENTES <b>0</b></div>
 <div class="chip" id="cGap" style="display:none;background:#fff;color:#b91c1c;border-color:#fff">⚠ INACTIVIDAD <b>0</b></div>
-<div class="chip" style="margin-left:auto;background:rgba(255,255,255,.1);cursor:pointer" onclick="AUTOSCROLL=!AUTOSCROLL;this.style.opacity=AUTOSCROLL?1:.5">⇅ auto</div>
+<a class="chip" href="./" style="margin-left:auto;background:rgba(255,255,255,.1);color:#fff;text-decoration:none">🏠 Inicio</a>
+<div class="chip" style="background:rgba(255,255,255,.1);cursor:pointer" onclick="AUTOSCROLL=!AUTOSCROLL;this.style.opacity=AUTOSCROLL?1:.5">⇅ auto</div>
 <div class="chip" style="background:rgba(255,255,255,.1);cursor:pointer" onclick="cargar()">↻ Actualizar</div>
 </div>
 <div class="off" id="off">⚠ SIN CONEXIÓN — mostrando últimos datos</div>
@@ -337,8 +339,14 @@ var VMODE=(/[?&](vista=montaje|por=mo)/.test(location.search))?'mon':'op';
 var MONT=(((location.search.match(/[?&]montaje=([A-Za-z0-9]+)/)||[])[1]||'all')).toUpperCase();
 if(MONT==='ALL') MONT='all';
 if(MONT!=='all') NAVE=naveOf(MONT);
+/* margen de seguridad anti-overscan de TV: ?safe=N (% de cada lado, default 3, 0 = sin margen) */
+var SAFE=parseFloat((location.search.match(/[?&]safe=([0-9.]+)/)||[])[1]);
+if(isNaN(SAFE)) SAFE=3; if(SAFE<0) SAFE=0; if(SAFE>12) SAFE=12;
+function applySafe(){ var pv=Math.round(window.innerHeight*SAFE/100), ph=Math.round(window.innerWidth*SAFE/100); document.body.style.padding=pv+'px '+ph+'px'; }
+applySafe();
+window.addEventListener('resize', applySafe);
 
-function syncURL(){ try{history.replaceState(null,'','?nave='+NAVE+'&vista='+(VMODE==='mon'?'montaje':'operario')+(MONT!=='all'?'&montaje='+MONT:''))}catch(e){} }
+function syncURL(){ try{history.replaceState(null,'','?nave='+NAVE+'&vista='+(VMODE==='mon'?'montaje':'operario')+(MONT!=='all'?'&montaje='+MONT:'')+(SAFE!==3?'&safe='+SAFE:''))}catch(e){} }
 function setNave(n){ NAVE=n; MONT='all'; syncURL(); paintNavBtns(); if(LASTD) render(LASTD); }
 function setView(v){ VMODE=v; syncURL(); paintNavBtns(); if(LASTD) render(LASTD); }
 function setMont(m){ MONT=m; if(m!=='all') NAVE=naveOf(m); syncURL(); paintNavBtns(); if(LASTD) render(LASTD); }
