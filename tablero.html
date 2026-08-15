@@ -393,6 +393,160 @@ setInterval(() => {
 
 fetchData();
 </script>
+
+<!-- ============ EFICIENCIA POR NAVE + RONDAS DE HOY + MONTAJES vs TAKT — aditivo ============
+     Lee ?view=horaxhora (hoy y &fecha=ayer) para: (a) eficiencia por NAVE con el mismo criterio que
+     las cards (estandar/real, tope 100%), (b) rondas del dia en curso (rondas_sup). Umbrales pedidos
+     por Riki: eficiencia por nave <80% -> tarjeta roja; rondas <90% validadas -> tarjeta roja;
+     menos del 80% de los montajes en ritmo de takt -> tarjeta roja. NO toca el core del tablero. -->
+<script>
+(function(){
+  var HXH = DASHBOARD_URL.split('?')[0] + '?view=horaxhora';
+  var ENH=null, ENA=null, RNH=null;
+  /* Nave 1 = pre-armado (M0, S1, S2, S7) · Nave 2 = linea de montaje (resto). Mismo mapa que NAVE_DE de horaxhora_tv.html */
+  var NAVE1 = {M0:1,S1:1,S2:1,S7:1};
+  var naveDe = function(c){ return NAVE1[String(c||'').toUpperCase()] ? '1' : '2'; };
+
+  function efNave(P){
+    var A={'1':{o:0,r:0},'2':{o:0,r:0}};
+    (P.grupos||[]).forEach(function(g){
+      var nv=naveDe(g.code);
+      (g.mos||[]).forEach(function(mm){ (mm.real||[]).forEach(function(t){
+        if(t.e!=='nc' && t.e!=='curso'){ A[nv].o+=(+t.obj||0); A[nv].r+=(+t.rmin||0); }
+      });});
+    });
+    return { n1:(A['1'].r>0?Math.min(100,Math.round(A['1'].o*100/A['1'].r)):null),
+             n2:(A['2'].r>0?Math.min(100,Math.round(A['2'].o*100/A['2'].r)):null) };
+  }
+  function ayerStr2(){ try{ if(D && D.ayer && D.ayer.fecha) return D.ayer.fecha; }catch(e){}
+    var d=new Date(); d.setDate(d.getDate()-1);
+    var p=function(n){return (n<10?'0':'')+n;};
+    return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); }
+  function pull(fecha, cb){
+    fetch(HXH + (fecha?('&fecha='+fecha):'') + '&t=' + Date.now(), {cache:'no-store', redirect:'follow'})
+      .then(function(r){ return r.json(); })
+      .then(function(j){ cb(j && j.ok ? j : null); })
+      .catch(function(){ cb(null); });
+  }
+  function pctOf(o){ return (o && o.total) ? Math.round((o.validadas||0)*100/o.total) : null; }
+  function vp(v){ return v==null ? '—' : v+'%'; }
+  function col(v){ return v==null ? '#94a3b8' : (v>=80?'#4ade80':(v>=70?'#fbbf24':'#f87171')); }
+
+  function taktCount(){
+    var v=0, r=0;
+    (D && D.montajes || []).forEach(function(m){
+      var mos = m.mos || [];
+      if(!mos.length) return;
+      var over=false;
+      mos.forEach(function(mo){ if((mo.dias_en_produccion||0) > 3) over=true; });
+      if(over) r++; else v++;
+    });
+    return {verdes:v, rojos:r};
+  }
+
+  function cellHTML(id, k, body, det, bad){
+    return '<div class="rcell'+(bad?' alerta':'')+'" id="'+id+'"><div class="k">'+k+'</div>'+body+(det?'<div class="d">'+det+'</div>':'')+'</div>';
+  }
+
+  function inject(){
+    var reunion = document.querySelector('.reunion');
+    if(!reunion) return;
+
+    /* --- 1) EFICIENCIA POR NAVE, al lado de EFICIENCIA AYER --- */
+    var grid = reunion.querySelector('.rgrid');
+    if(grid){
+      grid.style.gridTemplateColumns = 'repeat(5,1fr)';
+      var h = ENH||{}, a = ENA||{};
+      var bad = (h.n1!=null && h.n1<80) || (h.n2!=null && h.n2<80);
+      var body = '<div style="display:flex;gap:10px;margin-top:2px">'
+        + '<div style="flex:1"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1px">NAVE 1</div>'
+        +   '<div class="v" style="color:'+(bad?'#fff':col(h.n1))+'">'+vp(h.n1)+'</div>'
+        +   '<div class="d">ayer '+vp(a.n1)+'</div></div>'
+        + '<div style="flex:1"><div style="font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:1px">NAVE 2</div>'
+        +   '<div class="v" style="color:'+(bad?'#fff':col(h.n2))+'">'+vp(h.n2)+'</div>'
+        +   '<div class="d">ayer '+vp(a.n2)+'</div></div></div>';
+      var old = document.getElementById('cEfNave');
+      var html = cellHTML('cEfNave','EFICIENCIA POR NAVE (est/real · meta 80%)', body, '', bad);
+      if(old) old.outerHTML = html;
+      else {
+        var tmp = document.createElement('div'); tmp.innerHTML = html;
+        var first = grid.children[0];
+        if(first && first.nextSibling) grid.insertBefore(tmp.firstChild, first.nextSibling);
+        else grid.appendChild(tmp.firstChild);
+      }
+    }
+
+    /* --- 2) MONTAJES vs TAKT + rondas de HOY en la fila de abajo --- */
+    var row2 = reunion.querySelector('.rrow2');
+    if(row2){
+      var tc = taktCount(), totM = tc.verdes+tc.rojos;
+      var pctV = totM>0 ? Math.round(tc.verdes*100/totM) : null;
+      var badT = (pctV!=null && pctV<80);
+      var bodyT = '<div class="v" style="font-size:20px">'
+        + '<span style="color:'+(badT?'#fff':'#4ade80')+'">'+tc.verdes+' V</span> · '
+        + '<span style="color:'+(badT?'#fecaca':'#f87171')+'">'+tc.rojos+' R</span></div>';
+      var htmlT = cellHTML('cTakt','MONTAJES vs TAKT (3d)', bodyT, (pctV==null?'verde en ritmo · rojo pasado':(pctV+'% en ritmo · meta 80%')), badT);
+      var oldT = document.getElementById('cTakt');
+      if(oldT) oldT.outerHTML = htmlT;
+      else {
+        row2.style.gridTemplateColumns = '2fr 1fr 1fr 1fr';
+        var t2 = document.createElement('div'); t2.innerHTML = htmlT;
+        row2.appendChild(t2.firstChild);
+      }
+    }
+
+    /* --- 3) rondas: agrego HOY y pinto rojo si <90% (hoy o ayer) --- */
+    var ay = (D && D.ayer) || {};
+    [['RONDAS YANCE AYER','yance', ay.rondas_yance||{}], ['RONDAS RODRIGO AYER','rodrigo', ay.rondas_rodrigo||{}]].forEach(function(cfg){
+      var cells = reunion.querySelectorAll('.rcell');
+      for(var i=0;i<cells.length;i++){
+        var k = cells[i].querySelector('.k');
+        if(!k || k.textContent.trim().indexOf(cfg[0])!==0) continue;
+        var hoy = (RNH && RNH[cfg[1]]) || null;
+        var pH = pctOf(hoy), pA = pctOf(cfg[2]);
+        var old = cells[i].querySelector('.rondhoy');
+        if(old) old.parentNode.removeChild(old);
+        var dv = document.createElement('div');
+        dv.className = 'd rondhoy';
+        dv.style.fontWeight = '700';
+        dv.innerHTML = hoy ? ('HOY '+(hoy.validadas||0)+'/'+(hoy.total||0)+(pH==null?'':' ('+pH+'%)')) : 'HOY —';
+        k.parentNode.insertBefore(dv, k.nextSibling);
+        var bad = (pH!=null && pH<90) || (pA!=null && pA<90);
+        cells[i].className = 'rcell' + (bad ? ' alerta' : '');
+        k.textContent = cfg[0].replace(' AYER','') + ' · meta 90%';
+        var vv = cells[i].querySelector('.v');
+        if(vv) vv.innerHTML = 'AYER ' + (cfg[2].validadas||0) + '/' + (cfg[2].total||0) + (pA==null?'':' ('+pA+'%)');
+        break;
+      }
+    });
+  }
+
+  function start(){
+    var st = document.createElement('style');
+    st.textContent = '.rcell.alerta{background:#7f1d1d;border-color:#dc2626}'
+      + '.rcell.alerta .k,.rcell.alerta .d{color:#fecaca}.rcell.alerta .v{color:#fff}';
+    document.head.appendChild(st);
+    if(typeof build==='function' && !build.__navI){
+      var o = build;
+      build = function(){ o.apply(this, arguments); try{inject();}catch(e){} };
+      build.__navI = true;
+    }
+    /* el tablero rota paneles: la tira de indicadores solo existe en el DOM cuando se muestra ese panel */
+    if(typeof showPanel==='function' && !showPanel.__navI){
+      var sp = showPanel;
+      showPanel = function(){ sp.apply(this, arguments); try{inject();}catch(e){} };
+      showPanel.__navI = true;
+    }
+    var redraw = function(){ try{ if(typeof showPanel==='function' && panels && panels[cur]) showPanel(cur); else inject(); }catch(e){} };
+    pull(null, function(j){ if(j){ ENH = efNave(j); RNH = j.rondas_sup || null; } redraw(); });
+    pull(ayerStr2(), function(j){ if(j){ ENA = efNave(j); } redraw(); });
+    try{inject();}catch(e){}
+  }
+  if(document.readyState==='complete') start();
+  else window.addEventListener('load', start);
+})();
+</script>
+<!-- ============ FIN EFICIENCIA POR NAVE + RONDAS HOY + TAKT ============ -->
 </body>
 </html>
 <!-- ============ PULSO DE CALIDAD (DÍA ANTERIOR) — integrado en el panel de Indicadores ============

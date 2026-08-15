@@ -28,7 +28,15 @@ body{font-family:Arial,Helvetica,sans-serif;background:#f4f4f5;color:#1f2937;fon
 .hl{font-size:9px;letter-spacing:1px;color:#94a3b8;font-weight:bold;display:block;margin-top:3px}
 .hvv{font-size:25px;font-weight:bold;color:#fff;line-height:1.05}
 .avv{font-size:16px;font-weight:bold;color:#94a3b8}
-.bad .hvv{color:#f87171}
+.rcell.bad{background:#7f1d1d;border-color:#dc2626}
+.rcell.bad .k,.rcell.bad .hl,.rcell.bad .d{color:#fecaca}
+.rcell.bad .hvv,.rcell.bad .avv{color:#fff}
+.rcell.alerta{background:#7f1d1d;border-color:#dc2626}
+.rcell.alerta .k,.rcell.alerta .d{color:#fecaca}
+.efnav{width:100%;border-collapse:collapse;table-layout:fixed}
+.efnav td{vertical-align:top;padding:0 2px}
+.efnav .nv{font-size:9px;letter-spacing:1px;color:#94a3b8;font-weight:bold;display:block;margin-top:3px}
+.rcell.alerta .efnav .nv{color:#fecaca}
 .d{margin-top:3px;font-size:10px;color:#94a3b8}
 .plan{border-radius:8px;padding:6px 9px;color:#fff;vertical-align:top}
 .plan .k{color:#fff;opacity:.9;font-size:10px;font-weight:bold}
@@ -180,16 +188,28 @@ function renderIndicadores(){
     + '<table class="rgrid" style="margin-top:5px"><tr>'
     + (function(){
         var tc = taktCounts();
-        return '<td class="rcell" style="width:16%"><div class="k">MONTAJES vs TAKT (3d)</div>'
+        var totM = tc.verdes + tc.rojos;
+        var pctV = totM>0 ? Math.round(tc.verdes*100/totM) : null;
+        var badT = (pctV!=null && pctV < 80);   // meta: al menos 80% de los montajes en ritmo
+        return '<td class="rcell'+(badT?' alerta':'')+'" style="width:16%"><div class="k">MONTAJES vs TAKT (3d)</div>'
           + '<div style="font-size:22px;font-weight:bold;margin-top:2px;color:#fff">'
-          + '<span style="color:#4ade80">'+tc.verdes+' V</span> · <span style="color:#f87171">'+tc.rojos+' R</span></div>'
-          + '<div class="d">verde en ritmo · rojo pasado</div></td>';
+          + '<span style="color:'+(badT?'#fff':'#4ade80')+'">'+tc.verdes+' V</span> · <span style="color:'+(badT?'#fecaca':'#f87171')+'">'+tc.rojos+' R</span></div>'
+          + '<div class="d">'+(pctV==null?'verde en ritmo · rojo pasado':(pctV+'% en ritmo · meta 80%'))+'</div></td>';
       })()
     + '<td class="rcell" style="width:32%"><div class="k">5S HOY TEMPRANO</div><div style="font-size:14px;font-weight:bold;margin-top:2px;color:#fff">'
       + (cs.hora?cs.hora+' · ':'') + num(cs.sectores_ok,0)+'/'+num(cs.sectores_total,9)+' OK · '
       + '<span style="color:#4ade80">V '+num(cs.verdes,0)+'</span> <span style="color:#60a5fa">A '+num(cs.amarillos,0)+'</span> <span style="color:#f87171">R '+num(cs.rojos,0)+'</span></div>'
       + '<div class="d">'+(((cs.pendientes||[]).length)?('Pendientes: '+esc(cs.pendientes.join(' · '))):'Todos relevados ✓')+'</div></td>'
-    + '<td class="rcell"><div class="k">RONDAS AYER (validadas)</div><div style="font-size:14px;font-weight:bold;margin-top:2px;color:#fff">Y '+num(yay.validadas,0)+'/'+num(yay.total,0)+' · R '+num(ray.validadas,0)+'/'+num(ray.total,0)+'</div><div class="d">'+((yay.flagged||0)+(ray.flagged||0))+' a revisar</div></td>'
+    + (function(){
+        // AYER sale del dashboard; HOY lo inyecta el bloque aditivo desde ?view=horaxhora (rondas_sup)
+        var pY = num(yay.total,0)>0 ? Math.round(num(yay.validadas,0)*100/num(yay.total,0)) : null;
+        var pR = num(ray.total,0)>0 ? Math.round(num(ray.validadas,0)*100/num(ray.total,0)) : null;
+        var badA = (pY!=null && pY<90) || (pR!=null && pR<90);   // meta: 90% de tareas validadas
+        return '<td class="rcell'+(badA?' alerta':'')+'" id="cRondas" data-ayerbad="'+(badA?1:0)+'"><div class="k">RONDAS SUPERV. (validadas · meta 90%)</div>'
+          + '<div id="rondHoy" style="font-size:14px;font-weight:bold;margin-top:2px;color:#94a3b8">HOY —</div>'
+          + '<div style="font-size:13px;font-weight:bold;margin-top:1px;color:#fff">AYER  Y '+num(yay.validadas,0)+'/'+num(yay.total,0)+(pY==null?'':' ('+pY+'%)')+' · R '+num(ray.validadas,0)+'/'+num(ray.total,0)+(pR==null?'':' ('+pR+'%)')+'</div>'
+          + '<div class="d">'+((yay.flagged||0)+(ray.flagged||0))+' a revisar</div></td>';
+      })()
     + (function(){
         var p = D.plan_mes || {};
         var bg = {verde:'#16a34a',amarillo:'#d97706',rojo:'#dc2626',gris:'#475569'}[p.color||'gris'] || '#475569';
@@ -401,6 +421,11 @@ fetchData();
 (function(){
   var HXH_BASE = DASHBOARD_URL.split('?')[0] + '?view=horaxhora';
   var EFH=null, EFA=null, INH=null, INA=null;   // eficiencia por montaje {code:pct} hoy/ayer · inactividad global hoy/ayer (%)
+  var ENH=null, ENA=null, RNH=null;             // eficiencia por NAVE hoy/ayer {n1,n2} · rondas de HOY (rondas_sup)
+  /* Nave 1 = pre-armado (M0 Soldadura, S1 Muebles, S2 Fibra, S7 Tapiceria) · Nave 2 = linea de montaje.
+     Mismo mapa que NAVE_DE de horaxhora_tv.html — si cambia alla, cambiarlo aca tambien. */
+  var _NAVE={M0:'1',S1:'1',S2:'1',S7:'1'};
+  function _naveDe(c){return _NAVE[String(c||'').toUpperCase()]||'2';}
 
   function _toMin(s){var p=String(s).split(':');return (+p[0])*60+(+p[1]);}
   var _EXCL=['mayer','yance','lopez agustin'];
@@ -413,6 +438,18 @@ fetchData();
   function _planta(o,nowM,SEGS){var ciMin=(o.ci&&/^\d/.test(o.ci))?_toMin(o.ci):0;var lead=Math.max(500,ciMin);var fin=_finOp(o.nom);var tot=0;SEGS.forEach(function(sg,si){var segEnd=Math.min(sg[1],nowM,fin);if(segEnd<=sg[0])return;var cur=(si===0)?Math.max(sg[0],lead):sg[0];if(cur<segEnd)tot+=segEnd-cur;});return tot;}
   // eficiencia estándar/real por montaje, tope 100%, cuenta terminadas + en curso pasadas del estándar (no 'curso' ni 'nc')
   function _efMap(P){var m={};(P.grupos||[]).forEach(function(g){var o=0,r=0;(g.mos||[]).forEach(function(mm){(mm.real||[]).forEach(function(t){if(t.e!=='nc'&&t.e!=='curso'){o+=(+t.obj||0);r+=(+t.rmin||0);}});});m[g.code]=r>0?Math.min(100,Math.round(o*100/r)):null;});return m;}
+  // eficiencia por NAVE: mismo criterio que _efMap (estandar/real, tope 100%) pero sumando obj/rmin de todos los montajes de la nave
+  function _efNave(P){
+    var A={'1':{o:0,r:0},'2':{o:0,r:0}};
+    (P.grupos||[]).forEach(function(g){
+      var nv=_naveDe(g.code);
+      (g.mos||[]).forEach(function(mm){(mm.real||[]).forEach(function(t){
+        if(t.e!=='nc'&&t.e!=='curso'){A[nv].o+=(+t.obj||0);A[nv].r+=(+t.rmin||0);}
+      });});
+    });
+    return {n1:(A['1'].r>0?Math.min(100,Math.round(A['1'].o*100/A['1'].r)):null),
+            n2:(A['2'].r>0?Math.min(100,Math.round(A['2'].o*100/A['2'].r)):null)};
+  }
   function _inactPct(P){   // inactividad global = Σ huecos>15min / Σ hs en planta
     var nowM=P.hist?99999:_toMin(P.hora);var SEGS=_segs(P);
     var inact=0,planta=0;
@@ -425,7 +462,7 @@ fetchData();
       var xhr=new XMLHttpRequest();
       xhr.open('GET',HXH_BASE+(fecha?('&fecha='+fecha):'')+'&t='+(new Date()).getTime(),true);
       xhr.timeout=45000;
-      xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;var r=null;if(xhr.status>=200&&xhr.status<300){try{var j=JSON.parse(xhr.responseText);if(j&&j.ok)r={eff:_efMap(j),inact:_inactPct(j)};}catch(e){}}cb(r);};
+      xhr.onreadystatechange=function(){if(xhr.readyState!==4)return;var r=null;if(xhr.status>=200&&xhr.status<300){try{var j=JSON.parse(xhr.responseText);if(j&&j.ok)r={eff:_efMap(j),inact:_inactPct(j),nave:_efNave(j),rond:(j.rondas_sup||null)};}catch(e){}}cb(r);};
       xhr.ontimeout=function(){cb(null);};xhr.onerror=function(){cb(null);};
       xhr.send();
     }catch(e){cb(null);}
@@ -458,10 +495,50 @@ fetchData();
         var dv=document.createElement('div');dv.className='d inactline';
         dv.innerHTML='INACTIVIDAD  hoy <b style="color:'+_inCol(INH)+'">'+_vp(INH)+'</b> · ayer <b style="color:'+_inCol(INA)+'">'+_vp(INA)+'</b>';
         cells[j].appendChild(dv);
+        _efNaveCell(cells[j]);
         break;
       }
     }
+    _rondasHoy();
     try{fitScreen();}catch(e){}
+  }
+  // card EFICIENCIA POR NAVE (estandar/real, tope 100%) al lado de EFICIENCIA PARCIAL. Rojo si alguna nave <80%.
+  function _efNaveCell(after){
+    var h=ENH||{}, a=ENA||{};
+    var bad=(h.n1!=null&&h.n1<80)||(h.n2!=null&&h.n2<80);
+    var td=document.getElementById('cEfNave');
+    if(!td){
+      td=document.createElement('td');td.id='cEfNave';
+      if(after&&after.parentNode) after.parentNode.insertBefore(td, after.nextSibling); else return;
+    }
+    td.className='rcell'+(bad?' alerta':'');
+    function half(lb,vh,va){
+      return '<td><span class="nv">'+lb+'</span>'
+        +'<div class="hvv" style="color:'+(bad?'#fff':_effCol(vh))+'">'+_vp(vh)+'</div>'
+        +'<div class="d">ayer '+_vp(va)+'</div></td>';
+    }
+    td.innerHTML='<div class="k">EFICIENCIA POR NAVE (est/real · meta 80%)</div>'
+      +'<table class="efnav"><tr>'+half('NAVE 1',h.n1==null?null:h.n1,a.n1==null?null:a.n1)
+      +half('NAVE 2',h.n2==null?null:h.n2,a.n2==null?null:a.n2)+'</tr></table>';
+  }
+  // rondas del dia en curso (rondas_sup del hora a hora). Rojo si algun supervisor <90% validadas.
+  function _rondasHoy(){
+    var cel=document.getElementById('cRondas'), ln=document.getElementById('rondHoy');
+    if(!cel||!ln) return;
+    var r=RNH||null;
+    var y=(r&&r.yance)||null, ro=(r&&r.rodrigo)||null;
+    var pY=(y&&y.total)?Math.round((y.validadas||0)*100/y.total):null;
+    var pR=(ro&&ro.total)?Math.round((ro.validadas||0)*100/ro.total):null;
+    var badH=(pY!=null&&pY<90)||(pR!=null&&pR<90);
+    if(!r){ ln.innerHTML='HOY —'; ln.style.color='#94a3b8'; }
+    else{
+      ln.innerHTML='HOY  Y '+((y&&y.validadas)||0)+'/'+((y&&y.total)||0)+(pY==null?'':' ('+pY+'%)')
+        +' · R '+((ro&&ro.validadas)||0)+'/'+((ro&&ro.total)||0)+(pR==null?'':' ('+pR+'%)');
+      ln.style.color='#fff';
+    }
+    var badA=(cel.getAttribute('data-ayerbad')==='1');
+    if(badH||badA){ if(cel.className.indexOf('alerta')<0) cel.className+=' alerta'; }
+    else cel.className=cel.className.replace(/\s*alerta/,'');
   }
   function _refresh(){try{if(typeof build==='function')build();else _inject();}catch(e){}}
 
@@ -470,8 +547,8 @@ fetchData();
     st.textContent='.effha{float:right;font-size:12px;font-weight:bold;letter-spacing:.3px}.effha .ehl{color:#a1a1aa;font-weight:normal;font-size:10px}@media(min-width:1600px){.effha{font-size:17px}.effha .ehl{font-size:13px}}';
     document.head.appendChild(st);
     if(typeof build==='function' && !build.__effI){var o=build;build=function(){o.apply(this,arguments);_inject();};build.__effI=true;}
-    _fetch(null,function(r){if(r){EFH=r.eff;INH=r.inact;}_refresh();});
-    _fetch(_ayerStr(),function(r){if(r){EFA=r.eff;INA=r.inact;}_refresh();});
+    _fetch(null,function(r){if(r){EFH=r.eff;INH=r.inact;ENH=r.nave;RNH=r.rond;}_refresh();});
+    _fetch(_ayerStr(),function(r){if(r){EFA=r.eff;INA=r.inact;ENA=r.nave;}_refresh();});
     _inject();
   }
   if(document.readyState==='complete') _start();
