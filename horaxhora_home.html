@@ -56,6 +56,9 @@ a.card:hover{border-color:var(--nar);transform:translateY(-2px)}
 <script>
 var URL_API='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec?view=horaxhora';
 
+var LASTH=null, DAYER=null;
+function ayerHabil(){ var d=new Date(); do{ d.setDate(d.getDate()-1); }while(d.getDay()===0); var m=d.getMonth()+1, dd=d.getDate(); return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(dd<10?'0':'')+dd; }
+
 /* ===== misma configuración que horaxhora_tv.html — mantener sincronizadas ===== */
 var NAVE_DE={M0:'1',S1:'1',S2:'1',S7:'1',M1:'2',M2:'2',M3:'2',M4:'2',M5:'2',M6:'2',S5:'2',S6:'2',QC:'2',HOSP:'2',OTROS:'2',RETRAB:'2'};
 function naveOf(code){ return NAVE_DE[String(code||'').toUpperCase()] || '2'; }
@@ -168,8 +171,9 @@ function cardNave(tit,ico,des,qs,ef){
 }
 
 function render(D){
+  LASTH=D;
   var EF=D?efPorSector(D):null;
-  var EFA=D?(D.ef_ayer||null):null;
+  var EFA=DAYER?efPorSector(DAYER):(D?(D.ef_ayer||null):null);
   var h='';
   CARDS_MONT.forEach(function(c){ h+=cardMont(c,D,EF,EFA); });
   document.getElementById('cardsMont').innerHTML=h;
@@ -193,9 +197,14 @@ function cargar(){
     setTimeout(cargar,60000);
   });
 }
+function cargarAyer(){
+  fetch(URL_API+'&fecha='+ayerHabil(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(D){
+    if(D && D.ok!==false){ DAYER=D; if(LASTH) render(LASTH); }
+  }).catch(function(e){});
+}
 function tic(){var d=new Date();document.getElementById('reloj').textContent=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
 tic(); setInterval(tic,15000);
-render(null); cargar(); setInterval(cargar,5*60000);
+render(null); cargar(); setInterval(cargar,5*60000); cargarAyer(); setInterval(cargarAyer,30*60000);
 </script>
 </body>
 </html>
