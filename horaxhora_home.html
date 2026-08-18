@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinzia · Hora a Hora · Inicio</title>
+<style>
+:root{--nar:#EA580C;--bg:#0f172a;--panel:#1e293b;--line:#334155;--txt:#f1f5f9;--muted:#94a3b8;--ok:#22c55e;--bad:#ef4444;--curso:#38bdf8}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+.hdr{display:flex;align-items:center;gap:14px;padding:12px 26px;background:linear-gradient(90deg,var(--nar),#9a3412);flex-wrap:wrap}
+.hdr h1{font-size:24px;font-weight:900;letter-spacing:.5px}
+.hdr .sub{font-size:12px;opacity:.92;margin-top:2px}
+.lg{background:#fff;border-radius:8px;padding:3px 9px;display:inline-flex;align-items:center}
+.reloj{margin-left:auto;font-size:28px;font-weight:900;font-variant-numeric:tabular-nums}
+.chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:8px;padding:3px 10px;font-weight:800;font-size:12px;cursor:pointer}
+.off{background:var(--bad);color:#fff;padding:4px 14px;font-weight:800;font-size:13px;display:none;text-align:center}
+.cont{max-width:1560px;margin:0 auto;padding:20px 26px}
+.sec{font-size:13px;font-weight:900;color:var(--muted);letter-spacing:1.5px;margin:20px 0 10px;display:flex;align-items:center;gap:10px}
+.tag{font-size:10px;font-weight:900;background:var(--nar);color:#fff;border-radius:6px;padding:2px 8px;letter-spacing:.5px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+a.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;position:relative;transition:.15s;display:flex;flex-direction:column;gap:7px;text-decoration:none;color:var(--txt)}
+a.card:hover{border-color:var(--nar);transform:translateY(-2px)}
+.card .top{display:flex;align-items:center;gap:11px;padding-right:150px}
+.card .ico{font-size:27px}
+.card .tit{font-size:19px;font-weight:900;line-height:1.15}
+.card .des{font-size:12.5px;color:var(--muted);line-height:1.45}
+.card .url{font-size:10.5px;color:#64748b;font-family:monospace;margin-top:auto;padding-top:6px;border-top:1px dashed #27354f;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.card .ef{position:absolute;top:13px;right:15px;display:flex;gap:5px}
+.pill{font-size:12px;font-weight:900;border-radius:7px;padding:3px 8px;color:#fff;text-align:center;min-width:44px}
+.pill .l{font-size:8.5px;opacity:.82;display:block;line-height:1.1;letter-spacing:.5px}
+.pill.g{background:#15803d}.pill.r{background:#991b1b}.pill.o{background:#c2410c}.pill.m{background:#334155;color:#cbd5e1}
+.foot{margin-top:24px;font-size:12px;color:#64748b;text-align:center;padding-bottom:20px}
+@media (max-width:700px){.card .top{padding-right:0}.card .ef{position:static;margin-bottom:2px}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <span class="lg"><img src="cinzia%20logo.png" onerror="this.parentNode.style.display='none'" alt="CINZIA" style="height:24px;display:block"></span>
+  <div><h1>HORA A HORA · INICIO</h1><div class="sub">Elegí la pantalla — cada TV guarda su link directo y arranca solo en esa vista</div></div>
+  <div class="reloj" id="reloj">--:--</div>
+  <div class="chip" onclick="cargar()">↻ Actualizar</div>
+</div>
+<div class="off" id="off">⚠ SIN CONEXIÓN — mostrando últimos datos</div>
+<div class="cont">
+
+<div class="sec">POR MONTAJE · VISTA POR OPERARIOS <span class="tag">PARA EL TV DE CADA SECTOR</span></div>
+<div class="cards" id="cardsMont"></div>
+
+<div class="sec">POR NAVE · PLANTA COMPLETA</div>
+<div class="cards" id="cardsNave"></div>
+
+<div class="foot" id="foot">cargando datos…</div>
+</div>
+
+<script>
+var URL_API='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec?view=horaxhora';
+
+/* ===== misma configuración que horaxhora_tv.html — mantener sincronizadas ===== */
+var NAVE_DE={M0:'1',S1:'1',S2:'1',S7:'1',M1:'2',M2:'2',M3:'2',M4:'2',M5:'2',M6:'2',S5:'2',S6:'2',QC:'2',HOSP:'2',OTROS:'2',RETRAB:'2'};
+function naveOf(code){ return NAVE_DE[String(code||'').toUpperCase()] || '2'; }
+var SECTOR_OVERRIDE={'pradal':'M4','moreyra':'M4'};
+function sectorDe(o){
+  var k=String(o.nom||'').toLowerCase().replace(/\s+/g,' ').trim();
+  for(var key in SECTOR_OVERRIDE){ if(k.indexOf(key)>=0) return SECTOR_OVERRIDE[key]; }
+  if(String(o.sector||'').toUpperCase()==='OTROS') return 'QC';
+  return o.sector;
+}
+var EXCLUIR_OPERARIO=['mayer','yance','lopez agustin'];
+function _foldNom(s){return String(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
+function excluido(nom){
+  var k=_foldNom(nom);
+  return EXCLUIR_OPERARIO.some(function(x){return _foldNom(x).split(' ').every(function(tok){return tok && k.indexOf(tok)>=0;});});
+}
+function toMin(s){var p=String(s).split(':');return (+p[0])*60+(+p[1])}
+function normWO(s){return String(s==null?'':s).replace(/\s+/g,' ').trim().toUpperCase();}
+/* Odoo parte una tarea en dos al pasar el estándar: acá se vuelven a unir (idéntico al TV) */
+function mergeReal(arr){
+  if(arr && arr.__merged) return arr;
+  var src=(arr||[]).slice().sort(function(a,b){return toMin(a.ini)-toMin(b.ini)});
+  var out=[];
+  src.forEach(function(r){
+    var p=out[out.length-1];
+    var mismaTarea = p && p.mo===r.mo && normWO(p.wo)===normWO(r.wo) && (p.e==='nc')===(r.e==='nc');
+    var pegado = p && (toMin(r.ini)-toMin(p.fin) <= 3);
+    if(mismaTarea && pegado){
+      if(toMin(r.fin)>toMin(p.fin)) p.fin=r.fin;
+      p.rmin=(+p.rmin||0)+(+r.rmin||0);
+      p.obj=Math.max(+p.obj||0,+r.obj||0);
+      if(r.e==='curso') p.e='curso';
+    } else { out.push(Object.assign({},r)); }
+  });
+  out.forEach(function(r){ if(r.e!=='curso' && r.e!=='nc'){ r.e=((+r.obj||0)>0 && (+r.rmin||0)>(+r.obj||0))?'ko':'ok'; } });
+  out.__merged=true;
+  return out;
+}
+
+var NOMS={M0:'Soldadura',S1:'Armado Muebles',M1:'Revest. Interior',M2:'Inst. Eléctricas',S2:'Fibra',M3:'Revest. Exterior',M4:'Agua / Gas',M5:'Montaje 5',M6:'Montaje 6',S5:'Aberturas / Toldos',S6:'Slide Out',S7:'Tapicería',QC:'Control Final',HOSP:'Hospital'};
+var ICONS={QC:'🔎',M1:'🪚',M4:'🔧',M0:'🔥',M2:'⚡',M3:'🎨',S1:'🪑',S2:'🧪',S5:'🚪',S6:'↔️',S7:'🧵'};
+var DESCS={
+  QC:'Control Final + operarios de "varias" (OTROS va adentro de QC).',
+  M1:'Revestimiento Interior · Nave 2 — operarios del sector.',
+  M4:'Instalaciones Agua / Gas · Nave 2 — operarios del sector.',
+  M0:'Soldadura · Nave 1 — operarios del sector.',
+  M2:'Instalaciones Eléctricas · Nave 2 — operarios del sector.'
+};
+/* Prioridad de Riki 18/8: QC primero, después M1 y M4. El resto atrás. */
+var CARDS_MONT=['QC','M1','M4','M0','M2'];
+
+/* ===== EF HOY por sector: idéntico criterio que el TV (tope 100% por tarea,
+   retrabajos/NC cuentan, ponderado por minutos reales; excluidos y overrides aplicados) ===== */
+function efPorSector(D){
+  var acc={}; // code -> {ob, re}
+  (D.operarios||[]).forEach(function(o){
+    if(excluido(o.nom)) return;
+    var sc=String(sectorDe(o)||'').toUpperCase(); if(!sc) return;
+    var real=mergeReal(o.real);
+    var a=acc[sc]=acc[sc]||{ob:0,re:0};
+    real.forEach(function(r){ if(r.e!=='curso'){ var ob=+r.obj||0, rm=+r.rmin||0; a.ob+=Math.min(ob,rm); a.re+=rm; } });
+  });
+  var out={};
+  for(var c in acc){ out[c]=acc[c].re>0?Math.min(100,Math.round(acc[c].ob*100/acc[c].re)):null; }
+  return out;
+}
+function efNave(D,nave){
+  var ob=0,re=0;
+  (D.operarios||[]).forEach(function(o){
+    if(excluido(o.nom)) return;
+    var sc=String(sectorDe(o)||'').toUpperCase(); if(!sc) return;
+    if(nave!=='all' && naveOf(sc)!==nave) return;
+    mergeReal(o.real).forEach(function(r){ if(r.e!=='curso'){ var v=+r.obj||0, rm=+r.rmin||0; ob+=Math.min(v,rm); re+=rm; } });
+  });
+  return re>0?Math.min(100,Math.round(ob*100/re)):null;
+}
+function efPill(lbl,v){
+  var cls=v==null?'m':(v>=80?'g':(v>=70?'o':'r'));
+  return '<span class="pill '+cls+'"><span class="l">'+lbl+'</span>'+(v==null?'—':v+'%')+'</span>';
+}
+/* 5S del día: si el backend ya manda D.cinco_s (detalle por sector) se pinta; si no, ⚪ */
+function s5Pill(D,code){
+  var d=D&&D.cinco_s&&D.cinco_s[code];
+  var em='⚪', t='pend.';
+  if(d&&d.color){ var c=String(d.color).toLowerCase();
+    if(c==='verde'||c==='ok') {em='🟢';t='ok';}
+    else if(c==='rojo') {em='🔴';t='rojo';}
+    else if(c==='azul') {em='🔵';t='azul';}
+  }
+  return '<span class="pill m" title="5S del día — ronda 7:45">'+'<span class="l">5S</span>'+em+'</span>';
+}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+
+function cardMont(code,D,EF,EFA){
+  var ef=EF?EF[code]:null;
+  var efa=(EFA&&EFA[code]!=null)?EFA[code]:null; // EF de ayer: la manda el backend cuando esté (D.ef_ayer)
+  var url='horaxhora_tv.html?montaje='+code;
+  return '<a class="card" href="'+url+'">'
+    +'<div class="ef">'+efPill('HOY',ef)+efPill('AYER',efa)+s5Pill(D,code)+'</div>'
+    +'<div class="top"><span class="ico">'+(ICONS[code]||'🏭')+'</span><span class="tit">'+esc(code==='QC'?'CONTROL FINAL':('MONTAJE '+code.replace(/^M/,'')))+'</span></div>'
+    +'<div class="des">'+esc(DESCS[code]||((NOMS[code]||code)+' — operarios del sector.'))+'</div>'
+    +'<div class="url">'+url+'</div></a>';
+}
+function cardNave(tit,ico,des,qs,ef){
+  return '<a class="card" href="horaxhora_tv.html'+qs+'">'
+    +'<div class="ef">'+(ef!==undefined?efPill('HOY',ef):'')+'</div>'
+    +'<div class="top"><span class="ico">'+ico+'</span><span class="tit">'+tit+'</span></div>'
+    +'<div class="des">'+des+'</div>'
+    +'<div class="url">horaxhora_tv.html'+qs+'</div></a>';
+}
+
+function render(D){
+  var EF=D?efPorSector(D):null;
+  var EFA=D?(D.ef_ayer||null):null;
+  var h='';
+  CARDS_MONT.forEach(function(c){ h+=cardMont(c,D,EF,EFA); });
+  document.getElementById('cardsMont').innerHTML=h;
+  var n='';
+  n+=cardNave('NAVE 1','🏭','Todos los operarios de Nave 1 (Soldadura y pre-línea).','?nave=1',D?efNave(D,'1'):null);
+  n+=cardNave('NAVE 2','🏭','Todos los operarios de Nave 2 (M1 → Control Final).','?nave=2',D?efNave(D,'2'):null);
+  n+=cardNave('TODA LA PLANTA','🗺️','Nave 1 + Nave 2 juntas, vista completa.','?nave=all',D?efNave(D,'all'):null);
+  n+=cardNave('VISTA POR MONTAJE','📦','Filas = órdenes de fabricación en vez de operarios.','?vista=montaje');
+  document.getElementById('cardsNave').innerHTML=n;
+  document.getElementById('foot').textContent=D?('Datos del día '+(D.fecha||'')+' · actualizado '+(D.hora||'')+' · eficiencia con regla DYFSA (tope 100% por tarea, retrabajos incluidos)'):'sin datos';
+}
+
+function cargar(){
+  fetch(URL_API,{cache:'no-store'}).then(function(r){return r.json()}).then(function(D){
+    document.getElementById('off').style.display='none';
+    try{localStorage.setItem('hxh_home_last',JSON.stringify(D))}catch(e){}
+    render(D);
+  }).catch(function(){
+    document.getElementById('off').style.display='block';
+    try{var d=JSON.parse(localStorage.getItem('hxh_home_last')||'null'); if(d) render(d);}catch(e){}
+    setTimeout(cargar,60000);
+  });
+}
+function tic(){var d=new Date();document.getElementById('reloj').textContent=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
+tic(); setInterval(tic,15000);
+render(null); cargar(); setInterval(cargar,5*60000);
+</script>
+</body>
+</html>
