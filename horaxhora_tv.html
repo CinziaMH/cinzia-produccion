@@ -31,6 +31,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .efbig .l{font-size:9px;letter-spacing:1px;opacity:.9;display:block;white-space:nowrap}
 .efbig .n{font-size:22px;white-space:nowrap}
 .efbig.g{background:#15803d}.efbig.r{background:#991b1b}.efbig.o{background:#c2410c}.efbig.m{background:#334155;color:#cbd5e1}
+/* ===== zócalo TAKT por montaje (visible solo con ?montaje=X y datos D.takt) ===== */
+#taktbar{display:none;flex:0 0 auto;gap:8px;padding:7px 10px;background:#0b1224;border-top:3px solid var(--nar);align-items:stretch}
+#taktbar .tk{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:5px 12px;display:flex;flex-direction:column;gap:2px;justify-content:center;min-width:0}
+#taktbar .tk .t{font-size:10px;font-weight:900;color:var(--muted);letter-spacing:1px;white-space:nowrap}
+#taktbar .tk .v{font-size:16px;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#taktbar .tk .s{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#taktbar .tk.obj{border-color:var(--nar);text-align:center}
+#taktbar .tk.obj .v{font-size:21px;color:var(--nar)}
+#taktbar .tk.prev{flex:1}
+#taktbar .tk.cur{flex:1.6}
+#taktbar .tk.next{flex:1.2}
+#taktbar .okc{color:var(--ok)} #taktbar .koc{color:var(--bad)} #taktbar .rkc{color:#f97316}
+#taktbar .tbar{height:11px;background:#27354f;border-radius:6px;overflow:hidden;position:relative;margin:2px 0}
+#taktbar .tbar i{display:block;height:100%}
+#taktbar .tbar em{position:absolute;top:-2px;bottom:-2px;width:2px;background:#e2e8f0}
 /* toggle de nave */
 .navsel{display:flex;gap:5px;align-items:center;margin-left:3px}
 .navbtn{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.4);border-radius:8px;padding:3px 10px;font-weight:900;font-size:13px;color:#fff;cursor:pointer;letter-spacing:.5px}
@@ -202,6 +217,7 @@ body.bigrows .pb{white-space:normal;line-height:1.15;background:#42546f;border-c
 <div class="alertbar" id="alertbar"></div>
 <div class="ausbar" id="ausbar"></div>
 <div class="wrap"><div class="scroller" id="scroller"><div class="grid" id="grid"><div class="spin"></div></div></div></div>
+<div id="taktbar"></div>
 <div class="leg">
 <span><i style="background:#33415588;border:1px solid #64748b;height:9px"></i> Plan teórico (7:45)</span>
 <span><i style="background:#16a34a"></i> En tiempo</span>
@@ -800,7 +816,52 @@ function pintaS5(D){
     b.title='5S del día por sector — ronda 7:45';
   }
 }
-function refreshHeaderKPIs(){ pintaEfBox('efHoyBox','efHoyN',efVisible(LASTD)); pintaEfBox('efAyerBox','efAyerN',efVisible(LASTA)); pintaS5(LASTD); }
+/* ===== zócalo TAKT: orden anterior / en curso vs ritmo / próxima con fechas de Riki =====
+   Espera D.takt = { dias:3, M4:{ prev:{mo,prod,dias}, cur:{mo,prod,dia,dias_obj,avance}, next:{mo,prod,ini,fin,started} } }
+   (lo manda el backend cuando esté; hasta entonces el zócalo queda oculto). */
+function _fmtDia(s){ if(!s) return '—'; var p=String(s).split('-'); return p.length===3 ? (p[2]+'/'+p[1]) : String(s); }
+function pintaTakt(D){
+  var bar=document.getElementById('taktbar'); if(!bar) return;
+  var tk=(D&&D.takt)||null;
+  if(MONT==='all' || !tk || !tk[MONT]){ bar.style.display='none'; return; }
+  var s=tk[MONT], objD=+((s.cur&&s.cur.dias_obj)||tk.dias||3);
+  var h='';
+  h+='<div class="tk obj"><span class="t">OBJETIVO TAKT</span><span class="v">'+(tk.dias||3)+' días</span><span class="s">≈ '+Math.round(100/(tk.dias||3))+'% avance/día</span></div>';
+  var p=s.prev;
+  if(p){
+    var pOk=(+p.dias)<=(tk.dias||3);
+    h+='<div class="tk prev" style="border-color:'+(pOk?'#22c55e':'#ef4444')+'"><span class="t">✔ ORDEN ANTERIOR</span><span class="v">'+esc(p.mo||'')+(p.prod?(' · '+esc(p.prod)):'')+'</span><span class="s '+(pOk?'okc':'koc')+'">salió en '+p.dias+' día'+(p.dias==1?'':'s')+' '+(pOk?'✓ en takt':'✗ (+'+((+p.dias)-(tk.dias||3))+' vs takt)')+'</span></div>';
+  } else {
+    h+='<div class="tk prev"><span class="t">✔ ORDEN ANTERIOR</span><span class="v">—</span></div>';
+  }
+  var c=s.cur;
+  if(c){
+    var dia=+c.dia||1, av=(c.avance==null?null:+c.avance);
+    var esp=Math.min(100,Math.round(Math.min(dia,objD)*100/objD));
+    var pasado=dia>objD;
+    var enRitmo=(av!=null)&&(av>=esp-8);
+    var cls=pasado?'koc':(enRitmo?'okc':'rkc');
+    var bcol=pasado?'#ef4444':(enRitmo?'#22c55e':'#f97316');
+    var msg=pasado?('✗ PASADO DE TAKT (+'+(dia-objD)+' día'+((dia-objD)==1?'':'s')+')'):(enRitmo?'✓ viene en takt':'⚠ EN RIESGO — a este ritmo no llega');
+    h+='<div class="tk cur" style="border-color:'+bcol+'"><span class="t">▶ EN CURSO — '+esc(c.mo||'')+(c.prod?(' · '+esc(c.prod)):'')+' · día '+dia+' de '+objD+'</span>'
+      +'<span class="v '+cls+'">'+(av==null?msg:(msg+' — avance '+av+'% · esperado '+esp+'%'))+'</span>'
+      +'<div class="tbar"><i style="width:'+Math.min(av==null?0:av,100)+'%;background:'+bcol+'"></i><em style="left:'+esp+'%"></em></div></div>';
+  } else {
+    h+='<div class="tk cur"><span class="t">▶ EN CURSO</span><span class="v">sin orden en el montaje</span></div>';
+  }
+  var n=s.next;
+  if(n){
+    var hoy=(D&&D.fecha)||'';
+    var atras=(!n.started && n.ini && hoy && String(n.ini)<String(hoy));
+    h+='<div class="tk next" style="border-color:'+(atras?'#ef4444':'#38bdf8')+'"><span class="t">⏭ PRÓXIMA ORDEN</span>'
+      +'<span class="v">'+esc(n.mo||'')+(n.prod?(' · '+esc(n.prod)):'')+(atras?' <span class="koc" style="font-size:12px">⚠ NO ARRANCÓ</span>':'')+'</span>'
+      +'<span class="s'+(atras?' koc':'')+'">'+(atras?('debía arrancar '+_fmtDia(n.ini)):('inicio '+_fmtDia(n.ini)))+(n.fin?(' · fin prog. '+_fmtDia(n.fin)):'')+'</span></div>';
+  } else {
+    h+='<div class="tk next"><span class="t">⏭ PRÓXIMA ORDEN</span><span class="v">—</span><span class="s">cargar en SECUENCIA_TAKT</span></div>';
+  }
+  bar.innerHTML=h; bar.style.display='flex';
+}
+function refreshHeaderKPIs(){ pintaEfBox('efHoyBox','efHoyN',efVisible(LASTD)); pintaEfBox('efAyerBox','efAyerN',efVisible(LASTA)); pintaS5(LASTD); try{ pintaTakt(LASTD); }catch(e){} }
 function cargarAyer(){
   fetch(URL_API+'&fecha='+ayerHabil(),{cache:'no-store'}).then(function(r){return r.json()}).then(function(D){
     if(D && D.ok!==false){ LASTA=D; refreshHeaderKPIs(); }
