@@ -286,6 +286,24 @@ function alertaHtml(a){
   h+='<div class="at">'+(a.cerrada?'✅':'🟠')+' '+esc(a.titulo||'(sin título)')+'</div>';
   h+='<div style="font-size:11px;color:var(--muted);margin-top:2px">'+esc(a.fecha)+' · estado: '+esc(a.estado)+(a.responsable?' · responsable: '+esc(a.responsable):'')+'</div>';
   h+='<div class="agrid">';
+  // Tarea puntual (workorder que coincide con el error)
+  var tp=a.tarea_puntual||[];
+  h+='<div class="abox" style="border-color:#fdba74;background:#fff7ed"><div class="bl" style="color:#c2410c">🎯 Tarea puntual — quién la hizo</div><div class="bv">';
+  if(tp.length){
+    tp.forEach(function(t,i){
+      h+='<div style="font-weight:800'+(i?';margin-top:8px':'')+'">'+esc(t.tarea)+'</div>';
+      h+='<div class="mm" style="font-size:10.5px">'+esc((t.mo||'').replace(/^Dyfsa\//,''))+' · '+esc(t.estado||'')+(t.objetivo_min||t.real_min?(' · obj '+t.objetivo_min+"' / real "+t.real_min+"'"):'')+'</div>';
+      if(t.operarios&&t.operarios.length){
+        t.operarios.forEach(function(o){h+='<div class="opline"><span>👷 <b>'+esc(o.nombre)+'</b></span><span class="mm">'+o.minutos+' min'+(t.ultima_fecha?' · '+esc(t.ultima_fecha):'')+'</span></div>'});
+      } else {
+        h+='<div style="margin-top:3px">'+tag('warn','Nadie cargó tiempo en esta tarea')+'</div>';
+      }
+    });
+    h+='<div class="mm" style="margin-top:5px;font-size:10.5px">operación de la orden que coincide con el error; Odoo no guarda la asignación previa (la hace Mayer a mano), esto es quién le cargó tiempo</div>';
+  } else {
+    h+=tag('neut','Sin operación en Odoo que coincida con este error');
+  }
+  h+='</div></div>';
   // Operarios
   h+='<div class="abox"><div class="bl">👷 Operarios del montaje '+(a.montaje_causante?esc(a.montaje_causante):'(sin clasificar)')+'</div><div class="bv">';
   if(a.operarios&&a.operarios.length){
@@ -320,9 +338,14 @@ function limpiarFiltros(){ if(!_AN)return; _AN._f={op:'',veh:'',mont:''};
 function _montDe(a){ return a.montaje_causante||'(sin clasificar)'; }
 function _normTxt(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
 function _contiene(txt,q){return _normTxt(txt).indexOf(_normTxt(q))>=0}
+function _opsDe(a){
+  var l=(a.operarios||[]).map(function(o){return o.nombre});
+  (a.tarea_puntual||[]).forEach(function(t){(t.operarios||[]).forEach(function(o){if(l.indexOf(o.nombre)<0)l.push(o.nombre)})});
+  return l;
+}
 function _alertaPasa(a,f){
   if(f.mont && _montDe(a)!==f.mont) return false;
-  if(f.op && !(a.operarios||[]).some(function(o){return _contiene(o.nombre,f.op)})) return false;
+  if(f.op && !_opsDe(a).some(function(n){return _contiene(n,f.op)})) return false;
   return true;
 }
 function _vehPasa(v,q){
@@ -339,7 +362,7 @@ function renderAnalisis(D){
     vehs.push({id:v.mo,label:(v.cliente||v.orden)+' ('+v.mo+')'});
     (v.alertas||[]).forEach(function(a){
       monts[_montDe(a)]=1;
-      (a.operarios||[]).forEach(function(o){ops[o.nombre]=1});
+      _opsDe(a).forEach(function(n){ops[n]=1});
     });
   });
   var h='<h2>🔎 ANÁLISIS DE ALERTAS · '+esc(D.desde)+' → '+esc(D.hasta)+' <span style="font-weight:600;color:#475569">(generado '+esc(D.generado)+' · '+D.duracion_seg+'s)</span></h2>';
