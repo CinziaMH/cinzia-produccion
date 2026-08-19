@@ -5,58 +5,89 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cinzia · Pulso de Calidad</title>
 <style>
-:root{--nar:#EA580C;--bg:#0f172a;--panel:#1e293b;--line:#334155;--txt:#f1f5f9;--muted:#94a3b8;--verde:#22c55e;--azul:#3b82f6;--rojo:#ef4444;--otros:#64748b}
+:root{--nar:#EA580C;--bg:#f6f6f8;--panel:#ffffff;--line:#e8eaee;--txt:#111827;--muted:#6b7280;--verde:#16a34a;--azul:#2563eb;--rojo:#dc2626;--otros:#9ca3af}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;min-height:100vh}
-.hdr{display:flex;align-items:center;gap:12px;padding:8px 16px;background:linear-gradient(90deg,#7c2d12,#9a3412);position:sticky;top:0;z-index:20;flex-wrap:wrap}
-.hdr h1{font-size:17px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
-.hdr .sub{font-size:11px;opacity:.9}
-.chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:9px;padding:4px 11px;font-weight:800;font-size:12px;white-space:nowrap;color:#fff;text-decoration:none;cursor:pointer}
-select.msel,input.dpick{background:rgba(255,255,255,.92);border:none;border-radius:9px;padding:5px 9px;font-weight:700;font-size:13px;color:#1f2937}
-.maxw{max-width:1150px;margin:0 auto;padding:14px}
-h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:18px 0 10px}
+.hdr{display:flex;align-items:center;gap:12px;padding:10px 18px;background:var(--nar);position:sticky;top:0;z-index:20;flex-wrap:wrap;box-shadow:0 2px 10px rgba(17,24,39,.12)}
+.hdr h1{font-size:17px;font-weight:800;letter-spacing:.5px;white-space:nowrap;color:#fff}
+.hdr .sub{font-size:11px;color:#ffedd5}
+.chip{background:#fff;border:none;border-radius:999px;padding:6px 14px;font-weight:800;font-size:12px;white-space:nowrap;color:var(--nar);text-decoration:none;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+select.msel,input.dpick{background:#fff;border:none;border-radius:999px;padding:6px 12px;font-weight:700;font-size:13px;color:#1f2937;box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.maxw{max-width:1150px;margin:0 auto;padding:16px}
+h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:20px 0 10px}
 .off{background:var(--rojo);color:#fff;padding:6px 14px;font-weight:800;font-size:13px;display:none;text-align:center}
 .spin{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite;margin:60px auto}
 @keyframes r{to{transform:rotate(360deg)}}
-.vacio{color:var(--muted);font-size:13px;padding:16px;text-align:center;background:var(--panel);border-radius:11px}
+.vacio{color:var(--muted);font-size:13px;padding:18px;text-align:center;background:var(--panel);border-radius:16px;border:1px solid var(--line);box-shadow:0 6px 18px rgba(17,24,39,.05)}
 /* DPU cards */
-.qrow{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.qcard{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:18px 18px 16px}
-.qcard .qt{font-size:13px;font-weight:800;letter-spacing:.5px;color:#fdba74;display:flex;align-items:center;gap:8px}
-.qcard .dpu{font-size:52px;font-weight:800;line-height:1;margin-top:8px}
+.qrow{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.qcard{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px 20px 16px;box-shadow:0 6px 18px rgba(17,24,39,.05)}
+.qcard .qt{font-size:13px;font-weight:800;letter-spacing:.5px;color:#c2410c;display:flex;align-items:center;gap:8px}
+.qcard .dpu{font-size:52px;font-weight:800;line-height:1;margin-top:8px;color:#111827}
 .qcard .dpusub{font-size:12px;color:var(--muted);margin-top:2px}
-.qcard .qmeta{font-size:12.5px;color:#cbd5e1;margin-top:10px;font-weight:600}
-.sevbar{display:flex;height:14px;border-radius:8px;overflow:hidden;margin-top:14px;background:#0f172a}
+.qcard .qmeta{font-size:12.5px;color:#374151;margin-top:10px;font-weight:600}
+.sevbar{display:flex;height:14px;border-radius:8px;overflow:hidden;margin-top:14px;background:#eef0f3}
 .sevbar i{display:block;height:100%}
 .sevleg{display:flex;gap:14px;margin-top:9px;flex-wrap:wrap}
-.sevleg .sl{font-size:11.5px;color:#cbd5e1;font-weight:700;display:flex;align-items:center;gap:5px}
+.sevleg .sl{font-size:11.5px;color:#374151;font-weight:700;display:flex;align-items:center;gap:5px}
 .sevleg .sl i{width:11px;height:11px;border-radius:3px;display:inline-block}
-.dtog{margin-top:15px;font-size:12px;font-weight:800;color:#fdba74;cursor:pointer;user-select:none;display:inline-block}
-.dtog:hover{color:#fed7aa}
-.dlist{display:none;margin-top:10px;max-height:300px;overflow:auto;border-radius:10px}
+.dtog{margin-top:15px;font-size:12px;font-weight:800;color:var(--nar);cursor:pointer;user-select:none;display:inline-block}
+.dtog:hover{color:#9a3412}
+.dlist{display:none;margin-top:10px;max-height:300px;overflow:auto;border-radius:12px;border:1px solid var(--line)}
 .dlist .tbl{margin-top:0}
-.dlist .tbl th{background:#0f172a;position:sticky;top:0}
+.dlist .tbl th{background:#f9fafb;position:sticky;top:0}
 /* Voz cliente */
 .vozhead{display:flex;gap:14px;flex-wrap:wrap;align-items:stretch}
-.vbox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;flex:0 0 auto;min-width:150px}
-.vbox .n{font-size:40px;font-weight:800;line-height:1}
+.vbox{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 18px;flex:0 0 auto;min-width:150px;box-shadow:0 6px 18px rgba(17,24,39,.05)}
+.vbox .n{font-size:40px;font-weight:800;line-height:1;color:#111827}
 .vbox .l{font-size:11.5px;color:var(--muted);font-weight:700;margin-top:3px;letter-spacing:.4px}
 .gchips{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.gchip{border-radius:11px;padding:10px 16px;font-weight:800;color:#fff;text-align:center;min-width:96px}
+.gchip{border-radius:13px;padding:10px 16px;font-weight:800;color:#fff;text-align:center;min-width:96px}
 .gchip .gn{font-size:24px;line-height:1}
 .gchip .gl{font-size:10.5px;opacity:.95;font-weight:700;margin-top:2px}
-.tbl{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;margin-top:4px}
-.tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);font-weight:800}
-.tbl td{font-size:12.5px;padding:9px 10px;border-bottom:1px solid #26344a;vertical-align:top}
+.tbl{width:100%;border-collapse:collapse;background:var(--panel);border-radius:16px;overflow:hidden;margin-top:4px;border:1px solid var(--line);box-shadow:0 6px 18px rgba(17,24,39,.05)}
+.tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:800;background:#f9fafb}
+.tbl td{font-size:12.5px;padding:10px 12px;border-bottom:1px solid #f0f2f5;vertical-align:top}
 .tbl tr:last-child td{border-bottom:none}
 .gdot{display:inline-block;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:800;color:#fff;white-space:nowrap}
 .cli{display:flex;flex-direction:column;gap:8px}
 .clirow{display:flex;align-items:center;gap:8px;font-size:12.5px}
-.clirow .cn{flex:0 0 26px;height:20px;border-radius:6px;background:#3b2410;color:#fdba74;font-weight:800;text-align:center;font-size:12px;line-height:20px}
+.clirow .cn{flex:0 0 26px;height:20px;border-radius:6px;background:#ffedd5;color:#c2410c;font-weight:800;text-align:center;font-size:12px;line-height:20px}
 .clirow .cname{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.nota{max-width:1150px;margin:0 auto;padding:8px 14px 26px;font-size:11px;color:#64748b}
-@media(max-width:760px){.qrow{grid-template-columns:1fr}.hdr{gap:6px;padding:5px 10px}.hdr h1{font-size:13px}.hdr .lg{display:none}.maxw{padding:10px}
- .tbl .hideMob{display:none}}
+.nota{max-width:1150px;margin:0 auto;padding:8px 16px 28px;font-size:11px;color:#9ca3af}
+/* Análisis de alertas */
+.abtn{background:#fff;color:var(--nar);border:none;border-radius:999px;padding:7px 16px;font-weight:800;font-size:12.5px;cursor:pointer;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.abtn:disabled{opacity:.6;cursor:wait}
+.asum{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.asum .vbox{min-width:120px}
+.vcard{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px 18px;margin-bottom:16px;box-shadow:0 6px 18px rgba(17,24,39,.05)}
+.vcard .vh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.vcard .vh .cli2{font-size:16px;font-weight:800;color:#111827}
+.vcard .vh .mochip{font-size:11px;font-weight:800;background:#f3f4f6;border:1px solid var(--line);border-radius:8px;padding:2px 9px;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap}
+.tag.ok{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
+.tag.bad{background:#fee2e2;color:#b91c1c;border:1px solid #fecaca}
+.tag.warn{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.tag.neut{background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb}
+.acard{background:#f9fafb;border:1px solid #eef0f3;border-radius:14px;padding:12px 14px;margin-top:10px}
+.acard .at{font-weight:800;font-size:13px;color:#111827}
+.agrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;margin-top:10px}
+.abox{background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.abox .bl{font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.5px;text-transform:uppercase}
+.abox .bv{font-size:12px;margin-top:4px;line-height:1.45;color:#374151}
+.abox .bv b{color:#c2410c}
+.opline{display:flex;justify-content:space-between;gap:8px;font-size:12px}
+.opline .mm{color:var(--muted);white-space:nowrap}
+.papel{background:#fef9c3;border:1px dashed #facc15;border-radius:10px;padding:8px 11px;font-size:11.5px;color:#854d0e;margin-top:8px}
+.fbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px 14px;margin-bottom:12px;position:sticky;top:56px;z-index:15;box-shadow:0 6px 18px rgba(17,24,39,.07)}
+.fbar .fl{font-size:10.5px;font-weight:800;color:var(--muted);letter-spacing:.5px}
+.fbar select,.fbar input{background:#f9fafb;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:7px 10px;font-weight:700;font-size:12.5px;max-width:220px}
+.fbar input::placeholder{color:#9ca3af;font-weight:600}
+.fbar .fclear{background:none;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:6px 12px;font-weight:800;font-size:11.5px;cursor:pointer}
+.fbar .fclear:hover{color:var(--txt);background:#f3f4f6}
+.fbar .fcount{font-size:11.5px;color:var(--muted);font-weight:700;margin-left:auto}
+@media(max-width:760px){.qrow{grid-template-columns:1fr}.hdr{gap:6px;padding:7px 10px}.hdr h1{font-size:13px}.hdr .lg{display:none}.maxw{padding:10px}
+ .tbl .hideMob{display:none}.fbar{top:48px}}
 </style>
 </head>
 <body>
@@ -74,7 +105,8 @@ h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:
   <input class="dpick" type="date" id="desde" onchange="custom()">
   <input class="dpick" type="date" id="hasta" onchange="custom()">
   <div class="sub" id="gen" style="margin-left:4px">cargando…</div>
-  <a class="chip" href="./" style="margin-left:auto;background:rgba(255,255,255,.1)">🏠 Inicio</a>
+  <button class="abtn" id="abtn" style="margin-left:auto" onclick="analizarAlertas()">🔎 Analizar alertas</button>
+  <a class="chip" href="./" style="background:rgba(255,255,255,.1)">🏠 Inicio</a>
   <div class="chip" style="background:rgba(255,255,255,.1)" onclick="cargar()">↻</div>
 </div>
 <div class="off" id="off">⚠ SIN CONEXIÓN</div>
@@ -82,6 +114,7 @@ h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin:
 <div class="maxw" id="cont">
   <div class="spin"></div>
 </div>
+<div class="maxw" id="anal"></div>
 <div class="nota">DPU = defectos por vehículo inspeccionado, según gravedad cargada en el módulo de calidad de Odoo. Control Final = QC final · M4 = Instalaciones Etapa 2 y 3. Gravedad: 🟢 Bajo (very low/low) · 🔵 Normal · 🔴 Alto/Crítico. Voz del Cliente = reclamos externos registrados en planilla "Registro de NC Ext". Datos en vivo · refresca cada 5 min.</div>
 
 <script>
@@ -206,6 +239,197 @@ function cargar(){
 }
 aplicarRango();
 setInterval(cargar,300000);
+
+// ==================== ANÁLISIS DE ALERTAS ====================
+var URL_ANALISIS='https://script.google.com/macros/s/AKfycbzt3RiTVuAk0H0g2UJisVfoRA7rbUS9DyLgyEf9ZRBlHlWihFs1CA0-FhzHPh5y26MI/exec';
+function tag(cls,txt){return '<span class="tag '+cls+'">'+txt+'</span>'}
+function triTag(v,txtSi,txtNo,txtNull){
+  return v===true?tag('ok','✔ '+txtSi):v===false?tag('bad','⛔ '+txtNo):tag('neut','— '+txtNull);
+}
+function analizarAlertas(){
+  var desde=document.getElementById('desde').value, hasta=document.getElementById('hasta').value;
+  if(!desde||!hasta){alert('Elegí un rango de fechas primero');return}
+  if(URL_ANALISIS.indexOf('__')===0){alert('Falta configurar la URL del backend de análisis');return}
+  var btn=document.getElementById('abtn');btn.disabled=true;btn.textContent='⏳ Analizando…';
+  var an=document.getElementById('anal');
+  an.innerHTML='<h2>🔎 ANÁLISIS DE ALERTAS · '+esc(desde)+' → '+esc(hasta)+'</h2><div class="vacio">Cruzando Odoo + validaciones + capacitaciones… esto puede tardar 1-2 minutos.</div><div class="spin"></div>';
+  an.scrollIntoView({behavior:'smooth'});
+  var restore=function(){btn.disabled=false;btn.textContent='🔎 Analizar alertas'};
+  fetch(URL_ANALISIS+'?view=analisis&desde='+desde+'&hasta='+hasta+'&t='+Date.now(),{cache:'no-store',redirect:'follow'})
+   .then(function(r){return r.json()})
+   .then(function(D){renderAnalisis(D);restore()})
+   .catch(function(e){an.innerHTML='<h2>🔎 ANÁLISIS DE ALERTAS</h2><div class="vacio">No se pudo correr el análisis: '+esc(String(e))+'</div>';restore()});
+}
+function capHtml(cap){
+  if(!cap) return tag('neut','sin datos');
+  if(!cap.hubo_capacitacion) return tag('warn','Sin capacitación en el plan')+'<div class="bv" style="margin-top:4px">'+esc(cap.accion||'')+'</div>';
+  var h='';
+  (cap.temas||[]).forEach(function(t){
+    h+=(t.ejecutada_antes_del_error
+        ? tag('ok','Capacitación dictada antes del error')
+        : tag('warn','En plan pero no dictada antes'))
+      +'<div class="bv"><b>'+esc(t.tema)+'</b>'+(t.instructor?' · '+esc(t.instructor):'')+(t.dirigido_a?' · dirigido a: '+esc(t.dirigido_a):'')
+      +(t.meses_ejecutado&&t.meses_ejecutado.length?' · ejecutada mes '+t.meses_ejecutado.join(', '):'')+'</div>';
+    var a=t.asistencia||{};
+    if(a.cargada===false){
+      h+='<div class="papel">📋 '+esc(a.mensaje||'Verificar asistencia en la planilla papel')+'</div>';
+    } else if(a.cargada===true && a.operarios && a.operarios.length){
+      h+='<div class="bv">'+a.operarios.map(function(o){
+        return (o.asistio?'✔ ':'⛔ ')+esc(o.operario)+(o.asistio?' asistió':' NO asistió — mala operancia probable');
+      }).join('<br>')+'</div>';
+    }
+  });
+  return h;
+}
+function alertaHtml(a){
+  var h='<div class="acard">';
+  h+='<div class="at">'+(a.cerrada?'✅':'🟠')+' '+esc(a.titulo||'(sin título)')+'</div>';
+  h+='<div style="font-size:11px;color:var(--muted);margin-top:2px">'+esc(a.fecha)+' · estado: '+esc(a.estado)+(a.responsable?' · responsable: '+esc(a.responsable):'')+'</div>';
+  h+='<div class="agrid">';
+  // Operarios
+  h+='<div class="abox"><div class="bl">👷 Operarios del montaje '+(a.montaje_causante?esc(a.montaje_causante):'(sin clasificar)')+'</div><div class="bv">';
+  if(a.operarios&&a.operarios.length){
+    a.operarios.slice(0,6).forEach(function(o){h+='<div class="opline"><span>'+esc(o.nombre)+'</span><span class="mm">'+o.minutos+' min</span></div>'});
+    if(a.operarios.length>6)h+='<div class="mm">+'+(a.operarios.length-6)+' más</div>';
+    if(!a.montaje_causante)h+='<div style="color:var(--muted);margin-top:3px">⚠ montaje causante sin clasificar en Odoo: se listan todos los que cargaron tiempo en la orden (no es imputación individual)</div>';
+  } else h+='Sin partes de trabajo registrados';
+  h+='</div></div>';
+  // Tiempo productivo
+  var t=a.tiempo_productivo||{};
+  h+='<div class="abox"><div class="bl">⏱ Tiempo real vs objetivo</div><div class="bv">';
+  if(t.real_min>0&&t.objetivo_min>0){
+    h+=triTag(t.en_tiempo,'En tiempo','Fuera de tiempo','s/d')+'<div style="margin-top:4px">obj <b>'+t.objetivo_min+'</b> min · real <b>'+t.real_min+'</b> min'+(t.eficiencia!=null?' · efic. <b>'+t.eficiencia+'%</b>':'')+'</div><div class="mm">'+esc(t.alcance||'')+'</div>';
+  } else h+=tag('neut','Sin tiempos cargados para comparar');
+  h+='</div></div>';
+  // Recurrencia
+  var r=a.recurrencia||{};
+  h+='<div class="abox"><div class="bl">🔁 ¿Reclamo recurrente?</div><div class="bv">';
+  h+=r.es_recurrente?tag('bad','RECURRENTE · '+r.en_alertas+' alertas + '+r.en_voz_cliente+' voz cliente'):tag('ok','No se repite en el histórico');
+  if(r.ejemplos&&r.ejemplos.length){h+='<div style="margin-top:4px">'+r.ejemplos.map(function(x){return '<div class="mm">'+esc(x.fecha)+' · '+esc(x.veh||'')+' · '+esc((x.titulo||'').slice(0,60))+'</div>'}).join('')+'</div>'}
+  h+='</div></div>';
+  // Capacitación
+  h+='<div class="abox"><div class="bl">🎓 Capacitación del error</div><div class="bv">'+capHtml(a.capacitacion)+'</div></div>';
+  h+='</div></div>';
+  return h;
+}
+var _AN=null;
+function setFiltro(k,val){ if(!_AN)return; _AN._f[k]=val; renderCuerpo(); }
+function limpiarFiltros(){ if(!_AN)return; _AN._f={op:'',veh:'',mont:''};
+  ['fop','fveh','fmont'].forEach(function(id){var e=document.getElementById(id);if(e)e.value=''});
+  renderCuerpo(); }
+function _montDe(a){ return a.montaje_causante||'(sin clasificar)'; }
+function _normTxt(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function _contiene(txt,q){return _normTxt(txt).indexOf(_normTxt(q))>=0}
+function _alertaPasa(a,f){
+  if(f.mont && _montDe(a)!==f.mont) return false;
+  if(f.op && !(a.operarios||[]).some(function(o){return _contiene(o.nombre,f.op)})) return false;
+  return true;
+}
+function _vehPasa(v,q){
+  return _contiene((v.cliente||'')+' '+(v.orden||'')+' '+(v.mo||'')+' '+(v.codigo||''), q);
+}
+function renderAnalisis(D){
+  var an=document.getElementById('anal');
+  if(!D||!D.ok){an.innerHTML='<h2>🔎 ANÁLISIS DE ALERTAS</h2><div class="vacio vacio2">Error del análisis: '+esc(D&&D.error||'sin respuesta')+'</div>';return}
+  D._f={op:'',veh:'',mont:''};
+  _AN=D;
+  // opciones de filtros a partir del resultado
+  var ops={},vehs=[],monts={};
+  (D.vehiculos||[]).forEach(function(v){
+    vehs.push({id:v.mo,label:(v.cliente||v.orden)+' ('+v.mo+')'});
+    (v.alertas||[]).forEach(function(a){
+      monts[_montDe(a)]=1;
+      (a.operarios||[]).forEach(function(o){ops[o.nombre]=1});
+    });
+  });
+  var h='<h2>🔎 ANÁLISIS DE ALERTAS · '+esc(D.desde)+' → '+esc(D.hasta)+' <span style="font-weight:600;color:#475569">(generado '+esc(D.generado)+' · '+D.duracion_seg+'s)</span></h2>';
+  h+='<div class="asum">';
+  h+='<div class="vbox"><div class="n">'+D.total_alertas+'</div><div class="l">ALERTAS ANALIZADAS</div></div>';
+  h+='<div class="vbox"><div class="n">'+D.total_vehiculos+'</div><div class="l">VEHÍCULOS</div></div>';
+  h+='<div class="vbox"><div class="n">'+D.total_voz+'</div><div class="l">RECLAMOS EXTERNOS</div></div>';
+  if(D.operarios_reincidentes&&D.operarios_reincidentes.length){
+    h+='<div class="vbox" style="min-width:230px"><div class="l" style="margin-bottom:6px">⚠ OPERARIOS EN ≥2 ALERTAS DEL PERÍODO</div>';
+    D.operarios_reincidentes.slice(0,5).forEach(function(o){h+='<div class="opline"><span style="cursor:pointer;text-decoration:underline dotted" onclick="document.getElementById(\'fop\').value=this.textContent;setFiltro(\'op\',this.textContent)">'+esc(o.operario)+'</span><span class="mm">'+o.alertas+' alertas</span></div>'});
+    h+='</div>';
+  }
+  h+='</div>';
+  // barra de filtros
+  h+='<div class="fbar"><span class="fl">FILTRAR:</span>';
+  h+='<input id="fop" list="dlop" placeholder="👷 Operario — tipeá o elegí" oninput="setFiltro(\'op\',this.value)">'
+    +'<datalist id="dlop">'+Object.keys(ops).sort().map(function(o){return '<option>'+esc(o)+'</option>'}).join('')+'</datalist>';
+  h+='<input id="fveh" list="dlveh" placeholder="🚐 Vehículo / cliente — tipeá o elegí" oninput="setFiltro(\'veh\',this.value)">'
+    +'<datalist id="dlveh">'+vehs.map(function(v){return '<option>'+esc(v.label)+'</option>'}).join('')+'</datalist>';
+  h+='<select id="fmont" onchange="setFiltro(\'mont\',this.value)"><option value="">🏭 Todos los montajes</option>'
+    +Object.keys(monts).sort().map(function(m){return '<option>'+esc(m)+'</option>'}).join('')+'</select>';
+  h+='<button class="fclear" onclick="limpiarFiltros()">✕ Limpiar</button><span class="fcount" id="fcount"></span></div>';
+  if(D.truncado)h+='<div class="papel">⚠ Se analizaron los primeros '+D.total_vehiculos+' vehículos del período (límite por tiempo de ejecución). Achicá el rango para ver el resto.</div>';
+  if(!D.capacitacion_asistencia_cargada)h+='<div class="papel">📋 La asistencia a capacitaciones todavía no está cargada en el sheet RFP 06 02 — donde el análisis lo indique, verificar en la <b>planilla papel de asistencia</b>.</div>';
+  h+='<div id="analbody"></div>';
+  an.innerHTML=h;
+  renderCuerpo();
+  var btn=document.getElementById('abtn');btn.disabled=false;btn.textContent='🔎 Analizar alertas';
+}
+function renderCuerpo(){
+  var D=_AN, f=D._f, h='', nAl=0, nVeh=0, nVoz=0;
+  // Vehículos con alertas
+  (D.vehiculos||[]).forEach(function(v){
+    if(f.veh && !_vehPasa(v,f.veh)) return;
+    var alertas=(v.alertas||[]).filter(function(a){return _alertaPasa(a,f)});
+    if(!alertas.length) return;
+    nVeh++; nAl+=alertas.length;
+    v=Object.assign({},v,{alertas:alertas});
+    h+='<div class="vcard"><div class="vh">';
+    h+='<span class="cli2">🚐 '+esc(v.cliente||v.orden)+'</span><span class="mochip">'+esc(v.mo)+(v.codigo?' · '+esc(v.codigo):'')+'</span>';
+    if(v.etapa_actual)h+='<span class="mochip">'+esc(v.etapa_actual)+'</span>';
+    h+=triTag(v.qc_done_oficial?true:(v.estado_mo==='done'?false:null),'QC oficial hecho','MO cerrada SIN QC oficial','QC pendiente');
+    var vs=v.validacion_supervisor||{};
+    h+=triTag(vs.validada,'Supervisor validó','Supervisor rechazó','Sin validación de supervisor');
+    if(v.alertas_totales_historicas>v.alertas.length)h+=tag('warn','🔁 '+v.alertas_totales_historicas+' alertas históricas en esta orden');
+    h+='</div>';
+    if(vs.detalle)h+='<div style="font-size:11.5px;color:var(--muted);margin-top:5px">'+esc(vs.detalle)+((vs.rondas_ok||vs.rondas_ng)?(' · rondas: '+(vs.rondas_ok||0)+' ok / '+(vs.rondas_ng||0)+' ng'):'')+'</div>';
+    // Controles
+    var c=v.controles||{};
+    var ce=(c.etapa||[]);
+    h+='<div style="margin-top:7px">';
+    h+='<span class="bl" style="font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.5px">CONTROLES: </span>';
+    h+=ce.length?ce.map(function(x){return tag(x.ejecutado?'ok':'warn','Control '+x.montaje+' '+(x.ejecutado?'hecho':x.estado))}).join(' '):tag('bad','SIN control de etapa registrado');
+    h+=' '+(c.liberacion?tag(c.liberacion.ejecutado?'ok':'warn','QC liberación '+(c.liberacion.ejecutado?'hecho':c.liberacion.estado)):tag('neut','QC liberación s/registro'));
+    h+='</div>';
+    v.alertas.forEach(function(a){h+=alertaHtml(a)});
+    h+='</div>';
+  });
+  if(!nVeh&&(f.op||f.veh||f.mont))h+='<div class="vacio">Ninguna alerta coincide con el filtro elegido</div>';
+  // Voz del cliente (con filtro: operario no aplica porque el reclamo externo no tiene operario asociado)
+  var vozF=(D.voz||[]).filter(function(r){
+    if(f.op) return false;
+    if(f.mont) return false;
+    if(f.veh) return _contiene((r.cliente||'')+' '+(r.vehiculo?r.vehiculo.mo+' '+r.vehiculo.orden:''), f.veh);
+    return true;
+  });
+  nVoz=vozF.length;
+  if(vozF.length){
+    h+='<h2>📣 RECLAMOS EXTERNOS DEL PERÍODO · ANÁLISIS</h2>';
+    vozF.forEach(function(r){
+      h+='<div class="vcard"><div class="vh"><span class="cli2">'+esc(r.cliente)+'</span><span class="mochip">'+esc(r.fecha)+(r.prod?' · '+esc(r.prod):'')+'</span>';
+      h+=r.recurrente?tag('bad','🔁 RECURRENTE ×'+(r.repeticiones+1)):tag('ok','Primera vez');
+      if(r.vehiculo){h+=triTag(r.vehiculo.qc_done_oficial,'QC oficial hecho','QC no hecho','QC s/d')+'<span class="mochip">'+esc(r.vehiculo.mo)+'</span>'}
+      var vs=r.validacion_supervisor||{};
+      if(r.vehiculo)h+=triTag(vs.validada,'Supervisor validó','Supervisor rechazó','Sin validación supervisor');
+      h+='</div>';
+      h+='<div class="bv" style="font-size:12.5px;margin-top:6px">'+esc(r.motivo)+'</div>';
+      if(vs.detalle)h+='<div style="font-size:11.5px;color:var(--muted);margin-top:4px">'+esc(vs.detalle)+'</div>';
+      if(r.nota)h+='<div style="font-size:11.5px;color:var(--muted);margin-top:4px">'+esc(r.nota)+'</div>';
+      if(r.ejemplos&&r.ejemplos.length){h+='<div style="margin-top:5px">'+r.ejemplos.map(function(x){return '<div style="font-size:11px;color:var(--muted)">🔁 '+esc(x.fecha)+' · '+esc(x.cliente)+' · '+esc((x.motivo||'').slice(0,70))+'</div>'}).join('')+'</div>'}
+      h+='<div class="abox" style="margin-top:8px"><div class="bl">🎓 Capacitación del error</div><div class="bv">'+capHtml(r.capacitacion)+'</div></div>';
+      h+='</div>';
+    });
+  } else if(f.veh&&!nVeh) {
+    h+='<div class="vacio" style="margin-top:10px">Sin reclamos externos para este vehículo</div>';
+  }
+  document.getElementById('analbody').innerHTML=h;
+  var fc=document.getElementById('fcount');
+  if(fc)fc.textContent=(f.op||f.veh||f.mont)?('mostrando '+nAl+' alertas · '+nVeh+' vehículos · '+nVoz+' reclamos'):'';
+}
 </script>
 </body>
 </html>
