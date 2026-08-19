@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cinzia · Informe Mensual de Calidad</title>
+<style>
+:root{--nar:#EA580C;--bg:#f6f6f8;--panel:#fff;--line:#e8eaee;--txt:#111827;--muted:#6b7280;
+--verde:#16a34a;--azul:#2563eb;--rojo:#dc2626;
+--m0:#993C1D;--m1:#639922;--m2:#378ADD;--m3:#534AB7;--m4:#1D9E75;--m5:#BA7517;--qc:#185FA5}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+.hdr{background:var(--nar);color:#fff;padding:22px 20px 20px;text-align:center;position:relative}
+.hdr h1{font-size:23px;font-weight:800;letter-spacing:.5px}
+.hdr .sub{font-size:12.5px;color:#ffedd5;margin-top:3px}
+.hdr .ctl{margin-top:12px;display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
+.hdr input[type=month]{border:none;border-radius:999px;padding:7px 14px;font-weight:800;font-size:13px;color:#1f2937}
+.hbtn{background:#fff;color:var(--nar);border:none;border-radius:999px;padding:8px 16px;font-weight:800;font-size:12.5px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.hbtn:disabled{opacity:.6;cursor:wait}
+.hlink{position:absolute;left:14px;top:14px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:999px;padding:6px 13px;font-weight:800;font-size:12px;text-decoration:none}
+.maxw{max-width:1080px;margin:0 auto;padding:18px 16px 40px}
+h2{font-size:13px;font-weight:800;color:var(--muted);letter-spacing:.8px;margin:26px 0 12px;text-transform:uppercase}
+h2 .n{display:inline-block;background:var(--nar);color:#fff;border-radius:6px;width:20px;height:20px;text-align:center;line-height:20px;font-size:11px;margin-right:7px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;box-shadow:0 6px 18px rgba(17,24,39,.05)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;box-shadow:0 6px 18px rgba(17,24,39,.05)}
+.kpi .v{font-size:32px;font-weight:800;line-height:1}
+.kpi .l{font-size:10.5px;color:var(--muted);font-weight:700;letter-spacing:.4px;margin-top:5px;text-transform:uppercase}
+.kpi .d{font-size:11px;font-weight:800;margin-top:4px}
+.up{color:var(--rojo)}.down{color:var(--verde)}.flat{color:var(--muted)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);font-weight:800;background:#f9fafb}
+.tbl td{font-size:12.5px;padding:8px 9px;border-bottom:1px solid #f0f2f5;vertical-align:top}
+.tbl tr:last-child td{border-bottom:none}
+.bar{height:16px;border-radius:0 4px 4px 0;display:inline-block;vertical-align:middle}
+.brow{display:flex;align-items:center;gap:9px;margin:7px 0;font-size:12.5px}
+.brow .bl{flex:0 0 175px;font-weight:700;display:flex;align-items:center;gap:7px}
+.brow .bl i{width:11px;height:11px;border-radius:3px;display:inline-block;flex:0 0 11px}
+.brow .bmid{flex:1}
+.brow .bv{font-weight:800;color:#374151;white-space:nowrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tag{display:inline-flex;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:800}
+.tag.ok{background:#dcfce7;color:#15803d}.tag.bad{background:#fee2e2;color:#b91c1c}.tag.warn{background:#fef3c7;color:#92400e}.tag.neut{background:#f3f4f6;color:#6b7280}
+.papel{background:#fef9c3;border:1px dashed #facc15;border-radius:10px;padding:8px 12px;font-size:11.5px;color:#854d0e;margin:10px 0}
+.spin{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite;margin:60px auto}
+@keyframes r{to{transform:rotate(360deg)}}
+.vacio{color:var(--muted);font-size:13px;padding:18px;text-align:center;background:var(--panel);border-radius:16px;border:1px solid var(--line)}
+svg text{font-family:inherit}
+.editable{outline:none}.editable:hover{background:#fff7ed}
+.editable:focus{background:#fff7ed;box-shadow:inset 0 0 0 1.5px #fdba74;border-radius:4px}
+select.est{border:1px solid var(--line);border-radius:8px;padding:3px 7px;font-weight:700;font-size:11.5px;background:#f9fafb}
+.addrow{background:none;border:1.5px dashed #fdba74;color:var(--nar);border-radius:10px;padding:7px 14px;font-weight:800;font-size:12px;cursor:pointer;margin-top:10px}
+.savebtn{background:var(--nar);color:#fff;border:none;border-radius:10px;padding:8px 18px;font-weight:800;font-size:12.5px;cursor:pointer;margin-top:10px;margin-left:8px}
+.delx{color:#d1d5db;cursor:pointer;font-weight:800}.delx:hover{color:var(--rojo)}
+.mm{color:var(--muted)}
+.firma{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:34px}
+.firma .f{border-top:1.5px solid #9ca3af;padding-top:6px;text-align:center;font-size:12px;color:var(--muted)}
+@media print{.hbtn,.addrow,.savebtn,.delx,.noprint,.hlink,.hdr .ctl{display:none!important}
+ body{background:#fff}.card,.kpi{box-shadow:none;break-inside:avoid}
+ .hdr{-webkit-print-color-adjust:exact;print-color-adjust:exact}h2{break-after:avoid}}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}.brow .bl{flex-basis:125px}}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <a class="hlink" href="./">🏠 Inicio</a>
+  <h1>📋 INFORME MENSUAL DE CALIDAD</h1>
+  <div class="sub">DYFSA · Producción de motorhomes · datos vivos de Odoo + registros de calidad</div>
+  <div class="ctl noprint">
+    <input type="month" id="mes">
+    <button class="hbtn" id="btnGen" onclick="cargar()">⚙ Generar informe</button>
+    <button class="hbtn" onclick="window.print()">🖨 Imprimir / PDF</button>
+  </div>
+  <div class="sub" id="stat" style="margin-top:8px"></div>
+</div>
+
+<div class="maxw" id="cont"><div class="vacio">Elegí el mes y tocá <b>Generar informe</b>. Tarda 1-2 minutos (cruza todo el año en Odoo).</div></div>
+
+<script>
+var URL_EXEC='https://script.google.com/macros/s/AKfycbzt3RiTVuAk0H0g2UJisVfoRA7rbUS9DyLgyEf9ZRBlHlWihFs1CA0-FhzHPh5y26MI/exec';
+var MESES_L=['E','F','M','A','M','J','J','A','S','O','N','D'];
+var MESES_N=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var AREA_COLOR={'Instalaciones (M2/M4)':'#378ADD','Herrería (M0)':'#993C1D','Revest. Interior (M1)':'#639922','Revest. Exterior (M3)':'#534AB7','Otros':'#BA7517'};
+var D=null;
+
+function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML}
+function tag(c,t){return '<span class="tag '+c+'">'+t+'</span>'}
+function delta(act,ant,invertir){ // devuelve html; mejor=bajar salvo invertir
+  if(act==null||ant==null)return '<span class="d flat">—</span>';
+  var d=Math.round((act-ant)*10)/10;
+  if(d===0)return '<span class="d flat">= mes ant.</span>';
+  var sube=d>0, malo=invertir?!sube:sube;
+  return '<span class="d '+(malo?'up':'down')+'">'+(sube?'▲ +':'▼ ')+Math.abs(d)+' vs mes ant.</span>';
+}
+
+// ---------- evolución anual + tendencia (proyección lineal marcada) ----------
+var N_PROY=3;
+function tendencia(d){
+  var k=Math.min(4,d.length);if(k<2)return{proy:[],pend:0};
+  var xs=[],ys=[];for(var i=d.length-k;i<d.length;i++){xs.push(i);ys.push(d[i]);}
+  var mx=xs.reduce(function(a,b){return a+b})/k,my=ys.reduce(function(a,b){return a+b})/k,num=0,den=0;
+  for(var j=0;j<k;j++){num+=(xs[j]-mx)*(ys[j]-my);den+=(xs[j]-mx)*(xs[j]-mx);}
+  var m=den?num/den:0,b=my-m*mx,out=[];
+  for(var p=1;p<=N_PROY;p++){out.push(Math.max(0,m*(d.length-1+p)+b));}
+  return{proy:out,pend:m};
+}
+function fmtV(v,u){if(v==null)return '—';var s=(Math.abs(v)>=100?Math.round(v):Math.round(v*10)/10);return s+(u||'')}
+function drawTrend(s,grande){
+  var datos=s.datos.filter(function(x){return x!=null});
+  if(datos.length<2)return '<div class="mm" style="font-size:12px">'+esc(s.n)+': sin datos suficientes</div>';
+  var W=grande?960:420,H=grande?230:150,padL=40,padR=14,padT=26,padB=24;
+  var t=tendencia(datos),all=datos.concat(t.proy),nTot=datos.length+N_PROY;
+  var min=Math.min.apply(null,all),max=Math.max.apply(null,all);
+  var span=(max-min)||1;min=Math.max(0,min-span*.15);max=max+span*.15;
+  function X(i){return padL+(W-padL-padR)*i/(nTot-1)}
+  function Y(v){return padT+(H-padT-padB)*(1-(v-min)/(max-min))}
+  var h='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto">';
+  h+='<rect x="'+X(datos.length-1)+'" y="'+padT+'" width="'+(X(nTot-1)-X(datos.length-1))+'" height="'+(H-padT-padB)+'" fill="#f3f4f6" opacity=".55"/>';
+  [0,.5,1].forEach(function(f){var y=padT+(H-padT-padB)*f;
+    h+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#eef0f3"/>';
+    h+='<text x="'+(padL-5)+'" y="'+(y+3)+'" font-size="9" fill="#9ca3af" text-anchor="end">'+fmtV(max-(max-min)*f,s.u)+'</text>';});
+  for(var i=0;i<nTot;i++){var mi=(s.mes0+i)%12;
+    h+='<text x="'+X(i)+'" y="'+(H-8)+'" font-size="'+(grande?10:9)+'" fill="'+(i>=datos.length?'#b45309':'#6b7280')+'" text-anchor="middle" font-weight="'+(i===datos.length-1?'800':'600')+'">'+MESES_L[mi]+'</text>';}
+  var pts='';for(var i=0;i<datos.length;i++){pts+=(i?' L':'M')+X(i)+' '+Y(datos[i]);}
+  h+='<path d="'+pts+'" fill="none" stroke="'+s.color+'" stroke-width="2.5" stroke-linejoin="round"/>';
+  var pp='M'+X(datos.length-1)+' '+Y(datos[datos.length-1]);
+  for(var p=0;p<t.proy.length;p++){pp+=' L'+X(datos.length+p)+' '+Y(t.proy[p]);}
+  h+='<path d="'+pp+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-dasharray="4 5" opacity=".75"/>';
+  for(var i=0;i<datos.length;i++){h+='<circle cx="'+X(i)+'" cy="'+Y(datos[i])+'" r="'+(grande?3.5:3)+'" fill="'+s.color+'" stroke="#fff" stroke-width="1.5"/>';}
+  h+='<text x="'+X(0)+'" y="'+(Y(datos[0])-8)+'" font-size="10" fill="#6b7280" text-anchor="middle" font-weight="700">'+fmtV(datos[0],s.u)+'</text>';
+  h+='<text x="'+X(datos.length-1)+'" y="'+(Y(datos[datos.length-1])-9)+'" font-size="'+(grande?12:11)+'" fill="#111827" text-anchor="middle" font-weight="800">'+fmtV(datos[datos.length-1],s.u)+'</text>';
+  if(t.proy.length){var vf=t.proy[t.proy.length-1];
+    h+='<text x="'+X(nTot-1)+'" y="'+(Y(vf)-8)+'" font-size="10" fill="#b45309" text-anchor="middle" font-weight="800">≈'+fmtV(vf,s.u)+'</text>';
+    h+='<text x="'+(X(datos.length-1)+6)+'" y="'+(padT+10)+'" font-size="9" fill="#b45309" font-weight="800">PROYECCIÓN</text>';}
+  h+='</svg>';
+  var mejora=(s.mejor==='abajo'? t.pend<0 : t.pend>0);
+  var flecha=t.pend>0.001?'↗':(t.pend<-0.001?'↘':'→');
+  var neutro=Math.abs(t.pend)<((Math.max.apply(null,datos)-Math.min.apply(null,datos))*0.03||0.01);
+  var chip=tag(neutro?'neut':(mejora?'ok':'bad'), flecha+' '+(neutro?'estable':(mejora?'mejorando':'empeorando'))+' · '+fmtV(Math.abs(t.pend),s.u)+'/mes');
+  return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px">'
+    +'<span style="font-size:'+(grande?13:11.5)+'px;font-weight:800;color:#374151"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+s.color+';margin-right:6px"></i>'+esc(s.n)+'</span>'+chip+'</div>'+h;
+}
+
+// ------------------------------- carga -------------------------------
+function init(){
+  var d=new Date();d.setMonth(d.getMonth()-1);
+  document.getElementById('mes').value=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);
+}
+function cargar(){
+  var mes=document.getElementById('mes').value;
+  if(!mes){alert('Elegí un mes');return}
+  var b=document.getElementById('btnGen');b.disabled=true;b.textContent='⏳ Generando…';
+  document.getElementById('stat').textContent='Cruzando Odoo + registros… 1-2 min';
+  document.getElementById('cont').innerHTML='<div class="spin"></div>';
+  fetch(URL_EXEC+'?view=informe&mes='+mes+'&t='+Date.now(),{cache:'no-store',redirect:'follow'})
+   .then(function(r){return r.json()})
+   .then(function(j){D=j;render();b.disabled=false;b.textContent='⚙ Generar informe';})
+   .catch(function(e){document.getElementById('cont').innerHTML='<div class="vacio">Error: '+esc(String(e))+'</div>';b.disabled=false;b.textContent='⚙ Generar informe';});
+}
+
+function serieDe(campo){return (D.series||[]).map(function(s){return s[campo]})}
+function anterior(campo){var s=D.series||[];return s.length>1?s[s.length-2][campo]:null}
+
+function render(){
+  if(!D||!D.ok){document.getElementById('cont').innerHTML='<div class="vacio">Error del informe: '+esc(D&&D.error||'sin respuesta')+'</div>';return}
+  var K=D.kpis||{}, mes=D.mes, mNom=MESES_N[Number(mes.slice(5,7))-1]+' '+mes.slice(0,4);
+  document.getElementById('stat').textContent='Generado '+D.generado+' · '+D.duracion_seg+'s'+(D.cacheado?' · (caché)':'');
+  var h='';
+
+  // ===== 1 · héroe Voz del Cliente + KPIs =====
+  h+='<h2><span class="n">1</span>Resumen ejecutivo · '+esc(mNom)+'</h2>';
+  var topCli=(D.recurrentes||[]).filter(function(r){return r.cliente>0}).slice(0,3)
+    .map(function(r){return '<b>'+r.cliente+'</b> '+esc(r.modo.toLowerCase())}).join(' · ');
+  h+='<div style="background:#fff;border:2px solid #fecaca;border-left:8px solid var(--rojo);border-radius:18px;padding:18px 22px;box-shadow:0 6px 18px rgba(220,38,38,.08);margin-bottom:12px;display:flex;gap:22px;align-items:center;flex-wrap:wrap">';
+  h+='<div><div style="font-size:62px;font-weight:800;line-height:1;color:var(--rojo)">'+(K.nc_ext!=null?K.nc_ext:'—')+'</div>';
+  h+='<div style="font-size:12px;font-weight:800;letter-spacing:.6px;color:#991b1b;margin-top:4px">📣 VOZ DEL CLIENTE · NC EXTERNAS</div>';
+  h+=delta(K.nc_ext,anterior('nc_ext'),false)+'</div>';
+  h+='<div style="flex:1;min-width:240px;font-size:12.5px;color:#7f1d1d;line-height:1.5"><b>El número que más importa:</b> defectos que llegaron al cliente después de nuestro QC.'
+    +(topCli?(' Este mes: '+topCli+'.'):'')+'</div>';
+  if(K.nc_por_veh!=null)h+='<div style="text-align:center"><div style="font-size:26px;font-weight:800;color:#991b1b">'+K.nc_por_veh+'</div><div class="mm" style="font-size:10px;font-weight:700">NC EXT / VEHÍCULO<br>INSPECCIONADO</div></div>';
+  h+='</div>';
+  h+='<div class="kpis">';
+  h+='<div class="kpi"><div class="v">'+fmtV(K.dpu_cf)+'</div><div class="l">DPU · Control Final</div>'+delta(K.dpu_cf,anterior('dpu'),false)+'</div>';
+  h+='<div class="kpi"><div class="v">'+(K.defectos!=null?K.defectos:'—')+'</div><div class="l">Defectos detectados</div>'+delta(K.defectos,anterior('defectos'),false)+'</div>';
+  h+='<div class="kpi"><div class="v">'+(K.vehiculos!=null?K.vehiculos:'—')+'</div><div class="l">Vehículos c/ alertas</div>'+delta(K.vehiculos,anterior('vehiculos'),false)+'</div>';
+  h+='<div class="kpi"><div class="v">'+(K.hs_retrabajo!=null?K.hs_retrabajo+' h':'—')+'</div><div class="l">Horas en retrabajos NC</div>'+delta(K.hs_retrabajo,anterior('hs_retrabajo'),false)+'</div>';
+  h+='<div class="kpi"><div class="v">'+(K.hospital_prom!=null?K.hospital_prom:'—')+'</div><div class="l">Personas/día en Hospital</div>'+delta(K.hospital_prom,anterior('hospital_prom'),false)+'</div>';
+  h+='<div class="kpi"><div class="v">'+(K.deteccion_interna!=null?K.deteccion_interna+'%':'—')+'</div><div class="l">Detección interna</div>'+delta(K.deteccion_interna,anterior('deteccion_interna'),true)+'</div>';
+  h+='</div>';
+  h+='<div class="card" style="margin-top:12px"><div style="font-size:11px;font-weight:800;color:var(--muted);letter-spacing:.5px;margin-bottom:6px">LECTURA DEL MES (editable — escribí tu análisis)</div>'
+    +'<div class="editable" contenteditable="true" style="font-size:13px;line-height:1.55;min-height:40px">'+lecturaAuto()+'</div></div>';
+
+  // ===== 2 · evolución anual =====
+  h+='<h2><span class="n">2</span>Evolución anual · mes a mes y tendencia</h2>';
+  var mes0=0;
+  h+='<div class="card">'+drawTrend({n:'📣 Voz del Cliente · NC externas',u:'',color:'#dc2626',mejor:'abajo',datos:serieDe('nc_ext'),mes0:mes0},true)+'</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:14px">';
+  [{n:'DPU (defectos/vehículo)',u:'',color:'#EA580C',mejor:'abajo',c:'dpu'},
+   {n:'Defectos detectados',u:'',color:'#185FA5',mejor:'abajo',c:'defectos'},
+   {n:'Horas en retrabajos NC',u:'h',color:'#993C1D',mejor:'abajo',c:'hs_retrabajo'},
+   {n:'Personas/día en Hospital',u:'',color:'#534AB7',mejor:'abajo',c:'hospital_prom'},
+   {n:'Detección interna',u:'%',color:'#16a34a',mejor:'arriba',c:'deteccion_interna'}
+  ].forEach(function(s){s.datos=serieDe(s.c);s.mes0=mes0;h+='<div class="card">'+drawTrend(s,false)+'</div>';});
+  h+='</div>';
+  h+='<div class="mm" style="font-size:11px;margin-top:8px">Línea llena = dato real · punteada = <b>tendencia proyectada</b> (extrapolación lineal de los últimos 4 meses — es un cálculo, no un dato). Zona gris = meses proyectados.</div>';
+
+  // ===== 3 · DPU por unidad =====
+  h+='<h2><span class="n">3</span>Defectos por unidad inspeccionada</h2><div class="card">';
+  var us=D.unidades||[];
+  if(us.length){
+    var maxD=us[0].defectos||1;
+    h+='<table class="tbl"><thead><tr><th>Vehículo / cliente</th><th style="text-align:right">Defectos</th><th>Gravedad B/N/A</th><th style="width:40%"></th></tr></thead><tbody>';
+    us.slice(0,15).forEach(function(u){
+      h+='<tr><td><b>'+esc(u.veh)+'</b></td><td style="text-align:right"><b>'+u.defectos+'</b></td><td>'+u.bajo+' / '+u.normal+' / '+u.alto+'</td>'
+        +'<td><span class="bar" style="width:'+Math.round(u.defectos/maxD*95)+'%;background:'+(u.alto>0?'var(--rojo)':(u.defectos>maxD/2?'#f59e0b':'var(--verde)'))+'"></span></td></tr>';
+    });
+    if(us.length>15)h+='<tr><td class="mm" colspan="4">+'+(us.length-15)+' unidades más</td></tr>';
+    h+='</tbody></table>';
+  } else h+='<div class="mm">Sin detalle de unidades para este mes</div>';
+  h+='</div>';
+
+  // ===== 4 · detección + gravedad =====
+  h+='<h2><span class="n">4</span>Dónde se detectan los defectos</h2><div class="grid2">';
+  var interno=K.defectos||0, externo=K.nc_ext||0, tot=interno+externo||1;
+  h+='<div class="card"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px">CADENA DE DETECCIÓN ('+(interno+externo)+' defectos)</div>';
+  h+='<div class="brow"><span class="bl"><i style="background:var(--qc)"></i>Internos (QC/etapas)</span><span class="bmid"><span class="bar" style="width:'+Math.round(interno/tot*100)+'%;background:var(--qc)"></span></span><span class="bv">'+interno+' · '+Math.round(interno/tot*100)+'%</span></div>';
+  h+='<div class="brow"><span class="bl"><i style="background:var(--rojo)"></i>Cliente (NC externa)</span><span class="bmid"><span class="bar" style="width:'+Math.round(externo/tot*100)+'%;background:var(--rojo)"></span></span><span class="bv">'+externo+' · '+Math.round(externo/tot*100)+'%</span></div></div>';
+  var g=K.gravedad||{}; var gt=(g.bajo||0)+(g.normal||0)+(g.alto||0)||1;
+  h+='<div class="card"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px">POR GRAVEDAD (alertas internas)</div>';
+  h+='<div class="brow"><span class="bl"><i style="background:var(--verde)"></i>Bajo</span><span class="bmid"><span class="bar" style="width:'+Math.round((g.bajo||0)/gt*100)+'%;background:var(--verde)"></span></span><span class="bv">'+(g.bajo||0)+'</span></div>';
+  h+='<div class="brow"><span class="bl"><i style="background:var(--azul)"></i>Normal</span><span class="bmid"><span class="bar" style="width:'+Math.round((g.normal||0)/gt*100)+'%;background:var(--azul)"></span></span><span class="bv">'+(g.normal||0)+'</span></div>';
+  h+='<div class="brow"><span class="bl"><i style="background:var(--rojo)"></i>Alto/Crítico</span><span class="bmid"><span class="bar" style="width:'+Math.round((g.alto||0)/gt*100)+'%;background:var(--rojo)"></span></span><span class="bv">'+(g.alto||0)+'</span></div></div>';
+  h+='</div>';
+
+  // ===== 5 · horas NC =====
+  h+='<h2><span class="n">5</span>Horas dedicadas a No Conformidades (retrabajos)</h2><div class="grid2">';
+  var ha=D.hs_por_area||[], totH=K.hs_retrabajo||0, maxH=(ha[0]&&ha[0].hs)||1;
+  h+='<div class="card"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px">POR ÁREA ORIGEN · '+totH+' h totales (≈ '+Math.round(totH/8)+' jornadas · '+(Math.round(totH/8/22*10)/10)+' operarios full-time)</div>';
+  if(ha.length){ha.forEach(function(a){
+    h+='<div class="brow"><span class="bl"><i style="background:'+(AREA_COLOR[a.area]||'#BA7517')+'"></i>'+esc(a.area)+'</span><span class="bmid"><span class="bar" style="width:'+Math.round(a.hs/maxH*95)+'%;background:'+(AREA_COLOR[a.area]||'#BA7517')+'"></span></span><span class="bv">'+a.hs+' h</span></div>';});
+  } else h+='<div class="mm">Sin horas de retrabajo registradas</div>';
+  h+='</div>';
+  h+='<div class="card"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px">ÓRDENES QUE MÁS RETRABAJO CONSUMIERON</div><table class="tbl">';
+  (D.top_ordenes_retrabajo||[]).forEach(function(o){
+    h+='<tr><td><b>'+esc(o.orden)+'</b></td><td class="mm" style="font-size:11px">'+esc((o.tareas||[]).join(' · ').slice(0,70))+'</td><td style="text-align:right"><b>'+o.hs+' h</b></td></tr>';});
+  h+='</table><div class="mm" style="font-size:11px;margin-top:8px">Fuente: partes de trabajo en workcenters "Retrabajo NC…" de Odoo.</div></div>';
+  h+='</div>';
+
+  // ===== 6 · hospital =====
+  h+='<h2><span class="n">6</span>Hospital · personas dedicadas por día</h2><div class="card">';
+  h+='<div style="display:flex;gap:26px;flex-wrap:wrap;align-items:center">';
+  h+='<div><div style="font-size:38px;font-weight:800">'+(K.hospital_prom!=null?K.hospital_prom:'—')+'</div><div class="mm" style="font-size:11px;font-weight:700">PROMEDIO PERSONAS/DÍA</div></div>';
+  h+='<div><div style="font-size:24px;font-weight:800">'+(K.hospital_pico||'—')+'</div><div class="mm" style="font-size:11px;font-weight:700">PICO</div></div>';
+  h+='<div><div style="font-size:24px;font-weight:800">'+(K.hospital_dias||0)+'</div><div class="mm" style="font-size:11px;font-weight:700">DÍAS CON HOSPITAL ACTIVO</div></div>';
+  var hd=D.hospital_por_dia||[];
+  if(hd.length){
+    var maxP=Math.max.apply(null,hd.map(function(x){return x.personas}));
+    var W2=460,bw=Math.max(6,Math.min(14,Math.floor(W2/hd.length)-3));
+    h+='<div style="flex:1;min-width:280px"><svg viewBox="0 0 '+W2+' 72" style="width:100%;height:auto">';
+    hd.forEach(function(x,i){var alt=Math.round(x.personas/maxP*50);var xx=6+i*(bw+3);
+      h+='<rect x="'+xx+'" y="'+(60-alt)+'" width="'+bw+'" height="'+alt+'" rx="3" fill="'+(x.personas===maxP?'#dc2626':'#185FA5')+'"><title>'+x.dia+': '+x.personas+'</title></rect>';});
+    h+='<line x1="0" y1="60" x2="'+W2+'" y2="60" stroke="#e5e7eb"/>';
+    h+='<text x="6" y="70" font-size="9" fill="#9ca3af">'+esc(hd[0].dia.slice(8))+'/'+esc(hd[0].dia.slice(5,7))+'</text>';
+    h+='<text x="'+(6+(hd.length-1)*(bw+3))+'" y="70" font-size="9" fill="#9ca3af" text-anchor="end">'+esc(hd[hd.length-1].dia.slice(8))+'/'+esc(hd[hd.length-1].dia.slice(5,7))+'</text>';
+    h+='</svg></div>';
+  }
+  h+='</div><div class="mm" style="font-size:11px;margin-top:8px">Definición: operarios distintos por día con tiempo cargado en órdenes "(QC Control final)".</div></div>';
+
+  // ===== 7 · recurrentes =====
+  h+='<h2><span class="n">7</span>Modos de falla recurrentes del mes</h2><div class="card"><table class="tbl">';
+  h+='<thead><tr><th>#</th><th>Modo de falla</th><th style="text-align:right">Este mes</th><th style="text-align:right">Año</th><th style="text-align:right">Llegó al cliente</th><th>Capacitación en plan</th></tr></thead><tbody>';
+  (D.recurrentes||[]).forEach(function(r,i){
+    var cap=r.capacitacion? tag('ok','Sí · '+esc(r.capacitacion.tema).slice(0,30)+(r.capacitacion.dictada?' (dictada)':' (pend.)')) : tag('bad','NO — proponer');
+    h+='<tr><td>'+(i+1)+'</td><td><b>'+esc(r.modo)+'</b></td><td style="text-align:right">'+r.mes+'</td><td style="text-align:right">'+r.anio+'</td><td style="text-align:right">'+(r.cliente?('<b class="up">'+r.cliente+'</b>'):'0')+'</td><td>'+cap+'</td></tr>';});
+  h+='</tbody></table></div>';
+
+  // ===== 8 · plan de acción =====
+  h+='<h2><span class="n">8</span>Plan de acción · '+esc(mNom)+' '+tag('warn','✎ EDITABLE')+'</h2><div class="card">';
+  h+='<table class="tbl" id="plan"><thead><tr><th style="width:34%">Acción</th><th>Responsable</th><th>Área</th><th>Fecha límite</th><th>Estado</th><th class="noprint"></th></tr></thead><tbody>';
+  var acc=(D.plan&&D.plan.acciones&&D.plan.acciones.length)?D.plan.acciones:sugerirAcciones();
+  acc.forEach(function(a){h+=filaPlan(a);});
+  h+='</tbody></table>';
+  h+='<button class="addrow noprint" onclick="addPlan()">+ Agregar acción</button>';
+  h+='<button class="savebtn noprint" onclick="guardarPlan()">💾 Guardar plan en Plan_DYFSA_2026</button>';
+  h+='<span id="planstat" class="mm" style="font-size:11.5px;margin-left:10px"></span></div>';
+
+  // ===== 9 · capacitaciones =====
+  h+='<h2><span class="n">9</span>Capacitaciones propuestas '+tag('warn','✎ EDITABLE')+'</h2><div class="card">';
+  h+='<div class="mm" style="font-size:11.5px;margin-bottom:8px">Derivadas de los modos de falla recurrentes sin tema en el Plan RFP 06 02. Al guardar quedan en PLAN_ACCION.</div>';
+  h+='<table class="tbl" id="capac"><thead><tr><th style="width:24%">Tema</th><th style="width:26%">Contenido mínimo</th><th>Dirigido a</th><th>Instructor</th><th>Mes</th><th>Origen</th><th class="noprint"></th></tr></thead><tbody>';
+  var caps=(D.plan&&D.plan.capacitaciones&&D.plan.capacitaciones.length)?D.plan.capacitaciones:sugerirCapac();
+  caps.forEach(function(c){h+=filaCapac(c);});
+  h+='</tbody></table><button class="addrow noprint" onclick="addCapac()">+ Agregar capacitación</button></div>';
+
+  // ===== 10 · seguimiento mes anterior =====
+  var pa=(D.plan_anterior&&D.plan_anterior.acciones)||[];
+  h+='<h2><span class="n">10</span>Seguimiento del plan del mes anterior</h2><div class="card">';
+  if(pa.length){h+='<table class="tbl">';
+    pa.forEach(function(a){var est=String(a[4]||'Pendiente');
+      var cls=/hecha/i.test(est)?'ok':(/curso/i.test(est)?'warn':(/vencida/i.test(est)?'bad':'neut'));
+      h+='<tr><td>'+esc(a[0])+'</td><td class="mm">'+esc(a[1])+'</td><td>'+tag(cls,esc(est))+'</td></tr>';});
+    h+='</table>';
+  } else h+='<div class="mm">No hay plan guardado del mes anterior.</div>';
+  h+='</div>';
+
+  h+='<div class="firma"><div class="f">Riki Graglia · Producción</div><div class="f">Responsable de Calidad</div></div>';
+  h+='<div class="mm" style="font-size:10.5px;margin-top:26px;text-align:center">Generado desde Odoo (alertas Softhealer, partes de trabajo, workcenters de retrabajo) + Registro NC Ext + Plan_DYFSA_2026 + Plan de Capacitación RFP 06 02</div>';
+  document.getElementById('cont').innerHTML=h;
+}
+
+function lecturaAuto(){
+  var K=D.kpis||{},s=D.series||[],ant=s.length>1?s[s.length-2]:{};
+  var partes=[];
+  if(K.nc_ext!=null&&ant.nc_ext!=null)partes.push('Las NC externas '+(K.nc_ext>ant.nc_ext?'subieron':'bajaron')+' de '+ant.nc_ext+' a '+K.nc_ext+'.');
+  if(K.dpu_cf!=null&&ant.dpu!=null)partes.push('El DPU pasó de '+ant.dpu+' a '+K.dpu_cf+'.');
+  if(K.hs_retrabajo!=null)partes.push('Se dedicaron '+K.hs_retrabajo+' h a retrabajos ('+((D.hs_por_area||[])[0]?('mayor origen: '+(D.hs_por_area)[0].area):'')+').');
+  if(K.hospital_prom!=null)partes.push('El Hospital promedió '+K.hospital_prom+' personas/día.');
+  return esc(partes.join(' '))||'…';
+}
+function sugerirAcciones(){
+  var out=[]; (D.recurrentes||[]).slice(0,3).forEach(function(r){
+    var extra = r.cliente ? (', '+r.cliente+' llegaron al cliente') : '';
+    out.push(['Atacar modo de falla: '+r.modo+' ('+r.mes+' casos este mes'+extra+')','','','', 'Pendiente']);
+  });
+  if(!out.length)out.push(['','','','','Pendiente']);
+  return out;
+}
+function sugerirCapac(){
+  var out=[]; (D.recurrentes||[]).filter(function(r){return !r.capacitacion&&r.mes>1;}).slice(0,3).forEach(function(r){
+    out.push([r.modo,'','','','', r.mes+' alertas'+(r.cliente?(' + '+r.cliente+' NC ext'):'')+' sin tema en el plan']);
+  });
+  if(!out.length)out.push(['','','','','','']);
+  return out;
+}
+function filaPlan(a){
+  var est=String(a[4]||'Pendiente');
+  var opts=['Pendiente','En curso','Hecha','Vencida'].map(function(o){return '<option'+(o===est?' selected':'')+'>'+o+'</option>'}).join('');
+  return '<tr><td class="editable" contenteditable="true">'+esc(a[0])+'</td><td class="editable" contenteditable="true">'+esc(a[1])+'</td><td class="editable" contenteditable="true">'+esc(a[2])+'</td><td class="editable" contenteditable="true">'+esc(a[3])+'</td><td><select class="est">'+opts+'</select></td><td class="noprint"><span class="delx" onclick="this.closest(\'tr\').remove()">✕</span></td></tr>';
+}
+function filaCapac(c){
+  var h='<tr>';for(var i=0;i<6;i++){h+='<td class="editable'+(i===5?' mm':'')+'" contenteditable="true">'+esc(c[i]||'')+'</td>';}
+  return h+'<td class="noprint"><span class="delx" onclick="this.closest(\'tr\').remove()">✕</span></td></tr>';
+}
+function addPlan(){document.getElementById('plan').querySelector('tbody').insertAdjacentHTML('beforeend',filaPlan(['','','','','Pendiente']))}
+function addCapac(){document.getElementById('capac').querySelector('tbody').insertAdjacentHTML('beforeend',filaCapac(['','','','','','']))}
+function guardarPlan(){
+  var mes=document.getElementById('mes').value;
+  var acc=[],caps=[];
+  document.getElementById('plan').querySelectorAll('tbody tr').forEach(function(tr){
+    var tds=tr.querySelectorAll('td');
+    var fila=[tds[0].textContent.trim(),tds[1].textContent.trim(),tds[2].textContent.trim(),tds[3].textContent.trim(),tr.querySelector('select').value];
+    if(fila[0])acc.push(fila);
+  });
+  document.getElementById('capac').querySelectorAll('tbody tr').forEach(function(tr){
+    var tds=tr.querySelectorAll('td'),fila=[];
+    for(var i=0;i<6;i++)fila.push(tds[i].textContent.trim());
+    if(fila[0])caps.push(fila);
+  });
+  var st=document.getElementById('planstat');st.textContent='Guardando…';
+  fetch(URL_EXEC,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain'},
+    body:JSON.stringify({action:'guardar_plan',mes:mes,acciones:acc,capacitaciones:caps})})
+   .then(function(r){return r.json()})
+   .then(function(j){st.textContent=j.ok?('✔ Guardado ('+j.guardadas+' filas) en PLAN_ACCION'):('Error: '+j.error);})
+   .catch(function(e){st.textContent='Error: '+e;});
+}
+init();
+</script>
+</body>
+</html>
