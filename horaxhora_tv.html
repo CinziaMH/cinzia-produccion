@@ -46,6 +46,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 #taktbar .tbar{height:11px;background:#27354f;border-radius:6px;overflow:hidden;position:relative;margin:2px 0}
 #taktbar .tbar i{display:block;height:100%}
 #taktbar .tbar em{position:absolute;top:-2px;bottom:-2px;width:2px;background:#e2e8f0}
+/* ===== MODO MONTAJE (TV 32" de sector): header y zócalo compactos, sin superv/ausentes ===== */
+body.montmode #cSup, body.montmode #cAus, body.montmode .ausbar,
+body.montmode .navsel-nave, body.montmode .navsel-vista{display:none !important}
+body.montmode .hdr{gap:3px 6px;padding:2px 8px}
+body.montmode .hdr h1{font-size:14px}
+body.montmode .reloj{font-size:17px}
+body.montmode .sub{font-size:8px}
+body.montmode .chip{padding:1px 7px;font-size:10px}
+body.montmode .chip b{font-size:12px}
+body.montmode .navbtn{padding:1px 7px;font-size:11px}
+body.montmode .efbig{padding:1px 9px;border-width:1px;border-radius:8px}
+body.montmode .efbig .l{font-size:8px}
+body.montmode .efbig .n{font-size:17px}
+body.montmode .leg{padding:2px 10px;font-size:9px;gap:9px}
+body.montmode .leg i{width:12px;height:8px}
+body.montmode #taktbar{padding:4px 8px;gap:6px;border-top-width:2px}
+body.montmode #taktbar .tk{padding:3px 9px;gap:1px;border-radius:9px}
+body.montmode #taktbar .tk .t{font-size:9px}
+body.montmode #taktbar .tk .v{font-size:13px}
+body.montmode #taktbar .tk .s{font-size:10px}
+body.montmode #taktbar .tk.obj .v{font-size:15px}
+body.montmode #taktbar .tbar{height:8px;margin:1px 0}
 /* toggle de nave */
 .navsel{display:flex;gap:5px;align-items:center;margin-left:3px}
 .navbtn{background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.4);border-radius:8px;padding:3px 10px;font-weight:900;font-size:13px;color:#fff;cursor:pointer;letter-spacing:.5px}
@@ -188,12 +210,12 @@ body.bigrows .pb{white-space:normal;line-height:1.15;background:#42546f;border-c
 <span class="efbig m" id="efHoyBox"><span class="l">EFIC. HOY</span><span class="n" id="efHoyN">—</span></span>
 <span class="efbig m" id="efAyerBox"><span class="l">AYER</span><span class="n" id="efAyerN">—</span></span>
 <span class="efbig m" id="s5Box" title="5S del día — ronda 7:45"><span class="l">5S HOY</span><span class="n" id="s5N">—</span></span>
-<div class="navsel">
+<div class="navsel navsel-nave">
   <span class="navbtn" data-nave="1" onclick="setNave('1')">NAVE 1</span>
   <span class="navbtn" data-nave="2" onclick="setNave('2')">NAVE 2</span>
   <span class="navbtn" data-nave="all" onclick="setNave('all')">TODAS</span>
 </div>
-<div class="navsel">
+<div class="navsel navsel-vista">
   <span class="navbtn viewbtn" data-view="op" onclick="setView('op')">👷 Operario</span>
   <span class="navbtn viewbtn" data-view="mon" onclick="setView('mon')">🏭 Montaje</span>
 </div>
@@ -375,6 +397,7 @@ function setNave(n){ NAVE=n; MONT='all'; syncURL(); paintNavBtns(); if(LASTD) re
 function setView(v){ VMODE=v; syncURL(); paintNavBtns(); if(LASTD) render(LASTD); }
 function setMont(m){ MONT=m; if(m!=='all') NAVE=naveOf(m); syncURL(); paintNavBtns(); if(LASTD) render(LASTD); }
 function paintNavBtns(){
+  document.body.classList.toggle('montmode', MONT!=='all');
   document.querySelectorAll('.navbtn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-nave')===NAVE); });
   document.querySelectorAll('.viewbtn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-view')===VMODE); });
   document.querySelectorAll('.mbtn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-mont')===MONT); });
@@ -637,6 +660,7 @@ function render(D){
       return out;
     }
     var totRows=0;
+    var kpiPlanDia=0, kpiPlanAhora=0, kpiReal=0; /* KPIs del header desde los operarios visibles */
     var bySec={}; D.operarios.forEach(function(o){if(excluido(o.nom))return;var sc=sectorDe(o);(bySec[sc]=bySec[sc]||[]).push(o)});
     var secs=ORDEN.filter(function(c){return bySec[c]}).concat(Object.keys(bySec).filter(function(c){return ORDEN.indexOf(c)<0}));
     secs=secs.filter(function(c){ return NAVE==='all' || naveOf(c)===NAVE; });
@@ -670,6 +694,7 @@ function render(D){
         var efOp=eRe>0?Math.min(100,Math.round(eOb*100/eRe)):null;
         secEfOb+=eOb; secEfRe+=eRe;
         if(planDia>0){secPlanAhora+=planAhora; secReal+=realHecho;} secReg+=reg; secElap+=elapsed;
+        kpiPlanDia+=planDia; kpiPlanAhora+=planAhora; kpiReal+=(planDia>0?realHecho:reg);
         rows.push({o:o,mos:mos,planOps:planOps,planDia:planDia,planAhora:planAhora,realHecho:realHecho,avance:avance,reg:reg,efOp:efOp});
       });
       /* eficiencia del montaje EN VISTA OPERARIO = promedio ponderado de los operarios mostrados
@@ -715,6 +740,18 @@ function render(D){
         h+='</div></div>';
       });
     });
+    /* con filtro de montaje/nave, el PLAN HOY / A ESTA HORA / DESVÍO del header salen del plan
+       de los OPERARIOS visibles (packCliente), no del plan de las MOs — así el desvío es el del montaje */
+    if(MONT!=='all' || NAVE!=='all'){
+      var kPlan=hN(kpiPlanDia/60), kPa=hN(kpiPlanAhora/60), kRa=hN(kpiReal/60);
+      document.getElementById('cPlan').textContent=kPlan+' h';
+      document.getElementById('cPa').textContent=kPa+' h';
+      document.getElementById('cRa').textContent=kRa+' h';
+      var kdv=hN(kRa-kPa), kdvp=kPa>0?Math.round(kdv*100/kPa):0;
+      var kD=document.getElementById('cDesv');
+      kD.innerHTML='DESVÍO <b>'+(kdv>=0?'+':'')+kdv+' h ('+(kdvp>=0?'+':'')+kdvp+'%)</b>';
+      kD.style.background=kdv>=0?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)';
+    }
     document.getElementById('grid').innerHTML=h;
     fitRows(secs.length,totRows);
     var gc=document.getElementById('cGap'); var ng=document.querySelectorAll('.gap:not(.ack)').length;
@@ -835,6 +872,7 @@ function pintaTakt(D){
     h+='<div class="tk prev"><span class="t">✔ ORDEN ANTERIOR</span><span class="v">—</span></div>';
   }
   var c=s.cur;
+  var acts=(s.acts&&s.acts.length)?s.acts:null;
   if(c){
     var dia=+c.dia||1, av=(c.avance==null?null:+c.avance);
     var esp=Math.min(100,Math.round(Math.min(dia,objD)*100/objD));
@@ -845,7 +883,9 @@ function pintaTakt(D){
     var msg=pasado?('✗ PASADO DE TAKT (+'+(dia-objD)+' día'+((dia-objD)==1?'':'s')+')'):(enRitmo?'✓ viene en takt':'⚠ EN RIESGO — a este ritmo no llega');
     h+='<div class="tk cur" style="border-color:'+bcol+'"><span class="t">▶ EN CURSO — '+esc(c.mo||'')+(c.prod?(' · '+esc(c.prod)):'')+' · día '+dia+' de '+objD+'</span>'
       +'<span class="v '+cls+'">'+(av==null?msg:(msg+' — avance '+av+'% · esperado '+esp+'%'))+'</span>'
-      +'<div class="tbar"><i style="width:'+Math.min(av==null?0:av,100)+'%;background:'+bcol+'"></i><em style="left:'+esp+'%"></em></div></div>';
+      +'<div class="tbar"><i style="width:'+Math.min(av==null?0:av,100)+'%;background:'+bcol+'"></i><em style="left:'+esp+'%"></em></div>'
+      +(acts&&acts.length>1?('<span class="s">activas en el montaje: '+acts.map(function(x){return esc(x.mo)+' <b>d'+(+x.dia||1)+'</b>'+(x.avance!=null?(' '+x.avance+'%'):'')}).join(' · ')+'</span>'):'')
+      +'</div>';
   } else {
     h+='<div class="tk cur"><span class="t">▶ EN CURSO</span><span class="v">sin orden en el montaje</span></div>';
   }
