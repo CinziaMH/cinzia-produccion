@@ -475,7 +475,7 @@ cerrarDet(); CURGAP=null; recomputeAlarm();
 
 
 /* ===== helpers agregados (nombres, tareas, eficiencia, fusión Odoo) ===== */
-var SECTOR_OVERRIDE={'pradal':'M4','moreyra':'M4'};
+var SECTOR_OVERRIDE={'pradal':'M4','moreyra':'M4','vega gabriel':'S7'};
 function sectorDe(o){var k=String(o.nom||'').toLowerCase().replace(/\s+/g,' ').trim();for(var key in SECTOR_OVERRIDE){if(k.indexOf(key)>=0)return SECTOR_OVERRIDE[key];}return o.sector;}
 // Mayer y Yance son supervisores (no se cargan como operarios). Lopez Agustin ya no trabaja en la empresa.
 // Cada entrada puede tener varias palabras: se excluye si el nombre las contiene TODAS (en cualquier orden, sin acentos).

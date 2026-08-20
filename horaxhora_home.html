@@ -62,7 +62,7 @@ function ayerHabil(){ var d=new Date(); do{ d.setDate(d.getDate()-1); }while(d.g
 /* ===== misma configuración que horaxhora_tv.html — mantener sincronizadas ===== */
 var NAVE_DE={M0:'1',S1:'1',S2:'1',S7:'1',M1:'2',M2:'2',M3:'2',M4:'2',M5:'2',M6:'2',S5:'2',S6:'2',QC:'2',HOSP:'2',OTROS:'2',RETRAB:'2'};
 function naveOf(code){ return NAVE_DE[String(code||'').toUpperCase()] || '2'; }
-var SECTOR_OVERRIDE={'pradal':'M4','moreyra':'M4'};
+var SECTOR_OVERRIDE={'pradal':'M4','moreyra':'M4','vega gabriel':'S7'};
 function sectorDe(o){
   var k=String(o.nom||'').toLowerCase().replace(/\s+/g,' ').trim();
   for(var key in SECTOR_OVERRIDE){ if(k.indexOf(key)>=0) return SECTOR_OVERRIDE[key]; }

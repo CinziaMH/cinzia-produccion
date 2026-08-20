@@ -285,7 +285,8 @@ function naveOf(code){ return NAVE_DE[String(code||'').toUpperCase()] || '2'; }
    =================================================================== */
 var SECTOR_OVERRIDE={
   'pradal':'M4',
-  'moreyra':'M4'
+  'moreyra':'M4',
+  'vega gabriel':'S7'  /* Riki 20/8: Vega Gabriel es de Tapicería, no M4 (ojo: Vega Mauro es M3, por eso nombre completo) */
 };
 function sectorDe(o){
   var k=String(o.nom||'').toLowerCase().replace(/\s+/g,' ').trim();
