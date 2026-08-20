@@ -142,6 +142,42 @@ function drawTrend(s,grande){
     +'<span style="font-size:'+(grande?13:11.5)+'px;font-weight:800;color:#374151"><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+s.color+';margin-right:6px"></i>'+esc(s.n)+'</span>'+chip+'</div>'+h;
 }
 
+// Comparativo 2 series, un solo eje (misma unidad: cantidad)
+function drawDual(s1,s2){
+  var d1=s1.datos.map(function(x){return x==null?0:x}), d2=s2.datos.map(function(x){return x==null?0:x});
+  var n=Math.max(d1.length,d2.length);
+  if(n<2)return '<div class="mm">Sin datos suficientes</div>';
+  var W=960,H=230,padL=40,padR=14,padT=26,padB=24;
+  var max=Math.max(1,Math.max.apply(null,d1.concat(d2)))*1.15;
+  function X(i){return padL+(W-padL-padR)*i/(n-1)}
+  function Y(v){return padT+(H-padT-padB)*(1-v/max)}
+  var h='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto">';
+  [0,.5,1].forEach(function(f){var y=padT+(H-padT-padB)*f;
+    h+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#eef0f3"/>';
+    h+='<text x="'+(padL-5)+'" y="'+(y+3)+'" font-size="9" fill="#9ca3af" text-anchor="end">'+Math.round(max*(1-f))+'</text>';});
+  for(var i=0;i<n;i++){h+='<text x="'+X(i)+'" y="'+(H-8)+'" font-size="10" fill="#6b7280" text-anchor="middle" font-weight="600">'+MESES_L[i%12]+'</text>';}
+  [ [d2,s2.color], [d1,s1.color] ].forEach(function(par){
+    var d=par[0],c=par[1],pts='';
+    for(var i=0;i<d.length;i++){pts+=(i?' L':'M')+X(i)+' '+Y(d[i]);}
+    h+='<path d="'+pts+'" fill="none" stroke="'+c+'" stroke-width="2.5" stroke-linejoin="round"/>';
+    for(var i=0;i<d.length;i++){h+='<circle cx="'+X(i)+'" cy="'+Y(d[i])+'" r="3" fill="'+c+'" stroke="#fff" stroke-width="1.5"/>';}
+    h+='<text x="'+X(d.length-1)+'" y="'+(Y(d[d.length-1])-9)+'" font-size="11" fill="'+c+'" text-anchor="middle" font-weight="800">'+d[d.length-1]+'</text>';
+  });
+  h+='</svg>';
+  var u=d2[d2.length-1], nc=d1[d1.length-1];
+  var ratio=(u>0)? Math.round(nc/u*100)/100 : null;
+  var head='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px">'
+    +'<span style="font-size:13px;font-weight:800;color:#374151">Voz del Cliente vs unidades controladas en Control Final</span>'
+    +(ratio!=null? tag(ratio>=1?'bad':'warn', ratio+' NC externas por unidad controlada (último mes)') : '')+'</div>';
+  var leg='<div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap;font-size:11.5px;font-weight:700;color:#374151">'
+    +'<span><i style="display:inline-block;width:11px;height:11px;border-radius:3px;background:'+s1.color+';margin-right:5px"></i>'+esc(s1.n)+'</span>'
+    +'<span><i style="display:inline-block;width:11px;height:11px;border-radius:3px;background:'+s2.color+';margin-right:5px"></i>'+esc(s2.n)+'</span>'
+    +'<span class="mm" style="font-weight:600">unidades controladas = órdenes "(QC Control final)" con trabajo registrado en el mes</span></div>';
+  return head+h+leg;
+}
+function toggleFila(id){var e=document.getElementById(id);if(e)e.style.display=(e.style.display==='none')?'':'none'}
+function sevDot(s){var c=s==='rojo'?'var(--rojo)':(s==='azul'?'var(--azul)':(s==='verde'?'var(--verde)':'#9ca3af'));
+  return '<span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:'+c+';margin-right:5px"></span>'}
 // ------------------------------- carga -------------------------------
 function init(){
   var d=new Date();d.setMonth(d.getMonth()-1);
@@ -195,6 +231,10 @@ function render(){
   h+='<h2><span class="n">2</span>Evolución anual · mes a mes y tendencia</h2>';
   var mes0=0;
   h+='<div class="card">'+drawTrend({n:'📣 Voz del Cliente · NC externas',u:'',color:'#dc2626',mejor:'abajo',datos:serieDe('nc_ext'),mes0:mes0},true)+'</div>';
+  h+='<div class="card" style="margin-top:14px">'+drawDual(
+    {n:'📣 NC externas (Voz del Cliente)',color:'#dc2626',datos:serieDe('nc_ext')},
+    {n:'🏁 Unidades controladas en Control Final',color:'#185FA5',datos:serieDe('unidades_cf')}
+  )+'</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:14px">';
   [{n:'DPU (defectos/vehículo)',u:'',color:'#EA580C',mejor:'abajo',c:'dpu'},
    {n:'Defectos detectados',u:'',color:'#185FA5',mejor:'abajo',c:'defectos'},
@@ -205,23 +245,50 @@ function render(){
   h+='</div>';
   h+='<div class="mm" style="font-size:11px;margin-top:8px">Línea llena = dato real · punteada = <b>tendencia proyectada</b> (extrapolación lineal de los últimos 4 meses — es un cálculo, no un dato). Zona gris = meses proyectados.</div>';
 
-  // ===== 3 · DPU por unidad =====
-  h+='<h2><span class="n">3</span>Defectos por unidad inspeccionada</h2><div class="card">';
+  // ===== 3 · DPU por unidad (expandible: alertas usadas en el informe) =====
+  h+='<h2><span class="n">3</span>Defectos por unidad inspeccionada <span class="mm" style="font-size:11px;font-weight:600;text-transform:none;letter-spacing:0">— click en una unidad para ver sus alertas</span></h2><div class="card">';
   var us=D.unidades||[];
   if(us.length){
     var maxD=us[0].defectos||1;
-    h+='<table class="tbl"><thead><tr><th>Vehículo / cliente</th><th style="text-align:right">Defectos</th><th>Gravedad B/N/A</th><th style="width:40%"></th></tr></thead><tbody>';
-    us.slice(0,15).forEach(function(u){
-      h+='<tr><td><b>'+esc(u.veh)+'</b></td><td style="text-align:right"><b>'+u.defectos+'</b></td><td>'+u.bajo+' / '+u.normal+' / '+u.alto+'</td>'
+    h+='<table class="tbl"><thead><tr><th>Vehículo / cliente</th><th style="text-align:right">Defectos</th><th>Gravedad B/N/A</th><th style="width:38%"></th></tr></thead><tbody>';
+    us.slice(0,20).forEach(function(u,i){
+      h+='<tr style="cursor:pointer" onclick="toggleFila(\'ud'+i+'\')"><td><b>▸ '+esc(u.veh)+'</b></td><td style="text-align:right"><b>'+u.defectos+'</b></td><td>'+u.bajo+' / '+u.normal+' / '+u.alto+'</td>'
         +'<td><span class="bar" style="width:'+Math.round(u.defectos/maxD*95)+'%;background:'+(u.alto>0?'var(--rojo)':(u.defectos>maxD/2?'#f59e0b':'var(--verde)'))+'"></span></td></tr>';
+      var det=(u.items||[]).map(function(it){
+        return '<div style="padding:3px 0;border-bottom:1px solid #f0f2f5;font-size:12px">'+sevDot(it.sev)
+          +'<span class="mm" style="margin-right:8px">'+esc(it.fecha||'')+'</span>'
+          +'<span class="mm" style="margin-right:8px;font-weight:700">'+esc(it.origen||'')+'</span>'+esc(it.problema)+'</div>';
+      }).join('');
+      h+='<tr id="ud'+i+'" style="display:none"><td colspan="4" style="background:#f9fafb;padding:10px 16px">'+(det||'<span class="mm">sin detalle</span>')+'</td></tr>';
     });
-    if(us.length>15)h+='<tr><td class="mm" colspan="4">+'+(us.length-15)+' unidades más</td></tr>';
+    if(us.length>20)h+='<tr><td class="mm" colspan="4">+'+(us.length-20)+' unidades más</td></tr>';
     h+='</tbody></table>';
   } else h+='<div class="mm">Sin detalle de unidades para este mes</div>';
   h+='</div>';
 
+  // ===== 4 · Voz del Cliente por unidad (expandible) =====
+  h+='<h2><span class="n">4</span>Voz del Cliente · detalle por unidad <span class="mm" style="font-size:11px;font-weight:600;text-transform:none;letter-spacing:0">— click para ver los reclamos</span></h2><div class="card">';
+  var vu=D.voz_unidades||[];
+  if(vu.length){
+    h+='<table class="tbl"><thead><tr><th>Cliente / unidad</th><th style="text-align:right">Reclamos</th><th style="width:45%"></th></tr></thead><tbody>';
+    var maxV=vu[0].total||1;
+    vu.forEach(function(v,i){
+      h+='<tr style="cursor:pointer" onclick="toggleFila(\'vu'+i+'\')"><td><b>▸ '+esc(v.cliente)+'</b></td><td style="text-align:right"><b>'+v.total+'</b></td>'
+        +'<td><span class="bar" style="width:'+Math.round(v.total/maxV*95)+'%;background:var(--rojo)"></span></td></tr>';
+      var det=(v.rows||[]).map(function(r){
+        return '<div style="padding:3px 0;border-bottom:1px solid #f0f2f5;font-size:12px">'+sevDot(r.gcolor)
+          +'<span class="mm" style="margin-right:8px">'+esc(r.fecha||'')+'</span>'
+          +(r.prod?'<span class="mm" style="margin-right:8px;font-weight:700">'+esc(r.prod)+'</span>':'')
+          +esc(r.motivo)+(r.estado?' <span class="mm">· '+esc(r.estado)+'</span>':'')+'</div>';
+      }).join('');
+      h+='<tr id="vu'+i+'" style="display:none"><td colspan="3" style="background:#fff7f7;padding:10px 16px">'+(det||'<span class="mm">sin detalle</span>')+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  } else h+='<div class="mm">Sin reclamos externos registrados este mes</div>';
+  h+='</div>';
+
   // ===== 4 · detección + gravedad =====
-  h+='<h2><span class="n">4</span>Dónde se detectan los defectos</h2><div class="grid2">';
+  h+='<h2><span class="n">5</span>Dónde se detectan los defectos</h2><div class="grid2">';
   var interno=K.defectos||0, externo=K.nc_ext||0, tot=interno+externo||1;
   h+='<div class="card"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px">CADENA DE DETECCIÓN ('+(interno+externo)+' defectos)</div>';
   h+='<div class="brow"><span class="bl"><i style="background:var(--qc)"></i>Internos (QC/etapas)</span><span class="bmid"><span class="bar" style="width:'+Math.round(interno/tot*100)+'%;background:var(--qc)"></span></span><span class="bv">'+interno+' · '+Math.round(interno/tot*100)+'%</span></div>';
@@ -234,7 +301,7 @@ function render(){
   h+='</div>';
 
   // ===== 5 · horas NC =====
-  h+='<h2><span class="n">5</span>Horas dedicadas a No Conformidades (retrabajos)</h2><div class="grid2">';
+  h+='<h2><span class="n">6</span>Horas dedicadas a No Conformidades (retrabajos)</h2><div class="grid2">';
   var ha=D.hs_por_area||[], totH=K.hs_retrabajo||0, maxH=(ha[0]&&ha[0].hs)||1;
   h+='<div class="card"><div style="font-size:11px;font-weight:800;color:var(--muted);margin-bottom:8px">POR ÁREA ORIGEN · '+totH+' h totales (≈ '+Math.round(totH/8)+' jornadas · '+(Math.round(totH/8/22*10)/10)+' operarios full-time)</div>';
   if(ha.length){ha.forEach(function(a){
@@ -248,7 +315,7 @@ function render(){
   h+='</div>';
 
   // ===== 6 · hospital =====
-  h+='<h2><span class="n">6</span>Hospital · personas dedicadas por día</h2><div class="card">';
+  h+='<h2><span class="n">7</span>Hospital · personas dedicadas por día</h2><div class="card">';
   h+='<div style="display:flex;gap:26px;flex-wrap:wrap;align-items:center">';
   h+='<div><div style="font-size:38px;font-weight:800">'+(K.hospital_prom!=null?K.hospital_prom:'—')+'</div><div class="mm" style="font-size:11px;font-weight:700">PROMEDIO PERSONAS/DÍA</div></div>';
   h+='<div><div style="font-size:24px;font-weight:800">'+(K.hospital_pico||'—')+'</div><div class="mm" style="font-size:11px;font-weight:700">PICO</div></div>';
@@ -268,7 +335,7 @@ function render(){
   h+='</div><div class="mm" style="font-size:11px;margin-top:8px">Definición: operarios distintos por día con tiempo cargado en órdenes "(QC Control final)".</div></div>';
 
   // ===== 7 · recurrentes =====
-  h+='<h2><span class="n">7</span>Modos de falla recurrentes del mes</h2><div class="card"><table class="tbl">';
+  h+='<h2><span class="n">8</span>Modos de falla recurrentes del mes</h2><div class="card"><table class="tbl">';
   h+='<thead><tr><th>#</th><th>Modo de falla</th><th style="text-align:right">Este mes</th><th style="text-align:right">Año</th><th style="text-align:right">Llegó al cliente</th><th>Capacitación en plan</th></tr></thead><tbody>';
   (D.recurrentes||[]).forEach(function(r,i){
     var cap=r.capacitacion? tag('ok','Sí · '+esc(r.capacitacion.tema).slice(0,30)+(r.capacitacion.dictada?' (dictada)':' (pend.)')) : tag('bad','NO — proponer');
@@ -276,7 +343,7 @@ function render(){
   h+='</tbody></table></div>';
 
   // ===== 8 · plan de acción =====
-  h+='<h2><span class="n">8</span>Plan de acción · '+esc(mNom)+' '+tag('warn','✎ EDITABLE')+'</h2><div class="card">';
+  h+='<h2><span class="n">9</span>Plan de acción · '+esc(mNom)+' '+tag('warn','✎ EDITABLE')+'</h2><div class="card">';
   h+='<table class="tbl" id="plan"><thead><tr><th style="width:34%">Acción</th><th>Responsable</th><th>Área</th><th>Fecha límite</th><th>Estado</th><th class="noprint"></th></tr></thead><tbody>';
   var acc=(D.plan&&D.plan.acciones&&D.plan.acciones.length)?D.plan.acciones:sugerirAcciones();
   acc.forEach(function(a){h+=filaPlan(a);});
@@ -286,7 +353,7 @@ function render(){
   h+='<span id="planstat" class="mm" style="font-size:11.5px;margin-left:10px"></span></div>';
 
   // ===== 9 · capacitaciones =====
-  h+='<h2><span class="n">9</span>Capacitaciones propuestas '+tag('warn','✎ EDITABLE')+'</h2><div class="card">';
+  h+='<h2><span class="n">10</span>Capacitaciones propuestas '+tag('warn','✎ EDITABLE')+'</h2><div class="card">';
   h+='<div class="mm" style="font-size:11.5px;margin-bottom:8px">Derivadas de los modos de falla recurrentes sin tema en el Plan RFP 06 02. Al guardar quedan en PLAN_ACCION.</div>';
   h+='<table class="tbl" id="capac"><thead><tr><th style="width:24%">Tema</th><th style="width:26%">Contenido mínimo</th><th>Dirigido a</th><th>Instructor</th><th>Mes</th><th>Origen</th><th class="noprint"></th></tr></thead><tbody>';
   var caps=(D.plan&&D.plan.capacitaciones&&D.plan.capacitaciones.length)?D.plan.capacitaciones:sugerirCapac();
@@ -295,7 +362,7 @@ function render(){
 
   // ===== 10 · seguimiento mes anterior =====
   var pa=(D.plan_anterior&&D.plan_anterior.acciones)||[];
-  h+='<h2><span class="n">10</span>Seguimiento del plan del mes anterior</h2><div class="card">';
+  h+='<h2><span class="n">11</span>Seguimiento del plan del mes anterior</h2><div class="card">';
   if(pa.length){h+='<table class="tbl">';
     pa.forEach(function(a){var est=String(a[4]||'Pendiente');
       var cls=/hecha/i.test(est)?'ok':(/curso/i.test(est)?'warn':(/vencida/i.test(est)?'bad':'neut'));
