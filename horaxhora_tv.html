@@ -944,14 +944,41 @@ function _mostrarErr(msg){
   var off=document.getElementById('off');
   if(off){ off.textContent='\u26A0 ERROR DEL BACKEND \u2014 '+msg; off.style.display='block'; }
 }
+/* ==== NUNCA DEJAR LA PANTALLA VACIA (pedido de Riki, 21/8/2026) ====
+   Entre un refresco y el siguiente el TV tiene que seguir mostrando el ultimo
+   dato bueno. Si el backend falla, o devuelve error, o la respuesta viene sin
+   operarios, NO se vuelve a dibujar: queda lo que ya estaba en pantalla y solo
+   se prende la banda roja. Ademas se guarda el ultimo dato bueno del dia para
+   que al recargar la pagina (o al reiniciar el kiosk) pinte al instante en vez
+   de quedar en blanco. */
+function _guardarUltimo(D){
+  try{ localStorage.setItem('hxh_tv_last', JSON.stringify({f:D.fecha, d:D})); }catch(e){}
+}
+function _leerUltimo(){
+  try{
+    var v=JSON.parse(localStorage.getItem('hxh_tv_last')||'null');
+    if(v && v.d && v.f===_hoyISO()) return v.d;   /* solo si es de HOY */
+  }catch(e){}
+  return null;
+}
+function _hoyISO(){
+  var n=new Date();
+  return n.getFullYear()+'-'+('0'+(n.getMonth()+1)).slice(-2)+'-'+('0'+n.getDate()).slice(-2);
+}
 function cargar(){
   var off=document.getElementById('off');
   fetch(URL_API,{cache:'no-store'}).then(function(r){return r.json()}).then(function(D){
     if(!D || D.ok===false){ _mostrarErr(D && D.error ? D.error : 'respuesta vacia'); return; }
+    /* respuesta valida pero vacia: conservar lo que ya se ve */
+    if(LASTD && (!D.operarios || !D.operarios.length)){
+      _mostrarErr('el backend devolvio 0 operarios — se mantiene el ultimo dato');
+      return;
+    }
     off.style.display='none';
+    _guardarUltimo(D);
     render(D);
   }).catch(function(e){
-    _mostrarErr('sin conexion — reintentando');
+    _mostrarErr('sin conexion — se mantiene el ultimo dato');
   });
 }
 
@@ -983,6 +1010,8 @@ setInterval(function(){
 window.addEventListener('resize', function(){ if(LASTD) render(LASTD); });
 
 paintNavBtns();
+/* arranque: pintar al instante el ultimo dato bueno de hoy (si lo hay) */
+try{ var _prev=_leerUltimo(); if(_prev) render(_prev); }catch(e){}
 cargar();
 setInterval(function(){ if(_pollOK()) cargar(); }, 180000);
 cargarAyer();
