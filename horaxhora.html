@@ -259,7 +259,7 @@ verde en tiempo · naranja ef 80–100% · rojo ef < 80% */
 <span style="color:#ef4444;font-weight:800">│ AHORA</span>
 </div>
 <script>
-var URL_API='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec?view=horaxhora';
+var URL_API='https://script.google.com/macros/s/AKfycbwXM4MiCi2efiRC81FBmke2RjaEkLmgiuYdgjkCbk8sAz_7Odmk1dI1y2mCg3u36uPrew/exec?view=horaxhora';
 var COLORS={M0:'#dc2626',S1:'#b45309',M1:'#d97706',M2:'#f59e0b',S2:'#65a30d',M3:'#16a34a',M4:'#0891b2',M5:'#2563eb',S5:'#7c3aed',S6:'#9333ea',S7:'#c026d3',QC:'#16a34a',HOSP:'#ef4444'};
 var H0=8*60, COLP=104;
 var NOWG=0; // minutos del día "ahora" (se setea en render) — usado para detectar en-curso pasada de tiempo
@@ -300,7 +300,7 @@ return {over:true,warn:ef>=80,crit:ef<50,ef:ef,elap:elap}; // warn=NARANJA 80–
 }
 var KLAB={ok:['Terminada en tiempo','#16a34a'],ko:['Terminada ineficiente grave (ef 50–80%)','#dc2626'],koWarn:['Terminada ineficiente leve (ef 80–100%)','#f97316'],koCrit:['Terminada CRÍTICA · +200% del estándar (ef < 50%)','#7f1d1d'],curso:['En curso','#0ea5e9'],over:['En curso · ineficiente leve (ef 80–100%)','#f97316'],overHard:['En curso · ineficiente grave (ef 50–80%)','#dc2626'],overCrit:['En curso · CRÍTICO · +200% del estándar (ef < 50%)','#7f1d1d'],nc:['NC / Retrabajo','#dc2626'],ncCrit:['NC / Retrabajo CRÍTICO · +200% del estándar','#7f1d1d'],plan:['Tarea planificada (teórico)','#475569']};
 function cerrarDet(){document.getElementById('sheet').classList.remove('on');document.getElementById('shade').classList.remove('on')}
-var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
+var URL_EXEC='https://script.google.com/macros/s/AKfycbwXM4MiCi2efiRC81FBmke2RjaEkLmgiuYdgjkCbk8sAz_7Odmk1dI1y2mCg3u36uPrew/exec';
 var CUR=null;
 document.addEventListener('click',function(ev){
 ensureAudio();

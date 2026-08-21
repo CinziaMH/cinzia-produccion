@@ -101,7 +101,7 @@ tbody tr:hover{background:rgba(255,255,255,.05)}
 <div class="wrap"><div id="cont"><div class="spin"></div></div></div>
 
 <script>
-var URL_EXEC='https://script.google.com/macros/s/AKfycbwrp8Xipd_NEBnAvqxphejm6kWn4B4EHOGRjzLdGMvXgkhF_Ux9VkMb8-R9nxZi_HQTjg/exec';
+var URL_EXEC='https://script.google.com/macros/s/AKfycbwXM4MiCi2efiRC81FBmke2RjaEkLmgiuYdgjkCbk8sAz_7Odmk1dI1y2mCg3u36uPrew/exec';
 var ALL=[], VIEW=[]; var SORT={col:null,dir:-1};
 function _th(lbl,f,right){ var a=SORT.col===f?(SORT.dir<0?' ▼':' ▲'):''; return '<th data-sort="'+f+'" style="cursor:pointer;user-select:none'+(right?';text-align:right':'')+'" title="Ordenar (mayor a menor)">'+lbl+a+'</th>'; }
 function sortBy(f){ if(SORT.col===f){ SORT.dir=-SORT.dir; } else { SORT.col=f; SORT.dir=-1; } render(); }
