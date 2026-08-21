@@ -405,7 +405,8 @@ applySafe();
 window.addEventListener('resize', applySafe);
 
 function syncURL(){ try{history.replaceState(null,'','?nave='+NAVE+'&vista='+(VMODE==='mon'?'montaje':'operario')+(MONT!=='all'?'&montaje='+MONT:'')+(SAFE!==3?'&safe='+SAFE:''))}catch(e){} }
-function setNave(n){ NAVE=n; MONT='all'; syncURL(); paintNavBtns(); if(LASTD) render(LASTD); }
+function setNave(n){ NAVE=n; MONT='all'; syncURL(); 
+paintNavBtns(); if(LASTD) render(LASTD); }
 function setView(v){ VMODE=v; syncURL(); paintNavBtns(); if(LASTD) render(LASTD); }
 function setMont(m){ MONT=m; if(m!=='all') NAVE=naveOf(m); syncURL(); paintNavBtns(); if(LASTD) render(LASTD); }
 function paintNavBtns(){
@@ -415,6 +416,19 @@ function paintNavBtns(){
   document.querySelectorAll('.mbtn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-mont')===MONT); });
 }
 
+/* ==== AHORRO DE CUOTA UrlFetch (Apps Script) — 21/8/2026 ====
+   El backend tiene tope diario de llamadas a Odoo (20.000/dia en cuenta
+   Google personal). Antes cada pantalla pulleaba cada 60s las 24hs y entre
+   4-6 TVs se comian el cupo entero. Ahora: refresco cada 3 min, solo en
+   horario de planta y solo si la pestana esta visible. La carga inicial
+   (al abrir/recargar la pagina) SIEMPRE se hace, sin importar la hora. */
+function _pollOK(){
+  try{ if(document.hidden) return false; }catch(e){}
+  var n=new Date(), d=n.getDay(), h=n.getHours()+n.getMinutes()/60;
+  if(d===0) return false;              /* domingo: nadie en planta */
+  if(d===6) return h>=6 && h<14.5;     /* sabado 6:00-14:30 */
+  return h>=6 && h<19.5;               /* lunes a viernes 6:00-19:30 */
+}
 function esc(s){var d=document.createElement('div');d.textContent=String(s==null?'':s);return d.innerHTML}
 function toMin(s){var p=String(s).split(':');return (+p[0])*60+(+p[1])}
 /* pixel de un minuto (o "HH:MM"), respetando el almuerzo comprimido */
@@ -605,7 +619,7 @@ function render(D){
   var navtxt = MONT!=='all' ? ('SOLO '+MONT+' · '+(NOMS[MONT]||MONT)) : (NAVE==='all'?'TODAS LAS NAVES':('NAVE '+NAVE));
   document.getElementById('h1t').textContent='HORA A HORA · '+navtxt;
   document.title='Cinzia · Hora a Hora · '+navtxt;
-  document.getElementById('sub').textContent = D.fecha+' · jornada '+(D.sab?'8–13':'8:10–12 / 13–17')+(D.congelado?' · plan 7:45':'')+' · refresca c/1 min';
+  document.getElementById('sub').textContent = D.fecha+' · jornada '+(D.sab?'8–13':'8:10–12 / 13–17')+(D.congelado?' · plan 7:45':'')+' · refresca c/3 min';
 
   var nowM0=toMin(D.hora);
   var GRUPOS=(D.grupos||[]).filter(function(g){
@@ -955,9 +969,9 @@ window.addEventListener('resize', function(){ if(LASTD) render(LASTD); });
 
 paintNavBtns();
 cargar();
-setInterval(cargar, 60000);
+setInterval(function(){ if(_pollOK()) cargar(); }, 180000);
 cargarAyer();
-setInterval(cargarAyer, 30*60000);
+setInterval(function(){ if(_pollOK()) cargarAyer(); }, 60*60000);
 </script>
 </body>
 </html>

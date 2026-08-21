@@ -202,9 +202,23 @@ function cargarAyer(){
     if(D && D.ok!==false){ DAYER=D; if(LASTH) render(LASTH); }
   }).catch(function(e){});
 }
+
+/* ==== AHORRO DE CUOTA UrlFetch (Apps Script) — 21/8/2026 ====
+   El backend tiene tope diario de llamadas a Odoo (20.000/dia en cuenta
+   Google personal). Antes cada pantalla pulleaba cada 60s las 24hs y entre
+   4-6 TVs se comian el cupo entero. Ahora: refresco cada 3 min, solo en
+   horario de planta y solo si la pestana esta visible. La carga inicial
+   (al abrir/recargar la pagina) SIEMPRE se hace, sin importar la hora. */
+function _pollOK(){
+  try{ if(document.hidden) return false; }catch(e){}
+  var n=new Date(), d=n.getDay(), h=n.getHours()+n.getMinutes()/60;
+  if(d===0) return false;              /* domingo: nadie en planta */
+  if(d===6) return h>=6 && h<14.5;     /* sabado 6:00-14:30 */
+  return h>=6 && h<19.5;               /* lunes a viernes 6:00-19:30 */
+}
 function tic(){var d=new Date();document.getElementById('reloj').textContent=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
 tic(); setInterval(tic,15000);
-render(null); cargar(); setInterval(cargar,5*60000); cargarAyer(); setInterval(cargarAyer,30*60000);
+render(null); cargar(); setInterval(function(){ if(_pollOK()) cargar(); },5*60000); cargarAyer(); setInterval(function(){ if(_pollOK()) cargarAyer(); },60*60000);
 </script>
 </body>
 </html>
