@@ -186,13 +186,22 @@ function render(D){
   document.getElementById('foot').textContent=D?('Datos del día '+(D.fecha||'')+' · actualizado '+(D.hora||'')+' · eficiencia con regla DYFSA (tope 100% por tarea, retrabajos incluidos)'):'sin datos';
 }
 
+function _mostrarErr(msg){
+  var off=document.getElementById('off');
+  if(off){ off.textContent='\u26A0 ERROR DEL BACKEND \u2014 '+msg; off.style.display='block'; }
+}
 function cargar(){
   fetch(URL_API,{cache:'no-store'}).then(function(r){return r.json()}).then(function(D){
+    if(!D || D.ok===false){
+      _mostrarErr(D && D.error ? D.error : 'respuesta vacia');
+      try{var v=JSON.parse(localStorage.getItem('hxh_home_last')||'null'); if(v) render(v);}catch(e){}
+      return;
+    }
     document.getElementById('off').style.display='none';
     try{localStorage.setItem('hxh_home_last',JSON.stringify(D))}catch(e){}
     render(D);
   }).catch(function(){
-    document.getElementById('off').style.display='block';
+    _mostrarErr('sin conexion — reintentando');
     try{var d=JSON.parse(localStorage.getItem('hxh_home_last')||'null'); if(d) render(d);}catch(e){}
     setTimeout(cargar,60000);
   });

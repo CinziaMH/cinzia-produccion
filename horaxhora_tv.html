@@ -936,15 +936,30 @@ function cargarAyer(){
 }
 
 /* ================= carga + auto-refresh ================= */
+/* Muestra el error REAL del backend en la banda roja.
+   Antes, si el backend devolvia {ok:false,error:...} el tablero lo dibujaba
+   como si no hubiera datos y mostraba "Sin ordenes" — eso enmascaro una
+   caida de cuota durante toda la manana del 21/8/2026. */
+function _mostrarErr(msg){
+  var off=document.getElementById('off');
+  if(off){ off.textContent='\u26A0 ERROR DEL BACKEND \u2014 '+msg; off.style.display='block'; }
+}
 function cargar(){
   var off=document.getElementById('off');
   fetch(URL_API,{cache:'no-store'}).then(function(r){return r.json()}).then(function(D){
+    if(!D || D.ok===false){ _mostrarErr(D && D.error ? D.error : 'respuesta vacia'); return; }
     off.style.display='none';
     render(D);
   }).catch(function(e){
-    off.style.display='block';
+    _mostrarErr('sin conexion — reintentando');
   });
 }
+
+/* Los TVs en kiosk cargan el HTML una sola vez y no lo vuelven a bajar nunca,
+   asi que se quedan con la version vieja para siempre (paso el 21/8/2026: las
+   pantallas seguian pegandole al backend anterior). Recarga la pagina completa
+   una vez por hora, en horario de planta, para tomar los deploys nuevos. */
+setInterval(function(){ if(_pollOK()) location.reload(); }, 60*60000);
 
 /* ================= auto-scroll vertical para TV ================= */
 var scDir=1, scPos=null, scPause=0;
