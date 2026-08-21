@@ -122,12 +122,17 @@ body.montmode .horas .lbl{font-size:9px;padding:4px 5px;letter-spacing:0}
 
 .fila{display:flex;height:var(--rowh);border-bottom:1px solid #1c2940;position:relative}
 .fila:nth-child(odd){background:rgba(255,255,255,.015)}
-.fila .info{flex:0 0 var(--lblw);padding:5px 9px;display:flex;flex-direction:row;align-items:center;gap:8px;border-right:2px solid var(--line);position:sticky;left:0;background:#101a2e;z-index:6}
-.fila .info .who{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+/* ===== INFO OPERARIO 20% (21/8/2026) =====
+   min-width:0 + overflow:hidden son lo que hace que la columna RESPETE su ancho:
+   sin eso el bloque se desbordaba sobre la linea de tiempo. Las dos mitades van
+   con flex:1 1 0 para que el bloque AVANCE arranque SIEMPRE en la misma x en
+   todas las filas (antes lo corria el largo del nombre y quedaban desalineadas). */
+.fila .info{flex:0 0 var(--lblw);min-width:0;overflow:hidden;padding:5px 9px;display:flex;flex-direction:row;align-items:center;gap:8px;border-right:2px solid var(--line);position:sticky;left:0;background:#101a2e;z-index:6}
+.fila .info .who{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .fila .info .mo{font-weight:900;font-size:var(--fmo);display:flex;gap:6px;align-items:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fila .info .det{font-size:var(--fdet);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* estado (REAL% vs PLAN% + veredicto) ahora a la IZQUIERDA, al lado del nombre */
-.fila .info .stat{flex:0 0 auto;width:140px;display:flex;flex-direction:column;justify-content:center;gap:3px}
+.fila .info .stat{flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:3px}
 .fila .info .stat .t{font-size:11px;color:var(--muted);font-weight:900;letter-spacing:.2px}
 .fila .info .stat .bar{height:10px;background:#27354f;border-radius:6px;overflow:hidden;position:relative}
 .fila .info .stat .bar i{display:block;height:100%;border-radius:6px}
@@ -196,6 +201,9 @@ box-shadow:0 1px 4px rgba(0,0,0,.45)}
 .efb.g{background:#15803d;color:#bbf7d0;border:1px solid #22c55e}
 /* filas altas (montaje filtrado): el texto de las tarjetas se parte en hasta 2 renglones
    con letra más chica, para que entre la palabra completa */
+/* filas altas: nombre arriba y AVANCE abajo, cada uno a todo el ancho de la columna */
+body.bigrows .fila .info{flex-direction:column;align-items:stretch;justify-content:center;gap:6px}
+body.bigrows .fila .info .who,body.bigrows .fila .info .stat{flex:0 0 auto;width:100%}
 body.bigrows .blk{white-space:normal;line-height:1.2;text-overflow:clip;word-break:break-word}
 /* plan teórico (ESP) más legible: fondo más claro, texto más blanco y sin partir palabras */
 body.bigrows .pb{white-space:normal;line-height:1.15;background:#42546f;border-color:#8aa0c4;color:#f8fafc;font-weight:800}
@@ -448,7 +456,9 @@ function fit(D){
   var sab=!!(D&&D.sab); NHC=sab?5:9; ALMIDX=sab?-1:4;
   HASLUNCH = !sab && ALMIDX>=0;
   /* modo montaje: columna de operario al ~1/3 (pedido Riki 20/8) para ver 8-17hs cómodo */
-  var lblw = MONT!=='all' ? Math.max(100, Math.round(window.innerWidth*0.075)) : Math.max(300, Math.round(window.innerWidth*0.185));
+  /* La info del operario ocupa el 20% del ancho (pedido Riki 21/8/2026). Antes el
+     modo montaje pedia 7.5% pero el bloque se desbordaba y comia ~40% de la pantalla. */
+  var lblw = MONT!=='all' ? Math.max(180, Math.round(window.innerWidth*0.20)) : Math.max(300, Math.round(window.innerWidth*0.185));
   var avail=window.innerWidth - lblw - 4;
   /* la hora de almuerzo cuenta como LF de una hora normal → las demás ganan ancho */
   var denom = HASLUNCH ? (NHC-1)+LF : NHC;
