@@ -27,6 +27,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .btn .tt{font-weight:800;font-size:17px}
 .btn .ss{font-size:13px;color:var(--muted);margin-top:2px}
 .i-tv{background:var(--nar)}
+.sec{grid-column:1/-1;display:flex;align-items:center;gap:12px;margin:14px 2px -4px;font-size:13px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.sec:first-child{margin-top:0}
+.sec::after{content:"";flex:1;height:1px;background:var(--line)}
 .i-r{background:#639922}
 .i-y{background:#993C1D}
 .foot{margin-top:auto;padding:18px;font-size:12px;color:var(--muted);text-align:center}
@@ -40,6 +43,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <button id="installBtn" style="margin-top:14px;background:#fff;color:#c2410c;border:none;border-radius:99px;padding:9px 20px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.14)">📲 Agregar al inicio</button>
 </div>
 <div class="wrap">
+<div class="sec">Tableros en vivo</div>
 <a class="btn" href="tablero.html">
 <div class="ic i-tv">📺</div>
 <div><div class="tt">Tablero TV / PC</div><div class="ss">Pantalla completa con rotación de paneles</div></div>
@@ -49,6 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div><div class="tt">Tablero Celular</div><div class="ss">Misma info, formato vertical con scroll</div></div>
 </a>
 <a class="btn" href="tv.html"><div class="ic" style="background:#0F172A">📺</div><div><div class="tt">Tablero TV (Pie de Línea)</div><div class="ss">Pantalla para TV · liviano, indicadores + layout</div></div></a>
+<div class="sec">Hora a hora y plan</div>
 <a class="btn" href="horaxhora.html">
 <div class="ic" style="background:#0f172a">⏱</div>
 <div><div class="tt">Hora a Hora por Montaje</div><div class="ss">Plan del día vs real, orden por orden</div></div>
@@ -61,11 +66,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div class="ic" style="background:#0891b2">📋</div>
 <div><div class="tt">Plan por Operario</div><div class="ss">Asignación de Mayer · hojas imprimibles + mensaje Odoo</div></div>
 </a>
-<a class="btn" href="kits.html">
-<div class="ic" style="background:#7c3aed">📦</div>
-<div><div class="tt">Kits de Pañol</div><div class="ss">Armados y próximos a armar (60 días)</div></div>
-</a>
+<a class="btn" href="https://script.google.com/macros/s/AKfycbxzk2Bq5kOdEK5dwX4Bf3BqBog8uRul_ojtplu261r2UkHd0Rr_nAT7vx7Fw76IP2Qn/exec"><div class="ic" style="background:#F59E0B">📅</div><div><div class="tt">Plan de Producción</div><div class="ss">Programa de producción · web app</div></div></a>
 <a class="btn" href="criticas.html"><div class="ic" style="background:#B91C1C">🚨</div><div><div class="tt">Operaciones Críticas</div><div class="ss">Operaciones a +200% del tiempo estándar</div></div></a>
+<div class="sec">Calidad</div>
+<a class="btn" href="pulso-calidad.html"><div class="ic" style="background:#16A34A">🔬</div><div><div class="tt">Pulso de Calidad</div><div class="ss">DPU Control Final + M4 y Voz del Cliente</div></div></a>
+<a class="btn" href="controles-calidad.html"><div class="ic" style="background:#7C3AED">📄</div><div><div class="tt">Controles de Calidad por Cliente</div><div class="ss">Unidades con controles + descarga de PDFs</div></div></a>
+<a class="btn" href="informe-calidad.html"><div class="ic" style="background:#DC2626">📊</div><div><div class="tt">Informe Mensual de Calidad</div><div class="ss">Voz del Cliente, DPU, plan de acción por mes</div></div></a>
+<div class="sec">Supervisión</div>
 <a class="btn" href="https://script.google.com/macros/s/AKfycbwXM4MiCi2efiRC81FBmke2RjaEkLmgiuYdgjkCbk8sAz_7Odmk1dI1y2mCg3u36uPrew/exec?u=rodrigo">
 <div class="ic i-r">📋</div>
 <div><div class="tt">Supervisión · Rodrigo</div><div class="ss">5S 7:45 + rondas M1 → QC</div></div>
@@ -74,9 +81,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div class="ic i-y">🔧</div>
 <div><div class="tt">Supervisión · Yance</div><div class="ss">5S 7:45 + rondas M0 Soldadura</div></div>
 </a>
-<a class="btn" href="pulso-calidad.html"><div class="ic" style="background:#16A34A">🔬</div><div><div class="tt">Pulso de Calidad</div><div class="ss">DPU Control Final + M4 y Voz del Cliente</div></div></a>
-<a class="btn" href="controles-calidad.html"><div class="ic" style="background:#7C3AED">📄</div><div><div class="tt">Controles de Calidad por Cliente</div><div class="ss">Unidades con controles + descarga de PDFs</div></div></a>
-<a class="btn" href="informe-calidad.html"><div class="ic" style="background:#DC2626">📊</div><div><div class="tt">Informe Mensual de Calidad</div><div class="ss">Voz del Cliente, DPU, plan de acción por mes</div></div></a>
+<div class="sec">Áreas de apoyo</div>
+<a class="btn" href="kits.html">
+<div class="ic" style="background:#7c3aed">📦</div>
+<div><div class="tt">Kits de Pañol</div><div class="ss">Armados y próximos a armar (60 días)</div></div>
+</a>
 <a class="btn" href="diseno.html">
 <div class="ic" style="background:#EA580C">📐</div>
 <div><div class="tt">Diseño</div><div class="ss">Avance y salud por diseñador + tableros de Odoo</div></div>
@@ -85,7 +94,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 <div class="ic" style="background:#0369a1">⚙️</div>
 <div><div class="tt">Ingeniería de Procesos</div><div class="ss">Avance de Leonel y Agustina + tableros de Odoo</div></div>
 </a>
-<a class="btn" href="https://script.google.com/macros/s/AKfycbxzk2Bq5kOdEK5dwX4Bf3BqBog8uRul_ojtplu261r2UkHd0Rr_nAT7vx7Fw76IP2Qn/exec"><div class="ic" style="background:#F59E0B">📅</div><div><div class="tt">Plan de Producción</div><div class="ss">Programa de producción · web app</div></div></a>
 </div>
 <div class="foot">DYFSA SA · Cinzia Motorhomes · datos en vivo desde Odoo</div>
 <script>
