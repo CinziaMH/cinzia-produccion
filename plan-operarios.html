@@ -41,7 +41,9 @@ details summary{font-size:12px;color:var(--muted);font-weight:700;cursor:pointer
 .wo.tomada{opacity:.45}
 .wo.tomada .txt{text-decoration:line-through}
 .wo .quien{font-size:11px;color:var(--bad);font-weight:700;white-space:nowrap}
-.aus{opacity:.5}
+/* Ausente hoy: se marca con un aviso pero la fila sigue totalmente operativa (se le puede programar mañana) */
+.aus{border-color:#fed7aa;background:#fffaf5}
+.aus .ausTag{font-size:11px;font-weight:800;color:#b45309;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:1px 6px;margin-left:6px;white-space:nowrap}
 .msg{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;border-radius:10px;padding:12px 20px;font-weight:700;display:none;z-index:50;max-width:90%}
 .spin{width:36px;height:36px;border:4px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite;margin:60px auto}
 @keyframes r{to{transform:rotate(360deg)}}
@@ -161,7 +163,7 @@ function renderAsignar(){
         return '<option value="'+esc(o.mo)+'"'+(o.mo===pre?' selected':'')+'>'+num(o.mo)+' · '+esc(o.cliente)+' ('+o.code+') · '+Math.round(o.pend/60*10)/10+'h pend'+(nAs?' · '+nAs+' asignada'+(nAs>1?'s':'')+' en Odoo':'')+(o.en_cola?' · EN COLA':'')+'</option>';
       }).join('');
       h+='<div class="row'+(r.ausente_hoy?' aus':'')+'" data-op="'+esc(r.operario)+'" data-sec="'+esc(r.sector)+'">'
-        +'<div class="l1"><span class="nom">'+esc(r.operario)+(r.ausente_hoy?' ⚠ ausente hoy':'')+'</span><span class="sect">'+esc(r.sector||'—')+'</span>'
+        +'<div class="l1"><span class="nom">'+esc(r.operario)+(r.ausente_hoy?' <span class="ausTag">⚠ ausente hoy · se puede programar igual</span>':'')+'</span><span class="sect">'+esc(r.sector||'—')+'</span>'
         +'<select onchange="pintarWos(this);enforceExclusivity()">'+opts+'</select><span class="tot"></span></div>'
         +'<div class="wos"></div>'
         +'<input class="nota" placeholder="Nota para el operario (opcional)" value="'+esc(sv?sv.nota:'')+'">'
