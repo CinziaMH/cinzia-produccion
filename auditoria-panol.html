@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cinzia — Auditoría de Pañol</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f6fa;--s1:#ffffff;--s2:#f0f3f8;--s3:#e4e9f2;--border:#d4dbe8;--border2:#c2cce0;
+  --text:#1a2235;--text2:#374151;--muted:#6b7da0;
+  --green:#16a34a;--gbg:#f0fdf4;--gborder:#bbf7d0;
+  --red:#dc2626;--rbg:#fef2f2;--rborder:#fecaca;
+  --orange:#ea580c;--obg:#fff7ed;--oborder:#fed7aa;
+  --yellow:#ca8a04;--ybg:#fefce8;--yborder:#fef08a;
+  --accent:#FF6B2B;--accent-light:#fff4ef;--accent-border:#ffd4bc;
+  --cond:'Barlow Condensed',sans-serif;--sans:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px}
+body{padding-bottom:env(safe-area-inset-bottom)}
+.topbar{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:env(safe-area-inset-top) 16px 0;min-height:52px;background:var(--s1);border-bottom:2px solid var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-ico{width:34px;height:34px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.brand-name{font-family:var(--cond);font-size:19px;font-weight:900;letter-spacing:1px}
+.brand-sub{font-family:var(--cond);font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.clk{font-family:var(--mono);font-size:15px;color:var(--accent);letter-spacing:1px}
+.rtabs{display:flex;background:var(--s1);border-bottom:2px solid var(--border);position:sticky;top:calc(52px + env(safe-area-inset-top));z-index:150}
+.rtab{flex:1;text-align:center;padding:10px 13px 11px;font-size:12px;font-weight:700;font-family:var(--mono);color:var(--muted);cursor:pointer;border:0;background:none;border-bottom:3px solid transparent;margin-bottom:-2px}
+.rtab.act{color:var(--accent);border-bottom-color:var(--accent)}
+.prog-bar-wrap{display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--s1);border-bottom:1px solid var(--border)}
+.prog-lbl{font-size:10px;color:var(--muted);font-family:var(--mono);white-space:nowrap}
+.prog-bar{flex:1;height:5px;background:var(--s3);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .5s}
+.prog-pct{font-size:11px;font-family:var(--mono);color:var(--accent);font-weight:700}
+.astrip{display:flex;align-items:center;gap:8px;padding:7px 14px;font-size:12px;border-bottom:1px solid}
+.astrip.r{background:var(--rbg);border-color:var(--rborder);color:var(--red)}
+.astrip.y{background:var(--ybg);border-color:var(--yborder);color:var(--yellow)}
+.astrip.g{background:var(--gbg);border-color:var(--gborder);color:var(--green)}
+.astrip-cnt{font-family:var(--mono);font-weight:700;color:#fff;border-radius:20px;padding:1px 8px;font-size:11px;background:var(--red)}
+.wrap{max-width:720px;margin:0 auto;padding:12px}
+.sec{font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:16px 2px 8px}
+.mc{background:var(--s1);border:1.5px solid var(--border);border-radius:12px;margin-bottom:9px;box-shadow:0 1px 4px rgba(0,0,0,.05);transition:border-color .3s}
+.mc.ok{border-color:var(--gborder)} .mc.mal{border-color:var(--red);background:var(--rbg)}
+.mc-head{display:flex;align-items:center;gap:10px;padding:11px 12px}
+.mc-num{width:34px;height:32px;border-radius:7px;background:var(--accent-light);border:1px solid var(--accent-border);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;font-weight:700;color:var(--accent);flex-shrink:0}
+.mc-info{flex:1;min-width:0}
+.mc-name{font-size:14px;font-weight:600}
+.mc-sub{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:2px}
+.mc-body{border-top:1px solid var(--border);padding:12px;background:var(--s2);border-radius:0 0 12px 12px;display:flex;gap:8px;align-items:center}
+.ainp{width:96px;background:var(--s1);border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:var(--mono);font-size:20px;font-weight:500;text-align:center;padding:8px;outline:none}
+.ainp:focus{border-color:var(--accent)}
+.unid{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:60px}
+.btn{flex:1;padding:11px 10px;border-radius:8px;border:0;background:var(--accent);color:#fff;font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+.btn:disabled{opacity:.5}
+.epill{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--s2);color:var(--muted);white-space:nowrap}
+.epill.g{background:var(--gbg);border-color:var(--gborder);color:var(--green)}
+.epill.r{background:var(--rbg);border-color:var(--rborder);color:var(--red)}
+.epill.o{background:var(--obg);border-color:var(--oborder);color:var(--orange)}
+.campo{background:var(--s1);border:1.5px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:9px}
+.campo label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;font-family:var(--mono);color:var(--muted);margin-bottom:5px}
+.campo input{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:9px 10px;font-family:var(--sans);font-size:14px;outline:none}
+.campo input:focus{border-color:var(--accent)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{padding:7px 11px;border-radius:20px;border:1.5px solid var(--border);background:var(--s1);font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text2);cursor:pointer}
+.chip.sel{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
+.resp{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:6px}
+.lista{background:var(--s1);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:9px}
+.lrow{display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid var(--border)}
+.lrow:first-child{border-top:0}
+.lrow .n{flex:1;font-weight:600;font-size:13px}
+.lrow .p{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.kpi{background:var(--s1);border:1.5px solid var(--border);border-radius:12px;padding:12px;margin-bottom:9px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.kpi-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.kpi-lbl{font-family:var(--cond);font-size:16px;font-weight:700}
+.kpi-sub{font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:2px}
+.kpi-val{font-family:var(--cond);font-size:38px;font-weight:900;line-height:1}
+.dias{display:flex;gap:5px;margin:10px 0 6px}
+.dia{flex:1;text-align:center;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.dia i{display:block;height:26px;border-radius:6px;margin-bottom:3px;background:var(--s3)}
+.dia.verde i,.dot.verde{background:var(--green)} .dia.naranja i,.dot.naranja{background:var(--orange)}
+.dia.rojo i,.dot.rojo{background:var(--red)} .dia.gris i,.dot.gris{background:var(--border2)}
+.ley{display:flex;flex-wrap:wrap;gap:10px;font-family:var(--mono);font-size:10px;color:var(--muted);margin:2px 2px 8px}
+.ley span{display:flex;align-items:center;gap:5px}
+.dot{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block}
+details.dd{background:var(--s1);border:1.5px solid var(--border);border-radius:12px;margin-bottom:8px}
+details.dd summary{display:flex;align-items:center;gap:9px;padding:10px 12px;cursor:pointer;list-style:none;font-weight:600}
+details.dd summary::-webkit-details-marker{display:none}
+details.dd .res{margin-left:auto;font-family:var(--mono);font-size:10px;color:var(--muted);text-align:right}
+.tabla{overflow-x:auto;border-top:1px solid var(--border);background:var(--s2);border-radius:0 0 12px 12px}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{text-align:left;padding:7px 8px;white-space:nowrap;border-bottom:1px solid var(--border)}
+th{font-family:var(--mono);font-size:10px;color:var(--muted);font-weight:500}
+td.num{text-align:right;font-family:var(--mono)}
+.si{color:var(--green);font-weight:700} .no{color:var(--red);font-weight:700}
+.rbody{border-top:1px solid var(--border);padding:12px;background:var(--s2);border-radius:0 0 12px 12px}
+.sem{display:flex;gap:8px}
+.sem button{flex:1;padding:11px 6px;border-radius:8px;border:1.5px solid var(--border);background:var(--s1);color:var(--muted);font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+.sem button.v.sel{background:var(--gbg);border-color:var(--green);color:var(--green)}
+.sem button.r.sel{background:var(--rbg);border-color:var(--red);color:var(--red)}
+.foto{display:flex;align-items:center;gap:10px;margin-top:10px}
+.foto label{padding:9px 12px;border-radius:8px;border:1.5px dashed var(--border2);background:var(--s1);font-family:var(--mono);font-size:11px;color:var(--text2);cursor:pointer}
+.foto input{display:none}
+.foto img{width:54px;height:54px;object-fit:cover;border-radius:8px;border:1px solid var(--border)}
+.coment{width:100%;margin-top:10px;background:var(--s1);border:1.5px solid var(--rborder);border-radius:8px;font-family:var(--sans);font-size:13px;padding:8px 10px;height:60px;resize:none;outline:none}
+.rbody .btn{width:100%;margin-top:10px}
+.mc-coment{font-size:12px;color:var(--red);padding:0 12px 11px 56px}
+a.verfoto{font-family:var(--mono);font-size:10px;color:var(--accent)}
+.vacio{color:var(--muted);font-family:var(--mono);font-size:12px;padding:20px 4px}
+.err{background:var(--rbg);border:1.5px solid var(--rborder);color:var(--red);border-radius:12px;padding:12px;font-size:13px}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="brand"><div class="brand-ico">🚐</div><div><div class="brand-name">Cinzia</div><div class="brand-sub">Auditoría de Pañol</div></div></div>
+  <div class="clk" id="clk">--:--</div>
+</div>
+<div class="rtabs" role="tablist">
+  <button class="rtab act" id="t-contar" role="tab">Contar hoy</button>
+  <button class="rtab" id="t-res" role="tab">Resultados</button>
+</div>
+<div class="astrip y" id="aviso-prueba" hidden>Modo prueba: la página no está conectada a la planilla. Los datos son de ejemplo y no se guarda nada.</div>
+<div id="v-contar"></div>
+<div id="v-res" hidden></div>
+<script>
+// Pegar acá la URL /exec del programa de Apps Script "Auditoría Pañol"
+var API = 'https://script.google.com/macros/s/AKfycbwGsZVFPjPuQ25XAAnPnZmGGeWBFnpQ9WbK9kIy7DME02CPMK3suiefRFSFQMNFSqiD-w/exec';
+
+var RESPONSABLE='Leonel Madoery';
+var AUDITORES=['Leonel Madoery','Ricardo Graglia','Juan Mayer','Agustina Pucheta'];
+var DIAS=['dom','lun','mar','mié','jue','vie','sáb'];
+var CODIGO={A:'A',CHINA:'CH',C:'C'};
+function $(id){return document.getElementById(id)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function fechaLarga(s){var d=new Date(s+'T12:00:00');return DIAS[d.getDay()]+' '+d.getDate()+'/'+(d.getMonth()+1)}
+function fechaCorta(s){var d=new Date(s+'T12:00:00');return d.getDate()+'/'+(d.getMonth()+1)}
+function sumar(s,n){var d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+function guardarNombre(v){try{localStorage.setItem('auditorPanol',v)}catch(e){}}
+function leerNombre(){try{return localStorage.getItem('auditorPanol')||''}catch(e){return ''}}
+function reloj(){var d=new Date();$('clk').textContent=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2)}
+reloj();setInterval(reloj,15000);
+
+var SIN_CONEXION='La página todavía no está conectada al programa de la planilla.';
+function conectado(){return /^https:\/\/script\.google\.com\//.test(API)}
+function traducir(){return Promise.reject(new Error(conectado()?'No hubo respuesta del servidor. Revisá la conexión y recargá.':SIN_CONEXION))}
+function pedir(params){
+  if(!conectado()) return prueba.pedir(params);
+  return fetch(API+'?'+params).then(function(r){return r.json()},traducir);
+}
+function enviar(datos){
+  if(!conectado()) return prueba.enviar(datos);
+  return fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(datos)}).then(function(r){return r.json()},traducir);
+}
+function error(v,e){v.innerHTML='<div class="wrap"><div class="err">'+esc(e.message)+'</div></div>'}
+
+
+/* ---------- Modo prueba (solo si no hay conexión) ---------- */
+var prueba=(function(){
+  function f2(n){return ('0'+n).slice(-2)}
+  function hoyStr(){var d=new Date();return d.getFullYear()+'-'+f2(d.getMonth()+1)+'-'+f2(d.getDate())}
+  function horaStr(){var d=new Date();return f2(d.getHours())+':'+f2(d.getMinutes())}
+  var GR={A:'Grande — categoría A',CHINA:'Grande — China',C:'Insumo C'};
+  var items=[
+    {grupo:'A',insumo:'Mesada inoxidable 2 anafe con grifo',unidad:'unidades',planilla:0},
+    {grupo:'A',insumo:'Anafe inoxidable 2 hornallas',unidad:'unidades',planilla:0},
+    {grupo:'CHINA',insumo:'Ventana (400×700)',unidad:'unidades',planilla:113},
+    {grupo:'CHINA',insumo:'Baulera - (1000×900)',unidad:'unidades',planilla:10},
+    {grupo:'C',insumo:'Abrazadera 12-22mm',unidad:'cestas',planilla:2},
+    {grupo:'C',insumo:'Bastidor x3',unidad:'cestas',planilla:2}
+  ];
+  var puntos=[
+    {id:'descarga',nombre:'Zona de descarga',detalle:'Libre, ordenada y sin material sin ubicar',pideFoto:true},
+    {id:'remitos',nombre:'Tableros de remito',detalle:'Remitos al día y en su lugar',pideFoto:false},
+    {id:'pedidos',nombre:'Tableros de pedido',detalle:'Pedidos cargados y actualizados',pideFoto:false},
+    {id:'kanban',nombre:'Kanban',detalle:'Tarjetas de reposición pedidas a tiempo',pideFoto:true},
+    {id:'pasillo1',nombre:'Orden y limpieza — pasillo 1',detalle:'El pegado a producción',pideFoto:true},
+    {id:'pasillo2',nombre:'Orden y limpieza — pasillo 2',detalle:'El pegado al lado externo',pideFoto:true}
+  ];
+  var cestas=[
+    {insumo:'Arandela 10mm',proveedor:'Dintra',pedido:false},{insumo:'Arandela 12mm',proveedor:'Dintra',pedido:false},
+    {insumo:'Arandela 6mm',proveedor:'Dintra',pedido:false},{insumo:'Arandela 8mm',proveedor:'Dintra',pedido:false}
+  ];
+  var conteos={},marcas={};
+  function enVentana(h){return h>='08:00'&&h<='08:30'}
+  function itemsHoy(){return items.map(function(it,i){var c=conteos[i];
+    return {id:i,grupo:it.grupo,titulo:GR[it.grupo],insumo:it.insumo,unidad:it.unidad,hecho:!!c,
+      coincide:c?c.contado===it.planilla:null,hora:c?c.hora:null,auditor:c?c.auditor:null}})}
+  function rondaHoy(){return puntos.map(function(p){var m=marcas[p.id];
+    return {id:p.id,nombre:p.nombre,detalle:p.detalle,pideFoto:p.pideFoto,hecho:!!m,verde:m?m.estado==='Verde':null,
+      comentario:m?m.comentario:'',foto:m?m.foto:'',hora:m?m.hora:'',auditor:m?m.auditor:'',enHorario:m?enVentana(m.hora):null}})}
+  // Días de ejemplo para ver el semáforo y el resumen semanal
+  function diaEjemplo(fecha,dif,rojosRonda){
+    var its=items.map(function(it,i){var d=i<dif?(i%2?-1:1):0;
+      return {estado:'hecho',grupo:it.grupo,titulo:GR[it.grupo],insumo:it.insumo,contado:it.planilla+d,planilla:it.planilla,
+        coincide:d===0,diferencia:d,hora:'08:1'+i,enHorario:true,auditor:'Ejemplo'}});
+    var r=puntos.map(function(p,i){var rojo=i<rojosRonda;
+      return {id:p.id,nombre:p.nombre,detalle:p.detalle,pideFoto:p.pideFoto,hecho:true,verde:!rojo,
+        comentario:rojo?'Ejemplo de comentario en rojo':'',foto:'',hora:'08:2'+i,auditor:'Ejemplo',enHorario:true}});
+    return {fecha:fecha,habil:true,cerrado:true,cumplido:true,completo:true,auditados:6,noCoinciden:dif,
+      color:dif>1?'rojo':dif===1?'naranja':'verde',auditores:['Ejemplo'],items:its,ronda:r,
+      rondaVerdes:6-rojosRonda,rondaRojos:rojosRonda};
+  }
+  function sumarStr(s,n){var d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.getFullYear()+'-'+f2(d.getMonth()+1)+'-'+f2(d.getDate())}
+  function resultados(){
+    var hoy=hoyStr(),dh=new Date(hoy+'T12:00:00').getDay()||7,lunesPasado=sumarStr(hoy,-(dh-1)-7);
+    var patron=[[0,0],[1,1],[0,0],[2,1],[0,0]],dias=[];
+    var it=itemsHoy(),hechos=it.filter(function(x){return x.hecho});
+    var nc=hechos.filter(function(x){return !x.coincide}).length,rh=rondaHoy();
+    dias.push({fecha:hoy,habil:dh<=5,cerrado:horaStr()>'08:30',cumplido:false,completo:hechos.length===6,auditados:hechos.length,
+      noCoinciden:nc,color:nc>1?'rojo':nc===1?'naranja':(hechos.length===6?'verde':'gris'),
+      auditores:hechos.length?[hechos[0].auditor]:[],
+      items:it.map(function(x){var c=conteos[x.id],p=items[x.id];return c?{estado:'hecho',grupo:x.grupo,titulo:x.titulo,insumo:x.insumo,
+        contado:c.contado,planilla:p.planilla,coincide:c.contado===p.planilla,diferencia:c.contado-p.planilla,hora:c.hora,enHorario:enVentana(c.hora),auditor:c.auditor}
+        :{estado:'pendiente',grupo:x.grupo,titulo:x.titulo,insumo:x.insumo}}),
+      ronda:rh,rondaVerdes:rh.filter(function(x){return x.verde===true}).length,rondaRojos:rh.filter(function(x){return x.verde===false}).length});
+    for(var i=4;i>=0;i--) dias.push(diaEjemplo(sumarStr(lunesPasado,i),patron[i][0],patron[i][1]));
+    var sem={lunes:lunesPasado,viernes:sumarStr(lunesPasado,4),auditados:30,coinciden:27,verde:3,naranja:1,rojo:1,gris:0,
+      enHorario:5,dias:5,rondaVerdes:28,rondaRevisados:30,exactitud:90};
+    return {semanas:[sem],dias:dias,cestasVacias:cestas,resumen:{}};
+  }
+  return {
+    pedir:function(params){
+      $('aviso-prueba').hidden=false;
+      if(params.indexOf('resultados')>=0) return Promise.resolve(resultados());
+      return Promise.resolve({fecha:hoyStr(),hora:horaStr(),habil:true,ventana:{desde:'08:00',hasta:'08:30'},
+        items:itemsHoy(),ronda:rondaHoy(),cestasVacias:cestas});
+    },
+    enviar:function(b){
+      var h=horaStr();
+      if(b.tipo==='ronda'){ if(marcas[b.punto]) return Promise.resolve({error:'Ese punto ya se revisó hoy; la primera marca es la que vale'});
+        marcas[b.punto]={estado:b.estado,comentario:b.comentario,foto:b.foto,auditor:b.auditor,hora:h};
+        return Promise.resolve({ok:true,hora:h,enHorario:enVentana(h)}); }
+      if(conteos[b.id]) return Promise.resolve({error:'Ese ítem ya se auditó hoy; el primer conteo es el que vale'});
+      conteos[b.id]={contado:b.contado,auditor:b.auditor,hora:h};
+      return Promise.resolve({ok:true,coincide:b.contado===items[b.id].planilla,hora:h,enHorario:enVentana(h)});
+    }
+  };
+})();
+/* ---------- Cestas vacías ---------- */
+function franjaCestas(lista){
+  var sinPedir=lista.filter(function(x){return !x.pedido}).length;
+  if(sinPedir) return '<div class="astrip r"><span class="astrip-cnt">'+sinPedir+'</span>'+(sinPedir===1?'cesta vacía sin pedir':'cestas vacías sin pedir')+'</div>';
+  if(lista.length) return '<div class="astrip y">'+lista.length+(lista.length===1?' cesta vacía, ya pedida':' cestas vacías, todas pedidas')+'</div>';
+  return '';
+}
+function listaCestas(lista){
+  if(!lista.length) return '<div class="sec">Insumos C — cestas vacías</div><div class="vacio">No hay cestas vacías en la planilla.</div>';
+  return '<div class="sec">Insumos C — cestas vacías</div><div class="lista">'+lista.map(function(x){
+    return '<div class="lrow"><div class="n">'+esc(x.insumo)+(x.proveedor?'<div class="p">'+esc(x.proveedor)+'</div>':'')+'</div>'+
+      (x.pedido?'<span class="epill o">Pedido</span>':'<span class="epill r">Sin pedir</span>')+'</div>';
+  }).join('')+'</div>';
+}
+
+/* ---------- Contar hoy ---------- */
+function cargarHoy(){
+  var v=$('v-contar'); v.innerHTML='<div class="wrap"><div class="vacio">Cargando la auditoría de hoy…</div></div>';
+  pedir('accion=hoy').then(function(d){
+    if(d.error) throw new Error(d.error);
+    var ronda=d.ronda||[];
+    var hechos=d.items.filter(function(x){return x.hecho}).length+ronda.filter(function(x){return x.hecho}).length,total=d.items.length+ronda.length;
+    var abierta=d.hora>=d.ventana.desde&&d.hora<=d.ventana.hasta;
+    var cont={}; 
+    var html='<div class="prog-bar-wrap"><span class="prog-lbl">'+fechaLarga(d.fecha)+' · '+d.ventana.desde+' a '+d.ventana.hasta+'</span>'+
+      '<div class="prog-bar"><div class="prog-fill" style="width:'+(total?hechos*100/total:0)+'%"></div></div><span class="prog-pct">'+hechos+'/'+total+'</span></div>';
+    if(!abierta&&hechos<total) html+='<div class="astrip y">Fuera de horario: lo que se cargue ahora queda registrado como tardío.</div>';
+    html+=franjaCestas(d.cestasVacias||[]);
+    var nom=leerNombre();
+    html+='<div class="wrap"><div class="campo"><label for="auditor">Quién audita</label><div class="chips">'+
+      AUDITORES.map(function(n){return '<button class="chip'+(n===nom?' sel':'')+'" data-nombre="'+esc(n)+'">'+esc(n)+'</button>'}).join('')+
+      '</div><input id="auditor" autocomplete="name" placeholder="U otro nombre y apellido" value="'+esc(nom)+'">'+
+      '<div class="resp">Responsable: '+RESPONSABLE+', de lunes a viernes</div></div>';
+    html+='<div class="sec">Ítems de hoy</div>';
+    d.items.forEach(function(it){cont[it.grupo]=(cont[it.grupo]||0)+1;html+=tarjeta(it,CODIGO[it.grupo]+cont[it.grupo])});
+    html+='<div class="sec">Ronda del pañol</div>';
+    ronda.forEach(function(p){html+=puntoRonda(p)});
+    html+=listaCestas(d.cestasVacias||[])+'</div>';
+    v.innerHTML=html;
+    activarRonda(v);
+    function marcarChips(){var val=$('auditor').value.trim();v.querySelectorAll('.chip').forEach(function(c){c.classList.toggle('sel',c.getAttribute('data-nombre')===val)})}
+    v.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){
+      $('auditor').value=c.getAttribute('data-nombre');guardarNombre($('auditor').value);marcarChips();
+    })});
+    $('auditor').addEventListener('input',marcarChips);
+    $('auditor').addEventListener('change',function(e){guardarNombre(e.target.value.trim())});
+    v.querySelectorAll('button[data-id]').forEach(function(b){b.addEventListener('click',registrar)});
+  }).catch(function(e){error(v,e)});
+}
+function tarjeta(it,cod){
+  var head='<div class="mc-head"><div class="mc-num">'+cod+'</div><div class="mc-info"><div class="mc-name">'+esc(it.insumo)+'</div>'+
+    '<div class="mc-sub">'+esc(it.titulo)+(it.hecho?' · '+esc(it.hora)+' · '+esc(it.auditor):'')+'</div></div>';
+  if(it.hecho) return '<div class="mc '+(it.coincide?'ok':'mal')+'">'+head+(it.coincide?'<span class="epill g">Coincide</span>':'<span class="epill r">No coincide</span>')+'</div></div>';
+  return '<div class="mc" id="f'+it.id+'">'+head+'</div><div class="mc-body">'+
+    '<input class="ainp" type="number" inputmode="numeric" min="0" step="1" id="c'+it.id+'" aria-label="Cantidad contada de '+esc(it.insumo)+'">'+
+    '<span class="unid">'+esc(it.unidad)+'</span><button class="btn" data-id="'+it.id+'">Registrar</button></div></div>';
+}
+function registrar(e){
+  var b=e.currentTarget,id=b.getAttribute('data-id'),cant=$('c'+id).value,quien=$('auditor').value.trim();
+  if(!quien){alert('Escribí tu nombre en "Quién audita" antes de registrar.');$('auditor').focus();return}
+  if(cant===''){alert('Cargá la cantidad que contaste.');$('c'+id).focus();return}
+  if(!confirm('¿Registrar '+cant+'? El primer conteo es el que vale y no se puede corregir.'))return;
+  guardarNombre(quien); b.disabled=true; b.textContent='Registrando…';
+  enviar({id:Number(id),contado:Number(cant),auditor:quien}).then(function(r){
+    if(r.error) throw new Error(r.error);
+    cargarHoy();
+  }).catch(function(err){alert('No se registró: '+err.message);b.disabled=false;b.textContent='Registrar'});
+}
+
+/* ---------- Ronda ---------- */
+var FOTOS={},ESTADO={};
+function puntoRonda(p){
+  var head='<div class="mc-head"><div class="mc-num">'+(p.pideFoto?'📷':'✓')+'</div><div class="mc-info"><div class="mc-name">'+esc(p.nombre)+'</div>'+
+    '<div class="mc-sub">'+esc(p.detalle)+(p.hecho?' · '+esc(p.hora)+' · '+esc(p.auditor):'')+'</div></div>';
+  if(p.hecho) return '<div class="mc '+(p.verde?'ok':'mal')+'">'+head+(p.verde?'<span class="epill g">Verde</span>':'<span class="epill r">Rojo</span>')+'</div>'+
+    (p.comentario?'<div class="mc-coment">'+esc(p.comentario)+'</div>':'')+'</div>';
+  return '<div class="mc" data-punto="'+p.id+'" data-foto="'+(p.pideFoto?1:0)+'">'+head+'</div><div class="rbody">'+
+    '<div class="sem"><button class="v" data-estado="Verde">Verde</button><button class="r" data-estado="Rojo">Rojo</button></div>'+
+    (p.pideFoto?'<div class="foto"><label>Sacar foto<input type="file" accept="image/*" capture="environment"></label><span class="mini"></span></div>':'')+
+    '<textarea class="coment" placeholder="¿Qué está mal? (obligatorio en rojo)" hidden></textarea>'+
+    '<button class="btn" data-guardar>Registrar</button></div></div>';
+}
+function activarRonda(v){
+  v.querySelectorAll('[data-punto]').forEach(function(c){
+    var id=c.getAttribute('data-punto');
+    c.querySelectorAll('[data-estado]').forEach(function(b){b.addEventListener('click',function(){
+      ESTADO[id]=b.getAttribute('data-estado');
+      c.querySelectorAll('[data-estado]').forEach(function(x){x.classList.toggle('sel',x===b)});
+      c.querySelector('.coment').hidden=ESTADO[id]!=='Rojo';
+    })});
+    var f=c.querySelector('input[type=file]');
+    if(f) f.addEventListener('change',function(){
+      if(!f.files[0])return;
+      achicar(f.files[0]).then(function(url){FOTOS[id]=url;c.querySelector('.mini').innerHTML='<img src="'+url+'" alt="Foto de '+id+'">'})
+        .catch(function(){alert('No se pudo leer la foto. Probá sacarla de nuevo.')});
+    });
+    c.querySelector('[data-guardar]').addEventListener('click',function(e){registrarPunto(c,id,e.currentTarget)});
+  });
+}
+function achicar(archivo){
+  return new Promise(function(ok,mal){
+    var lector=new FileReader();
+    lector.onerror=mal;
+    lector.onload=function(){
+      var img=new Image();
+      img.onerror=mal;
+      img.onload=function(){
+        var lado=1280,k=Math.min(1,lado/Math.max(img.width,img.height));
+        var cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        ok(cv.toDataURL('image/jpeg',0.72));
+      };
+      img.src=lector.result;
+    };
+    lector.readAsDataURL(archivo);
+  });
+}
+function registrarPunto(c,id,b){
+  var quien=$('auditor').value.trim(),estado=ESTADO[id],com=c.querySelector('.coment').value.trim();
+  if(!quien){alert('Escribí tu nombre en "Quién audita" antes de registrar.');$('auditor').focus();return}
+  if(!estado){alert('Marcá verde o rojo.');return}
+  if(estado==='Rojo'&&!com){alert('En rojo hay que explicar qué está mal.');c.querySelector('.coment').focus();return}
+  if(c.getAttribute('data-foto')==='1'&&!FOTOS[id]){alert('Este punto necesita foto.');return}
+  guardarNombre(quien);b.disabled=true;b.textContent='Registrando…';
+  enviar({tipo:'ronda',punto:id,estado:estado,comentario:com,foto:FOTOS[id]||'',auditor:quien}).then(function(r){
+    if(r.error) throw new Error(r.error);
+    delete FOTOS[id];delete ESTADO[id];cargarHoy();
+  }).catch(function(err){alert('No se registró: '+err.message);b.disabled=false;b.textContent='Registrar'});
+}
+
+/* ---------- Resultados ---------- */
+function cargarResultados(){
+  var v=$('v-res'); v.innerHTML='<div class="wrap"><div class="vacio">Cargando resultados…</div></div>';
+  pedir('accion=resultados&dias=35').then(function(d){
+    if(d.error) throw new Error(d.error);
+    var html=franjaCestas(d.cestasVacias||[])+'<div class="wrap">';
+    html+='<div class="ley"><span><i class="dot verde"></i>Todo coincide</span><span><i class="dot naranja"></i>1 diferencia</span><span><i class="dot rojo"></i>Más de 1</span><span><i class="dot gris"></i>Incompleta</span></div>';
+    html+='<div class="sec">Resumen semanal</div>';
+    if(!d.semanas.length) html+='<div class="vacio">Todavía no hay conteos registrados.</div>';
+    d.semanas.forEach(function(s){html+=semana(s,d.dias)});
+    html+='<div class="sec">Día por día</div>';
+    d.dias.forEach(function(dia){if(dia.items.length||dia.rondaVerdes||dia.rondaRojos||(dia.habil&&dia.cerrado))html+=detalleDia(dia)});
+    html+=listaCestas(d.cestasVacias||[])+'</div>';
+    v.innerHTML=html;
+  }).catch(function(e){error(v,e)});
+}
+function semana(s,dias){
+  var color=s.exactitud===100?'var(--green)':(s.rojo?'var(--red)':'var(--orange)');
+  var cajas='';
+  for(var i=0;i<5;i++){
+    var f=sumar(s.lunes,i),dia=dias.filter(function(x){return x.fecha===f})[0];
+    var c=dia&&dia.auditados?dia.color:(dia&&dia.cerrado&&dia.habil?'gris':'');
+    cajas+='<div class="dia '+c+'"><i></i>'+['lun','mar','mié','jue','vie'][i]+'</div>';
+  }
+  return '<div class="kpi"><div class="kpi-top"><div><div class="kpi-lbl">Semana '+fechaCorta(s.lunes)+' al '+fechaCorta(s.viernes)+'</div>'+
+    '<div class="kpi-sub">'+s.coinciden+' de '+s.auditados+' ítems coinciden · objetivo 100%</div></div>'+
+    '<div class="kpi-val" style="color:'+color+'">'+(s.exactitud==null?'—':s.exactitud+'%')+'</div></div>'+
+    '<div class="dias">'+cajas+'</div>'+
+    '<div class="kpi-sub">'+s.verde+' verde · '+s.naranja+' naranja · '+s.rojo+' rojo · completas en horario '+s.enHorario+'/'+s.dias+'</div>'+
+    '<div class="kpi-sub">Ronda: '+s.rondaVerdes+' de '+s.rondaRevisados+' puntos en verde</div></div>';
+}
+function detalleDia(dia){
+  var hechos=dia.items.filter(function(x){return x.estado==='hecho'}).length;
+  var res=dia.items.length?hechos+'/'+dia.items.length+' contados'+(dia.noCoinciden?' · '+dia.noCoinciden+' dif.':''):'sin auditoría';
+  res+=' · ronda '+dia.rondaVerdes+'/'+dia.ronda.length+(dia.rondaRojos?' · '+dia.rondaRojos+' en rojo':'');
+  var filasR=dia.ronda.map(function(p){
+    if(!p.hecho) return '<tr><td>'+esc(p.nombre)+'</td><td colspan="4" class="no">Sin revisar</td></tr>';
+    return '<tr><td>'+esc(p.nombre)+'</td><td class="'+(p.verde?'si':'no')+'">'+(p.verde?'Verde':'Rojo')+'</td><td>'+esc(p.comentario)+'</td>'+
+      '<td>'+(p.foto?'<a class="verfoto" href="'+esc(p.foto)+'" target="_blank" rel="noopener">ver foto</a>':'')+'</td><td>'+esc(p.hora)+(p.enHorario?'':' tarde')+' · '+esc(p.auditor)+'</td></tr>';
+  }).join('');
+  var filas=dia.items.map(function(x){
+    if(x.estado!=='hecho') return '<tr><td>'+esc(x.insumo)+'</td><td>'+CODIGO[x.grupo]+'</td><td colspan="5" class="no">Sin contar</td></tr>';
+    return '<tr><td>'+esc(x.insumo)+'</td><td>'+CODIGO[x.grupo]+'</td><td class="num">'+x.contado+'</td><td class="num">'+x.planilla+'</td>'+
+      '<td class="num '+(x.coincide?'si':'no')+'">'+(x.coincide?'Sí':(x.diferencia>0?'+':'')+x.diferencia)+'</td>'+
+      '<td>'+esc(x.hora)+(x.enHorario?'':' tarde')+'</td><td>'+esc(x.auditor)+'</td></tr>';
+  }).join('');
+  return '<details class="dd"><summary><i class="dot '+(dia.items.length?dia.color:'gris')+'"></i>'+fechaLarga(dia.fecha)+
+    '<span class="res">'+res+(dia.auditores.length?'<br>'+esc(dia.auditores.join(', '))+(dia.habil&&dia.auditores.indexOf(RESPONSABLE)<0&&!dia.auditores.every(function(x){return x==='Ejemplo'})?' (reemplazo)':''):'')+'</span></summary>'+
+    (filas?'<div class="tabla"><table><tr><th>Insumo</th><th>Grupo</th><th>Contado</th><th>Planilla</th><th>Coincide</th><th>Hora</th><th>Auditó</th></tr>'+filas+'</table></div>':'')+
+    '<div class="tabla"><table><tr><th>Punto de ronda</th><th>Estado</th><th>Comentario</th><th>Foto</th><th>Hora y auditor</th></tr>'+filasR+'</table></div></details>';
+}
+
+/* ---------- Pestañas ---------- */
+function mostrar(cual){
+  var res=cual==='res';
+  $('t-contar').classList.toggle('act',!res);$('t-res').classList.toggle('act',res);
+  $('t-contar').setAttribute('aria-selected',!res);$('t-res').setAttribute('aria-selected',res);
+  $('v-contar').hidden=res;$('v-res').hidden=!res;
+  if(res) cargarResultados(); else cargarHoy();
+}
+$('t-contar').addEventListener('click',function(){mostrar('contar')});
+$('t-res').addEventListener('click',function(){mostrar('res')});
+mostrar(new URLSearchParams(location.search).get('vista')==='resultados'?'res':'contar');
+</script>
+</body>
+</html>
