@@ -54,6 +54,7 @@ body{padding-bottom:env(safe-area-inset-bottom)}
 .unid{font-family:var(--mono);font-size:11px;color:var(--muted);min-width:60px}
 .btn{flex:1;padding:11px 10px;border-radius:8px;border:0;background:var(--accent);color:#fff;font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
 .btn:disabled{opacity:.5}
+.btn.validar{display:block;width:100%;padding:14px;font-size:18px;margin:4px 0 6px}
 .epill{font-family:var(--mono);font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;border:1px solid var(--border);background:var(--s2);color:var(--muted);white-space:nowrap}
 .epill.g{background:var(--gbg);border-color:var(--gborder);color:var(--green)}
 .epill.r{background:var(--rbg);border-color:var(--rborder);color:var(--red)}
@@ -273,6 +274,8 @@ function cargarHoy(){
       '<div class="resp">Responsable: '+RESPONSABLE+', de lunes a viernes</div></div>';
     html+='<div class="sec">Ítems de hoy</div>';
     d.items.forEach(function(it){cont[it.grupo]=(cont[it.grupo]||0)+1;html+=tarjeta(it,CODIGO[it.grupo]+cont[it.grupo])});
+    var pendientes=d.items.filter(function(x){return !x.hecho}).length;
+    if(pendientes) html+='<button class="btn validar" id="validar">Validar conteo ('+pendientes+')</button>';
     html+='<div class="sec">Ronda del pañol</div>';
     ronda.forEach(function(p){html+=puntoRonda(p)});
     html+=listaCestas(d.cestasVacias||[])+'</div>';
@@ -284,7 +287,8 @@ function cargarHoy(){
     })});
     $('auditor').addEventListener('input',marcarChips);
     $('auditor').addEventListener('change',function(e){guardarNombre(e.target.value.trim())});
-    v.querySelectorAll('button[data-id]').forEach(function(b){b.addEventListener('click',registrar)});
+    v.querySelectorAll('input[data-id]').forEach(function(inp){inp.addEventListener('input',function(){BORRADOR[inp.getAttribute('data-id')]=inp.value})});
+    if($('validar')) $('validar').addEventListener('click',function(){validarConteo(d.items.filter(function(x){return !x.hecho}))});
   }).catch(function(e){error(v,e)});
 }
 function tarjeta(it,cod){
@@ -292,19 +296,31 @@ function tarjeta(it,cod){
     '<div class="mc-sub">'+esc(it.titulo)+(it.hecho?' · '+esc(it.hora)+' · '+esc(it.auditor):'')+'</div></div>';
   if(it.hecho) return '<div class="mc '+(it.coincide?'ok':'mal')+'">'+head+(it.coincide?'<span class="epill g">Coincide</span>':'<span class="epill r">No coincide</span>')+'</div></div>';
   return '<div class="mc" id="f'+it.id+'">'+head+'</div><div class="mc-body">'+
-    '<input class="ainp" type="number" inputmode="numeric" min="0" step="1" id="c'+it.id+'" aria-label="Cantidad contada de '+esc(it.insumo)+'">'+
-    '<span class="unid">'+esc(it.unidad)+'</span><button class="btn" data-id="'+it.id+'">Registrar</button></div></div>';
+    '<input class="ainp" type="number" inputmode="numeric" min="0" step="1" id="c'+it.id+'" data-id="'+it.id+'" value="'+esc(BORRADOR[it.id]||'')+'" aria-label="Cantidad contada de '+esc(it.insumo)+'">'+
+    '<span class="unid">'+esc(it.unidad)+'</span></div></div>';
 }
-function registrar(e){
-  var b=e.currentTarget,id=b.getAttribute('data-id'),cant=$('c'+id).value,quien=$('auditor').value.trim();
-  if(!quien){alert('Escribí tu nombre en "Quién audita" antes de registrar.');$('auditor').focus();return}
-  if(cant===''){alert('Cargá la cantidad que contaste.');$('c'+id).focus();return}
-  if(!confirm('¿Registrar '+cant+'? El primer conteo es el que vale y no se puede corregir.'))return;
-  guardarNombre(quien); b.disabled=true; b.textContent='Registrando…';
-  enviar({id:Number(id),contado:Number(cant),auditor:quien}).then(function(r){
-    if(r.error) throw new Error(r.error);
-    cargarHoy();
-  }).catch(function(err){alert('No se registró: '+err.message);b.disabled=false;b.textContent='Registrar'});
+var BORRADOR={};
+function validarConteo(items){
+  var quien=$('auditor').value.trim(),b=$('validar');
+  if(!quien){alert('Escribí tu nombre en "Quién audita" antes de validar.');$('auditor').focus();return}
+  var falta=items.filter(function(it){return $('c'+it.id).value===''});
+  if(falta.length){alert('Falta cargar la cantidad de: '+falta.map(function(x){return x.insumo}).join(', ')+'.');$('c'+falta[0].id).focus();return}
+  var resumen=items.map(function(it){return '· '+it.insumo+': '+$('c'+it.id).value+' '+it.unidad}).join('\n');
+  if(!confirm('¿Validar estos conteos?\n\n'+resumen+'\n\nEl primer conteo es el que vale y no se puede corregir.'))return;
+  guardarNombre(quien);b.disabled=true;
+  var errores=[],k=0;
+  (function siguiente(){
+    if(k>=items.length){
+      BORRADOR={};
+      if(errores.length) alert('No se registraron:\n'+errores.join('\n'));
+      cargarHoy();return;
+    }
+    var it=items[k++];
+    b.textContent='Registrando '+k+' de '+items.length+'…';
+    enviar({id:it.id,contado:Number($('c'+it.id).value),auditor:quien}).then(function(r){
+      if(r.error) errores.push(it.insumo+': '+r.error); else delete BORRADOR[it.id];
+    }).catch(function(e){errores.push(it.insumo+': '+e.message)}).then(siguiente);
+  })();
 }
 
 /* ---------- Ronda ---------- */
