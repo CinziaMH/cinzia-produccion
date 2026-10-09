@@ -382,20 +382,25 @@ function renderAsistencia() {
   const antesDeArrancar = minAhora < 8*60 + 15;   // antes de las 08:15 todavía no fichó nadie
   const roster = m.roster_n || 0;
 
-  // ----- hoy -----
-  let izq;
-  if (!dHoy || antesDeArrancar) {
+  // ----- hoy (antes de las 08:15 muestra el último día hábil) -----
+  let izq, titIzq = 'ASISTENCIA DE HOY';
+  let dVer = (dHoy && !antesDeArrancar) ? dHoy : null;
+  if (!dVer) {
+    const prev = m.dias.filter(x => x.fecha < hoy).sort((a, b) => a.fecha < b.fecha ? 1 : -1)[0];
+    if (prev) { dVer = prev; const pp = prev.fecha.split('-'); titIzq = 'ASISTENCIA DEL ÚLTIMO DÍA · ' + pp[2] + '/' + pp[1] + ' (hoy arranca 08:15)'; }
+  }
+  if (!dVer) {
     izq = '<div class="lista"><div class="li">La jornada de hoy todavía no arrancó — se completa desde las 08:15.</div></div>';
   } else {
-    const aus = _limpia(dHoy.ausentes_nombres), tar = _limpia(dHoy.tardes_nombres);
+    const aus = _limpia(dVer.ausentes_nombres), tar = _limpia(dVer.tardes_nombres);
     const pres = Math.max(0, roster - aus.length);
     izq = '<div class="ahero">'
       + '<div class="c p"><div class="n">' + pres + '</div><div class="l">PRESENTES</div></div>'
       + '<div class="c f"><div class="n">' + aus.length + '</div><div class="l">FALTARON</div></div>'
       + '<div class="c t"><div class="n">' + tar.length + '</div><div class="l">LLEGARON TARDE</div></div></div>'
-      + '<div class="asub">FALTARON HOY</div><div class="achips">'
+      + '<div class="asub">FALTARON</div><div class="achips">'
       + (aus.length ? aus.map(n => '<span class="achip">' + esc(n) + '</span>').join('') : '<span style="color:var(--ok);font-weight:700">✓ Sin faltas</span>') + '</div>'
-      + '<div class="asub">LLEGADAS TARDE HOY</div><div class="achips">'
+      + '<div class="asub">LLEGADAS TARDE</div><div class="achips">'
       + (tar.length ? tar.map(t => { const p = String(t).split(' '); const hh = /^\d{1,2}:\d{2}$/.test(p[p.length-1]) ? p.pop() : ''; return '<span class="achip t">' + esc(p.join(' ')) + (hh ? '<small>⏰ ' + esc(hh) + '</small>' : '') + '</span>'; }).join('') : '<span style="color:var(--ok);font-weight:700">✓ Todos en horario</span>') + '</div>';
   }
 
@@ -427,7 +432,7 @@ function renderAsistencia() {
   const pctF = (diasCon && roster) ? Math.round(totF / (diasCon * roster) * 1000) / 10 : 0;
 
   return '<div class="asis">'
-    + '<div class="botcard"><h4>ASISTENCIA DE HOY</h4>' + izq + '</div>'
+    + '<div class="botcard"><h4>' + titIzq + '</h4>' + izq + '</div>'
     + '<div class="botcard"><h4>CÓMO VENIMOS · ' + MN.toUpperCase() + ' ' + Y + '</h4><div class="cal">' + cal + '</div>'
     + '<div class="caltot"><b>' + totF + '</b> faltas · <b>' + totT + '</b> llegadas tarde · ' + diasCon + ' días · ausentismo <b>' + pctF + '%</b> · F = faltas · T = llegadas tarde</div></div>'
     + '</div>';
