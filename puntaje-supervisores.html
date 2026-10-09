@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puntaje de Supervisores · DYFSA</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#fff; --surface-alt:#f2f4f7; --border:#e3e6ea;
+    --ink:#12161c; --muted:#6b7480; --accent:#E85D2C; --navy:#1E3A5F;
+    --good:#1a7f4b; --warn:#b7791f; --bad:#c0392b;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+  a.volver{font-size:12px;color:var(--muted);text-decoration:none}
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:6px 0 4px}
+  h1{font-size:21px;margin:0;letter-spacing:-.02em;color:var(--navy)}
+  .subtitle{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .ctrls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  input[type=date]{font:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--border);
+    border-radius:8px;background:var(--surface);color:var(--ink)}
+  .btn{font:inherit;font-size:12.5px;padding:6px 11px;border:1px solid var(--border);border-radius:8px;
+    background:var(--surface);color:var(--ink);cursor:pointer}
+  .btn:hover{background:var(--surface-alt)}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .seg button{font:inherit;font-size:12.5px;padding:6px 11px;border:0;background:var(--surface);cursor:pointer;color:var(--ink)}
+  .seg button.on{background:var(--navy);color:#fff}
+
+  .note{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);
+    border-radius:10px;padding:10px 14px;font-size:12.5px;color:#333;margin:14px 0}
+  .status{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted);margin:14px 0}
+  .spin{width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--accent);
+    border-radius:50%;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  section.box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-top:14px}
+  section.box h2{font-size:14px;margin:0 0 10px}
+  .semtab{width:100%;border-collapse:collapse;font-size:13px}
+  .semtab th,.semtab td{padding:7px 6px;text-align:center;border-bottom:1px solid var(--border)}
+  .semtab th:first-child,.semtab td:first-child{text-align:left}
+  .semtab th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+  .semtab th.dia{cursor:pointer}
+  .semtab th.sel{color:var(--accent)}
+  .semtab td.sel{background:#fff4ef}
+  .chip{display:inline-block;min-width:38px;padding:2px 7px;border-radius:99px;font-weight:800;font-variant-numeric:tabular-nums}
+  .scrollx{overflow-x:auto}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+  .card-head{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid var(--border)}
+  .sup-name{font-size:16px;font-weight:750;margin:0}
+  .sup-meta{font-size:12px;color:var(--muted);margin-top:1px}
+  .sup-monts{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px}
+  .mets{padding:2px 16px 16px}
+  .met{border-top:1px solid var(--border);padding:12px 2px}
+  .met:first-child{border-top:none}
+  .met.info{background:var(--surface-alt);margin:6px -8px 0;padding:12px 10px;border-radius:10px;border-top:none}
+  .met-top{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;user-select:none}
+  .met-name{font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px}
+  .caret{font-size:9px;color:var(--muted);transition:transform .15s}
+  .met.open .caret{transform:rotate(90deg)}
+  .met-right{display:flex;align-items:baseline;gap:9px}
+  .met-raw{font-size:12px;color:var(--muted);font-family:var(--mono)}
+  .met-score{font-size:15.5px;font-weight:800;min-width:34px;text-align:right}
+  .tag{font-size:10px;font-weight:700;color:var(--muted);border:1px solid var(--border);border-radius:99px;padding:0 6px;background:var(--surface)}
+  .bar{height:5px;background:var(--surface-alt);border-radius:99px;margin-top:8px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:99px}
+  .detail{display:none;margin-top:11px;background:var(--surface-alt);border:1px solid var(--border);border-radius:10px;padding:12px}
+  .met.info .detail{background:var(--surface)}
+  .met.open .detail{display:block}
+  .dlab{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:0 0 5px}
+  .dblock+.dblock{margin-top:11px}
+  table.t{width:100%;border-collapse:collapse;font-size:12px}
+  table.t th{text-align:right;font-weight:600;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;padding:4px 6px;border-bottom:1px solid var(--border)}
+  table.t th:first-child,table.t td:first-child{text-align:left}
+  table.t td{padding:4px 6px;border-bottom:1px solid rgba(0,0,0,.045);text-align:right;font-variant-numeric:tabular-nums}
+  table.t tfoot td{font-weight:700;border-top:1px solid var(--border)}
+  .mcode{font-family:var(--mono);font-weight:700;font-size:11.5px}
+  .fx{font-family:var(--mono);font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:7px 9px;color:#333}
+  .flag{font-size:11.5px;color:var(--warn);margin-top:7px;display:block}
+  .scroll{max-height:260px;overflow:auto;border-radius:7px;background:var(--surface);border:1px solid var(--border);padding:2px 8px}
+  .pill{display:inline-block;font-size:10px;font-family:var(--mono);font-weight:700;padding:1px 6px;border-radius:99px;background:var(--surface-alt);border:1px solid var(--border)}
+  footer{margin-top:22px;font-size:11.5px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="volver" href="./">← Portal de producción</a>
+  <header class="top">
+    <div>
+      <h1>Puntaje de Supervisores</h1>
+      <div class="subtitle">Día a día · DYFSA · datos reales del hora a hora de Odoo</div>
+    </div>
+    <div class="ctrls">
+      <div class="seg"><button id="vDia" class="on">Día</button><button id="vSem">Semana</button></div>
+      <button class="btn" id="prev" title="Día anterior">◀</button>
+      <input type="date" id="fecha">
+      <button class="btn" id="next" title="Día siguiente">▶</button>
+      <button class="btn" id="hoy">Hoy</button>
+      <button class="btn primary" id="recargar">Actualizar</button>
+    </div>
+  </header>
+
+  <div class="note">
+    <b>Índice 0–100</b> = promedio simple de 3 métricas: productividad, % de tareas validadas y huecos sin tarea.
+    El <b>DPU</b> (defectos por unidad) se muestra pero <b>todavía no suma al índice</b> — no tiene umbral.
+    Cada supervisor se mide sobre <b>sus operarios</b> según el reparto de la validación de tareas.
+    Tocá una métrica para ver el cálculo completo.
+  </div>
+
+  <div class="status" id="status"><div class="spin"></div><span>Cargando…</span></div>
+
+  <section class="box" id="semBox" style="display:none">
+    <h2 id="semTit">Evolución de la semana</h2>
+    <div class="scrollx"><table class="semtab" id="semTab"></table></div>
+  </section>
+
+  <div class="grid" id="grid"></div>
+  <footer id="foot"></footer>
+</div>
+
+<script>
+//=====================================================================
+// CONFIGURACIÓN
+//=====================================================================
+var EP = 'https://script.google.com/macros/s/AKfycbwXM4MiCi2efiRC81FBmke2RjaEkLmgiuYdgjkCbk8sAz_7Odmk1dI1y2mCg3u36uPrew/exec';
+var JORNADA_MIN = 450;
+
+// Reparto por operario (Riki, 08/10/2026 — una sola nave, según validación de tareas).
+// Cada regla: lista de partes que deben estar en el nombre (prefijo de alguna palabra).
+var SUPS = [
+  { key:'yance', nombre:'Alejandro Yance',
+    alcance:'Soldadura · S1 Control numérico · M1 Carpintería · S7 Tapicería',
+    montajesDefecto:['M0','M1'],
+    ops:[
+      {n:'Sergio Gimenez',     r:['gimenez'],           s:'Soldadura'},
+      {n:'Enzo Ubilla',        r:['ubilla'],            s:'Pre ensamble 0'},
+      {n:'Lucas Torres',       r:['torres'],            s:'S1 Control numérico'},
+      {n:'Facundo Fernández',  r:['fernandez'],         s:'S1 Control numérico'},
+      {n:'Guillermo González', r:['gonzal','guillermo'],s:'M1 Carpintería'},
+      {n:'Fabrizio Carrizo',   r:['carrizo'],           s:'M1 Carpintería'},
+      {n:'Gabriel Vega',       r:['vega','gabriel'],    s:'S7 Tapicería'}
+    ]},
+  { key:'orona', nombre:'Rodrigo Orona',
+    alcance:'M2 · S2 · M3 · M4 · M5 · S5 · S6 · M7 Pintura · Control de calidad',
+    montajesDefecto:'RESTO',
+    ops:[
+      {n:'Gonzalo Molina',     r:['molina'],            s:'M2 Instalaciones 1'},
+      {n:'Benjamín Barono',    r:['barono'],            s:'M2 Instalaciones 1'},
+      {n:'Richard Balan',      r:['balan'],             s:'M2 Instalaciones 1'},
+      {n:'Ezequiel Galván',    r:['galvan'],            s:'M3 Revestimiento ext. 1'},
+      {n:'Mauro Vega',         r:['vega','mauro'],      s:'M3 Revestimiento ext. 1'},
+      {n:'Guillermo Vázquez',  r:['vazquez'],           s:'M3 Revestimiento ext. 1'},
+      {n:'Pablo Bravo',        r:['bravo'],             s:'S2 Aberturas'},
+      {n:'Mayco Aris',         r:['aris','mayco'],      s:'S2'},
+      {n:'Mariano Gómez',      r:['gomez'],             s:'S2'},
+      {n:'Axel Carreño',       r:['carreno'],           s:'S2'},
+      {n:'Mauro Rodríguez',    r:['rodriguez'],         s:'M4 Instalaciones 2/3'},
+      {n:'Lautaro Moreyra',    r:['moreyra'],           s:'M4 Instalaciones 2/3'},
+      {n:'Esteban Aris',       r:['aris','esteban'],    s:'M4 Instalaciones 2/3'},
+      {n:'Lucas Pradal',       r:['pradal'],            s:'M4 Instalaciones 2/3'},
+      {n:'Alan Aguilera',      r:['aguilera'],          s:'M4 Instalaciones 2/3'},
+      {n:'Jazmín Ibarba',      r:['ibarba'],            s:'M4 Instalaciones 2/3'},
+      {n:'Ignacio Heredia Bedoya', r:['bedoya'],        s:'M5 Revestimiento ext. 2'},
+      {n:'Jonathan Gordillo',  r:['gordillo'],          s:'S6 Ensanches'},
+      {n:'César Lazos',        r:['lazos'],             s:'S6 Ensanches'},
+      {n:'Eduardo Illesca',    r:['illesca'],           s:'M7 Pintura'},
+      {n:'Felipe Edelstein',   r:['edelstein'],         s:'Control de calidad'},
+      {n:'Javier Campo',       r:['campo'],             s:'Control de calidad'}
+    ]}
+];
+// No cuentan como operarios
+var EXCLUIR = [['yance'],['orona'],['orona','facundo'],['quispe']];
+
+var MONT_NOMBRE = {
+  M0:'Soldadura', M1:'Revestim. interior', M2:'Inst. eléctricas', M3:'Revestim. exterior',
+  M4:'Inst. agua y gas', M5:'Aberturas', M6:'Slide-out', M7:'Pintura', QC:'Control final',
+  OTROS:'Pre ensambles / otros', ND:'Sin clasificar'
+};
+
+//=====================================================================
+// CLASIFICADOR DE DEFECTOS → MONTAJE DE ORIGEN
+//=====================================================================
+var REGLAS = [
+  ['M4', /TANQUE|AGUA|GAS|INODORO|DUCHA|BACHA|DESAGOTE|CALDERA|GASOIL|MANGUERA|DISPENSER|BA.O|CALEFO|RESUM|BOMBA|CANILLA|GRIFER|CLIMA|TERMOTANQUE|SANITARI/],
+  ['M2', /CABLE|ELECTR|LED|LUZ|LUCES|TABLERO|FUSIBLE|220|12V|PANEL(ES)? SOLAR|REGULADOR|STARLINK|\bTV\b|VOLTIMETRO|TECLA|EXTRACTOR|TOMA|BATER|AIRE ACONDICIONADO|AIRE 12|INVERSOR|SENSOR|CARGADOR|ANTENA|ILUMINA/],
+  ['M5', /VENTANA|ABERTURA|MAMPARA|CLARABOYA|VENTILUZ|PUERTA EXTERIOR|CERRADURA|PICAPORTE|TRABA/],
+  ['M7', /PINTAR|PINTURA/],
+  ['M3', /EXTERIOR|TECHO|MASILL|FIBRA|GUARDABARRO|ESPEJO|CALCO|ZOCALO|SELLAR VEHICULO|SELLADO DE TECHO|DEBAJO DE VEHICULO|BAJO VEHI/],
+  ['M6', /SLIDE/],
+  ['M0', /SOLD|ESTRUCTURA|CHASIS|CABINA|HERRER|OXIDAD|SOPORTE DE ESCALON|ESCALON|PARAGOLPE/],
+  ['M1', /MUEBLE|CAJON|MESA|ALACENA|TAPA FALSA|PARED|REVESTIM|PLAFON|RESPALDA|CORTINA|ALMOHAD|BUTACA|TAPIZ|HELADERA|MOLDURA|PISO|BAULERA|PUERTA DE I|ACRILICO|EMPROLIJAR|LIMPIEZA|SELLAD|SELLAR|COLOCAR|INSTALAR|FIJAR|AJUSTAR|ARMAR|ARMADO/]
+];
+function clasificar(txt){
+  var t = (txt||'').toUpperCase();
+  for (var i=0;i<REGLAS.length;i++) if (REGLAS[i][1].test(t)) return REGLAS[i][0];
+  return 'ND';
+}
+
+//=====================================================================
+// UTILIDADES
+//=====================================================================
+function R(x){ return Math.round(x); }
+function R1(x){ return Math.round(x*10)/10; }
+function R2(x){ return Math.round(x*100)/100; }
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+function h(min){ return R1(min/60); }
+function color(p){ return p==null ? 'var(--muted)' : (p>=85 ? 'var(--good)' : (p>=65 ? 'var(--warn)' : 'var(--bad)')); }
+function fondo(p){ return p==null ? '#eef0f3' : (p>=85 ? '#e3f4ea' : (p>=65 ? '#fbf0dc' : '#fbe3e0')); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+function hhmm2min(s){ return s ? (+s.slice(0,2))*60 + (+s.slice(3,5)) : null; }
+function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function deIso(s){ var p=s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+function fmtFecha(s){ var p=s.split('-'); return p[2]+'/'+p[1]; }
+var DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function diaCorto(s){ return DIAS[deIso(s).getDay()]+' '+fmtFecha(s); }
+function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z ]/g,' ').split(/\s+/).filter(Boolean); }
+function calza(nombre, regla){
+  var tk = norm(nombre);
+  return regla.every(function(p){ return tk.some(function(t){ return t.indexOf(p)===0; }); });
+}
+function semanaDe(s){
+  var d = deIso(s), dow = (d.getDay()+6)%7, out=[];
+  d.setDate(d.getDate()-dow);
+  for (var i=0;i<6;i++){ var y=new Date(d.getTime()); y.setDate(d.getDate()+i); out.push(iso(y)); }
+  return out;
+}
+
+// operario del tablero → {sup, ficha} | 'excluido' | null
+function asignar(nom){
+  for (var i=0;i<EXCLUIR.length;i++){
+    if (calza(nom, EXCLUIR[i])){
+      // "Orona" excluye a Rodrigo y Facundo; nadie más se apellida así
+      return 'excluido';
+    }
+  }
+  for (var a=0;a<SUPS.length;a++)
+    for (var b=0;b<SUPS[a].ops.length;b++)
+      if (calza(nom, SUPS[a].ops[b].r)) return {sup:SUPS[a].key, ficha:SUPS[a].ops[b]};
+  return null;
+}
+
+//=====================================================================
+// DATOS (con memoria por fecha)
+//=====================================================================
+var CACHE = {};
+function traer(qs){
+  return fetch(EP+qs).then(function(r){ return r.json(); }).catch(function(e){ return {err:String(e)}; });
+}
+function dia(f, forzar){
+  if (!forzar && CACHE[f]) return Promise.resolve(CACHE[f]);
+  return traer('?view=horaxhora&fecha='+f).then(function(j){ CACHE[f]=j; return j; });
+}
+var QA = null;
+function calidad(forzar){
+  if (!forzar && QA) return Promise.resolve(QA);
+  return traer('?view=calidad').then(function(j){ QA=j; return j; });
+}
+
+//=====================================================================
+// AGREGACIÓN de uno o varios días
+//=====================================================================
+function agregar(listaDias, qa){
+  var S = {};   // por supervisor
+  SUPS.forEach(function(s){ S[s.key] = {M:{}, OP:{}, vehs:{}}; });
+  var DEF = [], sinAsignar = {}, diasCon = [], diasSin = [];
+
+  listaDias.forEach(function(x){
+    var ops = (x.data && x.data.operarios) || [];
+    var conTareas = ops.filter(function(o){ return (o.real||[]).length; });
+    if (!conTareas.length){ diasSin.push(x.fecha); return; }
+    diasCon.push(x.fecha);
+
+    conTareas.forEach(function(o){
+      var rs = o.real.slice().sort(function(a,b){ return (a.ini||'').localeCompare(b.ini||''); });
+
+      // los retrabajos son defectos sin importar quién los hizo
+      rs.forEach(function(w){
+        if (w.e==='nc' || w.mwc==='RETRAB')
+          DEF.push({fuente:'Retrabajo', mo:w.mo, txt:w.wo, montaje:clasificar(w.wo), fecha:x.fecha});
+      });
+
+      var as = asignar(o.nom);
+      if (as==='excluido') return;
+      if (!as){ sinAsignar[o.nom]=1; return; }
+      var B = S[as.sup];
+
+      var op = B.OP[as.ficha.n] || (B.OP[as.ficha.n] = {n:as.ficha.n, s:as.ficha.s, opdias:0, gap:0, obj:0, real:0, ok:0, ng:0, sin:0});
+      op.opdias++;
+      var prevFin=null;
+      rs.forEach(function(w){
+        var i = hhmm2min(w.ini), f = hhmm2min(w.fin);
+        if (prevFin!=null && i!=null && i>prevFin) op.gap += (i-prevFin);
+        if (f!=null) prevFin = prevFin==null ? f : Math.max(prevFin,f);
+        if (w.e==='nc' || w.mwc==='RETRAB') return;   // retrabajo: no productivo
+        var k = w.mwc || 'ND';
+        var m = B.M[k] || (B.M[k] = {obj:0, real:0, n:0, mos:{}});
+        m.n++; m.obj += (w.obj||0); m.real += (w.rmin||0); m.mos[w.mo]=1;
+        B.vehs[w.mo]=1;
+        op.obj += (w.obj||0); op.real += (w.rmin||0);
+        if (w.val==='ok') op.ok++; else if (w.val==='ng') op.ng++; else op.sin++;
+      });
+    });
+  });
+
+  // alertas de calidad dentro del período
+  var desde = listaDias[0].fecha, hasta = listaDias[listaDias.length-1].fecha;
+  ['dpu_cf','dpu_m4'].forEach(function(k){
+    var b = qa && qa[k];
+    if (b && b.items) b.items.forEach(function(it){
+      var f = String(it.fecha||'').slice(0,10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(f) && (f<desde || f>hasta)) return;
+      DEF.push({fuente:'Alerta de calidad', mo:String(it.veh||'').replace('Dyfsa/MO/',''), txt:it.problema,
+                montaje:clasificar(it.problema), fecha:f});
+    });
+  });
+  var visto={}, DEF2=[];
+  DEF.forEach(function(d){ var k=d.fuente+'|'+d.mo+'|'+d.txt; if (visto[k]) return; visto[k]=1; DEF2.push(d); });
+
+  return {S:S, DEF:DEF2, sinAsignar:Object.keys(sinAsignar), diasCon:diasCon, diasSin:diasSin};
+}
+
+//=====================================================================
+// MÉTRICAS
+//=====================================================================
+function calcular(sup, AG){
+  var B = AG.S[sup.key];
+
+  // 1. Productividad por montaje (tope 100 c/u)
+  var filasP = Object.keys(B.M).filter(function(k){ return B.M[k].real>0; }).sort().map(function(k){
+    var m=B.M[k]; return {m:k, obj:m.obj, real:m.real, n:m.n, mos:Object.keys(m.mos).length, efic:R(m.obj/m.real*100)};
+  });
+  var prom = filasP.length ? R(filasP.reduce(function(a,f){return a+f.efic;},0)/filasP.length) : null;
+  var tope = filasP.length ? R(filasP.reduce(function(a,f){return a+Math.min(f.efic,100);},0)/filasP.length) : null;
+  var sP = tope;
+
+  // 2. Validadas (por operario)
+  var ops = Object.keys(B.OP).map(function(k){ return B.OP[k]; }).sort(function(a,b){ return a.s.localeCompare(b.s)||a.n.localeCompare(b.n); });
+  var vOk=0, vTot=0;
+  ops.forEach(function(o){ vOk+=o.ok; vTot+=o.ok+o.ng+o.sin; });
+  var sV = vTot ? R(vOk/vTot*100) : null;
+
+  // 3. Huecos (por operario)
+  var gap=0, disp=0;
+  ops.forEach(function(o){ gap+=o.gap; disp+=o.opdias*JORNADA_MIN; });
+  var pctOcio = disp ? R(gap/disp*100) : null;
+  var sH = pctOcio==null ? null : clamp(100-pctOcio,0,100);
+
+  // 4. DPU (solo informativo)
+  var propios = sup.montajesDefecto;
+  var ajenos = {};
+  SUPS.forEach(function(s){ if (s.montajesDefecto!=='RESTO') s.montajesDefecto.forEach(function(m){ ajenos[m]=1; }); });
+  var defs = AG.DEF.filter(function(d){
+    if (d.montaje==='ND') return false;
+    return propios==='RESTO' ? !ajenos[d.montaje] : propios.indexOf(d.montaje)>=0;
+  });
+  var vehs = {}; Object.keys(B.vehs).forEach(function(v){ vehs[v]=1; });
+  defs.forEach(function(d){ if (d.mo) vehs[d.mo]=1; });
+  var nVeh = Object.keys(vehs).length;
+  var dpu = nVeh ? R2(defs.length/nVeh) : null;
+  var porMont = {}; defs.forEach(function(d){ porMont[d.montaje]=(porMont[d.montaje]||0)+1; });
+
+  var val = [sP,sV,sH].filter(function(s){ return s!=null; });
+  var indice = val.length ? R(val.reduce(function(a,b){return a+b;},0)/val.length) : null;
+
+  return { sup:sup, indice:indice, nOps:ops.length, nPlant:sup.ops.length,
+    metricas:[
+      {k:'prod', nombre:'Productividad', score:sP, raw: prom==null?'—':prom+'%', d:{tipo:'prod', filas:filasP, prom:prom, tope:tope}},
+      {k:'val',  nombre:'% de tareas validadas', score:sV, raw: vTot? vOk+'/'+vTot : '—', d:{tipo:'val', ops:ops, ok:vOk, tot:vTot}},
+      {k:'huec', nombre:'Huecos sin tarea', score:sH, raw: pctOcio==null?'—':pctOcio+'% ocioso', d:{tipo:'huec', ops:ops, gap:R(gap), disp:disp, pct:pctOcio}},
+      {k:'dpu',  nombre:'DPU — defectos por unidad', score:null, info:true, raw: dpu==null?'—':dpu+' def/veh', d:{tipo:'dpu', defs:defs, nVeh:nVeh, dpu:dpu, porMont:porMont}}
+    ]};
+}
+
+//=====================================================================
+// RENDER
+//=====================================================================
+function ring(pct){
+  var p = pct==null?0:clamp(pct,0,100), c=color(pct), r=25, C=2*Math.PI*r;
+  return '<svg width="66" height="66" viewBox="0 0 66 66" style="flex:0 0 auto">'+
+    '<circle cx="33" cy="33" r="'+r+'" fill="none" stroke="var(--surface-alt)" stroke-width="7"/>'+
+    '<circle cx="33" cy="33" r="'+r+'" fill="none" stroke="'+c+'" stroke-width="7" stroke-linecap="round" stroke-dasharray="'+(C*p/100).toFixed(1)+' '+C.toFixed(1)+'" transform="rotate(-90 33 33)"/>'+
+    '<text x="33" y="34" text-anchor="middle" dominant-baseline="central" font-size="19" font-weight="800" fill="'+c+'" font-family="inherit">'+(pct==null?'—':pct)+'</text></svg>';
+}
+
+function tProd(d){
+  if (!d.filas.length) return '<div class="fx">Sin tareas cerradas en el período.</div>';
+  var f = d.filas.map(function(r){
+    return '<tr><td><span class="mcode">'+r.m+'</span> '+esc(MONT_NOMBRE[r.m]||'')+'</td><td>'+r.n+'</td><td>'+r.mos+'</td><td>'+h(r.obj)+'</td><td>'+h(r.real)+'</td>'+
+      '<td style="color:'+color(r.efic)+';font-weight:700">'+r.efic+'%</td><td>'+Math.min(r.efic,100)+'</td></tr>';
+  }).join('');
+  return '<div class="dblock"><p class="dlab">Por montaje (según el centro de trabajo de la tarea)</p><table class="t">'+
+    '<thead><tr><th>Montaje</th><th>Tareas</th><th>Veh.</th><th>Obj (h)</th><th>Real (h)</th><th>Efic.</th><th>Punt.</th></tr></thead><tbody>'+f+'</tbody>'+
+    '<tfoot><tr><td>Promedio</td><td colspan="4"></td><td>'+d.prom+'%</td><td>'+d.tope+'</td></tr></tfoot></table></div>'+
+    '<div class="dblock"><div class="fx">eficiencia = Σ tiempo objetivo ÷ Σ tiempo real × 100 · puntaje = promedio con tope 100 por montaje = <b>'+d.tope+'</b></div></div>';
+}
+function tVal(d){
+  if (!d.tot) return '<div class="fx">Sin tareas cerradas en el período.</div>';
+  var f = d.ops.filter(function(o){ return o.ok+o.ng+o.sin; }).map(function(o){
+    var t=o.ok+o.ng+o.sin, p=R(o.ok/t*100);
+    return '<tr><td>'+esc(o.n)+' <span class="pill">'+esc(o.s)+'</span></td><td>'+o.ok+'</td><td>'+o.ng+'</td><td>'+o.sin+'</td><td>'+t+'</td><td style="color:'+color(p)+';font-weight:700">'+p+'%</td></tr>';
+  }).join('');
+  var p = R(d.ok/d.tot*100);
+  return '<div class="dblock"><p class="dlab">Por operario</p><div class="scroll"><table class="t">'+
+    '<thead><tr><th>Operario</th><th>Ok</th><th>No ok</th><th>Sin validar</th><th>Total</th><th>%</th></tr></thead><tbody>'+f+'</tbody>'+
+    '<tfoot><tr><td>Total</td><td>'+d.ok+'</td><td colspan="2"></td><td>'+d.tot+'</td><td>'+p+'%</td></tr></tfoot></table></div></div>'+
+    '<div class="dblock"><div class="fx">'+d.ok+' validadas Ok ÷ '+d.tot+' tareas cerradas × 100 = <b>'+p+'%</b></div></div>'+
+    '<span class="flag">⚠ "Sin validar" cuenta en contra.</span>';
+}
+function tHuec(d){
+  if (!d.disp) return '<div class="fx">Sin operarios con tareas en el período.</div>';
+  var f = d.ops.map(function(o){
+    var ds=o.opdias*JORNADA_MIN, p=R(o.gap/ds*100);
+    return '<tr><td>'+esc(o.n)+' <span class="pill">'+esc(o.s)+'</span></td><td>'+o.opdias+'</td><td>'+ds+'</td><td>'+R(o.gap)+'</td><td style="color:'+color(100-p)+';font-weight:700">'+p+'%</td></tr>';
+  }).join('');
+  return '<div class="dblock"><p class="dlab">Por operario</p><div class="scroll"><table class="t">'+
+    '<thead><tr><th>Operario</th><th>Días</th><th>Disp (min)</th><th>Hueco (min)</th><th>% ocioso</th></tr></thead><tbody>'+f+'</tbody>'+
+    '<tfoot><tr><td>Total</td><td></td><td>'+d.disp+'</td><td>'+d.gap+'</td><td>'+d.pct+'%</td></tr></tfoot></table></div></div>'+
+    '<div class="dblock"><div class="fx">hueco = minutos entre el fin de una tarea y el inicio de la siguiente · 100 − ('+d.gap+' ÷ '+d.disp+' × 100) = <b>'+clamp(100-d.pct,0,100)+'</b></div></div>'+
+    '<span class="flag">⚠ Disponible = '+JORNADA_MIN+' min por operario y día con tareas. En el día en curso el hueco todavía está incompleto.</span>';
+}
+function tDpu(d){
+  if (!d.defs.length) return '<div class="fx">Sin defectos registrados en el período ('+d.nVeh+' vehículos trabajados).</div>';
+  var pm = Object.keys(d.porMont).sort(function(a,b){ return d.porMont[b]-d.porMont[a]; }).map(function(m){
+    return '<tr><td><span class="mcode">'+m+'</span> '+esc(MONT_NOMBRE[m]||'')+'</td><td>'+d.porMont[m]+'</td><td>'+R2(d.porMont[m]/d.nVeh)+'</td></tr>';
+  }).join('');
+  var li = d.defs.map(function(x){
+    return '<tr><td><span class="pill">'+x.montaje+'</span> '+esc(x.txt)+'</td><td>'+esc(x.mo)+'</td><td>'+esc(x.fuente)+'</td></tr>';
+  }).join('');
+  return '<div class="dblock"><p class="dlab">Por montaje de origen</p><table class="t"><thead><tr><th>Montaje</th><th>Defectos</th><th>DPU</th></tr></thead><tbody>'+pm+'</tbody>'+
+    '<tfoot><tr><td>Total · '+d.nVeh+' vehículos</td><td>'+d.defs.length+'</td><td>'+d.dpu+'</td></tr></tfoot></table></div>'+
+    '<div class="dblock"><p class="dlab">Uno por uno</p><div class="scroll"><table class="t"><thead><tr><th>Defecto</th><th>Orden</th><th>Fuente</th></tr></thead><tbody>'+li+'</tbody></table></div></div>'+
+    '<span class="flag">⚠ El montaje de origen se deduce del texto. Solo informativo: todavía no suma al índice.</span>';
+}
+function detalle(d){ return d.tipo==='prod'?tProd(d):d.tipo==='val'?tVal(d):d.tipo==='huec'?tHuec(d):tDpu(d); }
+
+function pintarCards(res){
+  document.getElementById('grid').innerHTML = res.map(function(r){
+    var mets = r.metricas.map(function(m){
+      var c = color(m.score);
+      var der = m.info ? '<span class="tag">no suma</span>' : '<span class="met-score" style="color:'+c+'">'+(m.score==null?'—':m.score)+'</span>';
+      return '<div class="met'+(m.info?' info':'')+'"><div class="met-top" onclick="this.parentNode.classList.toggle(\'open\')">'+
+        '<span class="met-name"><span class="caret">▶</span>'+m.nombre+'</span>'+
+        '<span class="met-right"><span class="met-raw">'+m.raw+'</span>'+der+'</span></div>'+
+        (m.info?'':'<div class="bar"><i style="width:'+(m.score||0)+'%;background:'+c+'"></i></div>')+
+        '<div class="detail">'+detalle(m.d)+'</div></div>';
+    }).join('');
+    return '<div class="card"><div class="card-head">'+ring(r.indice)+
+      '<div><h3 class="sup-name">'+r.sup.nombre+'</h3>'+
+      '<div class="sup-meta">'+r.nOps+' de '+r.nPlant+' operarios con tareas en el período</div>'+
+      '<div class="sup-monts">'+esc(r.sup.alcance)+'</div></div></div>'+
+      '<div class="mets">'+mets+'</div></div>';
+  }).join('');
+}
+
+function pintarSemana(semana, porDia, total, sel){
+  var cab = '<tr><th>Supervisor</th>'+semana.map(function(f){
+    return '<th class="dia'+(f===sel?' sel':'')+'" data-f="'+f+'">'+diaCorto(f)+'</th>'; }).join('')+'<th>Semana</th></tr>';
+  var filas = SUPS.map(function(s,i){
+    return '<tr><td><b>'+s.nombre+'</b></td>'+semana.map(function(f){
+      var r = porDia[f]; var v = r ? r[i].indice : null;
+      return '<td class="'+(f===sel?'sel':'')+'">'+(r?'<span class="chip" style="color:'+color(v)+';background:'+fondo(v)+'">'+(v==null?'—':v)+'</span>':'<span style="color:var(--muted)">·</span>')+'</td>';
+    }).join('')+'<td><span class="chip" style="color:'+color(total?total[i].indice:null)+';background:'+fondo(total?total[i].indice:null)+'">'+(total&&total[i].indice!=null?total[i].indice:'—')+'</span></td></tr>';
+  }).join('');
+  var t = document.getElementById('semTab');
+  t.innerHTML = '<thead>'+cab+'</thead><tbody>'+filas+'</tbody>';
+  [].forEach.call(t.querySelectorAll('th.dia'), function(th){
+    th.addEventListener('click', function(){ document.getElementById('fecha').value = th.getAttribute('data-f'); modo='dia'; marcarModo(); pintar(); });
+  });
+  document.getElementById('semTit').textContent = 'Índice por día · semana del '+fmtFecha(semana[0])+' al '+fmtFecha(semana[5])+' (tocá un día para verlo)';
+  document.getElementById('semBox').style.display='';
+}
+
+//=====================================================================
+// ARRANQUE
+//=====================================================================
+var modo = 'dia';
+function marcarModo(){
+  document.getElementById('vDia').className = modo==='dia'?'on':'';
+  document.getElementById('vSem').className = modo==='sem'?'on':'';
+}
+
+function pintar(forzar){
+  var sel = document.getElementById('fecha').value;
+  var hoyIso = iso(new Date());
+  var semana = semanaDe(sel).filter(function(f){ return f<=hoyIso; });
+  if (semana.indexOf(sel)<0) semana.push(sel);
+  var st = document.getElementById('status');
+  st.style.display='flex';
+  st.innerHTML = '<div class="spin"></div><span>Consultando el hora a hora…</span>';
+
+  Promise.all(semana.map(function(f){ return dia(f, forzar).then(function(j){ return {fecha:f, data:j}; }); })
+    .concat([calidad(forzar)])).then(function(r){
+    var qa = r.pop();
+    var porDia = {};
+    r.forEach(function(x){
+      var ag = agregar([x], qa);
+      if (ag.diasCon.length) porDia[x.fecha] = SUPS.map(function(s){ return calcular(s, ag); });
+    });
+    var agSem = agregar(r, qa);
+    var total = agSem.diasCon.length ? SUPS.map(function(s){ return calcular(s, agSem); }) : null;
+    pintarSemana(semanaDe(sel), porDia, total, modo==='dia'?sel:null);
+
+    var ag = modo==='dia' ? agregar(r.filter(function(x){ return x.fecha===sel; }), qa) : agSem;
+    if (!ag.diasCon.length){
+      st.innerHTML = '<span>⚠ '+(modo==='dia' ? 'Sin tareas cargadas el '+diaCorto(sel)+'.' : 'Sin tareas cargadas en la semana.')+'</span>';
+      document.getElementById('grid').innerHTML=''; document.getElementById('foot').innerHTML=''; return;
+    }
+    st.style.display='none';
+    pintarCards(SUPS.map(function(s){ return calcular(s, ag); }));
+    document.getElementById('foot').innerHTML =
+      (modo==='dia' ? 'Día: <b>'+diaCorto(sel)+'</b>' : 'Semana · días con datos: <b>'+ag.diasCon.map(diaCorto).join(' · ')+'</b>')+
+      (ag.sinAsignar.length ? '<br>Con tareas pero sin supervisor asignado (no suman): '+esc(ag.sinAsignar.join(', ')) : '')+
+      '<br>No cuentan como operarios: Yance, Rodrigo Orona, Facundo Orona, Agustín Quispe · actualizado '+new Date().toLocaleString('es-AR');
+  }).catch(function(e){
+    st.innerHTML = '<span>⚠ Error consultando el tablero: '+esc(e)+'</span>';
+  });
+}
+
+(function(){
+  var f = document.getElementById('fecha');
+  var hoy = new Date();
+  if (hoy.getDay()===0) hoy.setDate(hoy.getDate()-1);   // domingo → sábado
+  f.value = iso(hoy); f.max = iso(new Date());
+  function mover(n){
+    var d = deIso(f.value); d.setDate(d.getDate()+n);
+    if (d.getDay()===0) d.setDate(d.getDate()+n);
+    if (iso(d) > iso(new Date())) return;
+    f.value = iso(d); pintar();
+  }
+  document.getElementById('prev').onclick = function(){ mover(-1); };
+  document.getElementById('next').onclick = function(){ mover(1); };
+  document.getElementById('hoy').onclick = function(){ f.value = iso(new Date()); pintar(); };
+  document.getElementById('recargar').onclick = function(){ pintar(true); };
+  f.onchange = function(){ pintar(); };
+  document.getElementById('vDia').onclick = function(){ modo='dia'; marcarModo(); pintar(); };
+  document.getElementById('vSem').onclick = function(){ modo='sem'; marcarModo(); pintar(); };
+  pintar();
+})();
+</script>
+</body>
+</html>

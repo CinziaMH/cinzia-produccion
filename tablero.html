@@ -107,6 +107,32 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .lista{overflow:hidden;flex:1}
 .lista .li{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)}
 .lista .li b{font-weight:700}
+/* --- asistencia (hoy + calendario del mes) --- */
+.asis{display:grid;grid-template-columns:1fr 1.35fr;gap:14px;flex:1;min-height:0}
+.asis .botcard h4{font-size:13px}
+.ahero{display:flex;gap:12px;margin-bottom:10px}
+.ahero .c{flex:1;border-radius:12px;padding:10px 12px;background:#f4f4f5}
+.ahero .c .n{font-size:38px;font-weight:800;line-height:1}
+.ahero .c .l{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.5px;margin-top:4px}
+.ahero .c.f .n{color:var(--bad)} .ahero .c.t .n{color:var(--warn)} .ahero .c.p .n{color:var(--ok)}
+.asub{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.5px;margin:8px 0 4px}
+.achips{display:flex;flex-wrap:wrap;gap:6px}
+.achip{font-size:14px;font-weight:700;border-radius:8px;padding:4px 9px;background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.achip.t{background:#fefce8;color:#854d0e;border-color:#fde68a}
+.achip small{font-weight:600;opacity:.8;margin-left:4px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;flex:1;min-height:0;align-content:stretch}
+.cal .hd{text-align:center;font-weight:800;color:var(--muted);font-size:12px}
+.cal .d{border:1px solid var(--line);border-radius:9px;padding:5px 7px;display:flex;flex-direction:column;justify-content:space-between;min-height:46px;background:#fff}
+.cal .d.vac{border:none;background:transparent}
+.cal .d.dom{opacity:.35}
+.cal .d.sin{background:#fafafa;color:#a1a1aa}
+.cal .d.hoy{box-shadow:0 0 0 2px var(--nar)}
+.cal .d.f{background:#fef2f2;border-color:#fecaca}
+.cal .d .dn{font-size:13px;font-weight:800}
+.cal .d .dv{display:flex;gap:6px;font-size:15px;font-weight:800}
+.cal .d .dv .F{color:var(--bad)} .cal .d .dv .T{color:var(--warn)} .cal .d .dv .ok{color:#a1a1aa;font-weight:600}
+.caltot{font-size:13px;color:var(--muted);margin-top:8px}
+.caltot b{color:var(--txt)}
 .nctotal{font-size:30px;font-weight:800;color:var(--warn)}
 .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:var(--bg);z-index:30}
 .spin{width:46px;height:46px;border:5px solid var(--line);border-top-color:var(--nar);border-radius:50%;animation:r 1s linear infinite}
@@ -203,6 +229,7 @@ function build() {
   const monPanels = buildLinePanels((D.montajes || []).filter(m => m.mos.length > 0 || m.cola > 0));
   panels = monPanels.map(rows => () => renderMonPanel(rows));
   panels.push(() => renderIndicadores());
+  panels.push(() => renderAsistencia());
 
   renderDots();
   if (cur >= panels.length) cur = 0;
@@ -338,6 +365,72 @@ function renderIndicadores() {
     + '<div class="botcard"><h4>NO CONFORMIDAD HOY</h4><div class="lista">' + nc + '</div></div>'
     + '</div>';
   return h;
+}
+
+/* ====== ASISTENCIA: hoy + calendario del mes ====== */
+// No cuentan como operarios (pedido Riki 7/10/2026): supervisores y pañol
+const NO_OPERARIOS = /yance|orona|oroná|quispe/i;
+function _limpia(arr){ return (arr || []).filter(n => !NO_OPERARIOS.test(String(n))); }
+function _hoyIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function renderAsistencia() {
+  const m = D.ausentismo_mes;
+  if (!m || !m.dias) return '<div class="botcard"><h4>ASISTENCIA</h4><div class="lista"><div class="li">Sin datos de asistencia del mes</div></div></div>';
+  const hoy = _hoyIso();
+  const ahora = new Date(); const minAhora = ahora.getHours()*60 + ahora.getMinutes();
+  const map = {}; m.dias.forEach(x => { map[x.fecha] = x; });
+  const dHoy = map[hoy];
+  const antesDeArrancar = minAhora < 8*60 + 15;   // antes de las 08:15 todavía no fichó nadie
+  const roster = m.roster_n || 0;
+
+  // ----- hoy -----
+  let izq;
+  if (!dHoy || antesDeArrancar) {
+    izq = '<div class="lista"><div class="li">La jornada de hoy todavía no arrancó — se completa desde las 08:15.</div></div>';
+  } else {
+    const aus = _limpia(dHoy.ausentes_nombres), tar = _limpia(dHoy.tardes_nombres);
+    const pres = Math.max(0, roster - aus.length);
+    izq = '<div class="ahero">'
+      + '<div class="c p"><div class="n">' + pres + '</div><div class="l">PRESENTES</div></div>'
+      + '<div class="c f"><div class="n">' + aus.length + '</div><div class="l">FALTARON</div></div>'
+      + '<div class="c t"><div class="n">' + tar.length + '</div><div class="l">LLEGARON TARDE</div></div></div>'
+      + '<div class="asub">FALTARON HOY</div><div class="achips">'
+      + (aus.length ? aus.map(n => '<span class="achip">' + esc(n) + '</span>').join('') : '<span style="color:var(--ok);font-weight:700">✓ Sin faltas</span>') + '</div>'
+      + '<div class="asub">LLEGADAS TARDE HOY</div><div class="achips">'
+      + (tar.length ? tar.map(t => { const p = String(t).split(' '); const hh = /^\d{1,2}:\d{2}$/.test(p[p.length-1]) ? p.pop() : ''; return '<span class="achip t">' + esc(p.join(' ')) + (hh ? '<small>⏰ ' + esc(hh) + '</small>' : '') + '</span>'; }).join('') : '<span style="color:var(--ok);font-weight:700">✓ Todos en horario</span>') + '</div>';
+  }
+
+  // ----- calendario -----
+  const ym = String(m.mes).split('-'), Y = +ym[0], Mo = +ym[1];
+  const MN = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][Mo-1];
+  const nDias = new Date(Y, Mo, 0).getDate();
+  const primer = (new Date(Y, Mo-1, 1).getDay() + 6) % 7;
+  let cal = ['L','M','M','J','V','S','D'].map(w => '<div class="hd">' + w + '</div>').join('');
+  for (let i = 0; i < primer; i++) cal += '<div class="d vac"></div>';
+  let totF = 0, totT = 0, diasCon = 0;
+  for (let dn = 1; dn <= nDias; dn++) {
+    const ds = Y + '-' + String(Mo).padStart(2,'0') + '-' + String(dn).padStart(2,'0');
+    const dow = (new Date(Y, Mo-1, dn).getDay() + 6) % 7;
+    let x = map[ds];
+    if (x && ds === hoy && antesDeArrancar) x = null;
+    let cls = 'd' + (dow === 6 ? ' dom' : '') + (ds === hoy ? ' hoy' : '');
+    if (x) {
+      const f = _limpia(x.ausentes_nombres).length, t = _limpia(x.tardes_nombres).length;
+      totF += f; totT += t; diasCon++;
+      const tip = _limpia(x.ausentes_nombres).concat(_limpia(x.tardes_nombres).map(n => 'tarde: ' + n)).join(' · ');
+      cal += '<div class="' + cls + (f ? ' f' : '') + '" title="' + esc(tip) + '"><div class="dn">' + dn + '</div><div class="dv">'
+        + (f ? '<span class="F">' + f + 'F</span>' : '') + (t ? '<span class="T">' + t + 'T</span>' : '') + (!f && !t ? '<span class="ok">✓</span>' : '')
+        + '</div></div>';
+    } else {
+      cal += '<div class="' + cls + ' sin"><div class="dn">' + dn + '</div></div>';
+    }
+  }
+  const pctF = (diasCon && roster) ? Math.round(totF / (diasCon * roster) * 1000) / 10 : 0;
+
+  return '<div class="asis">'
+    + '<div class="botcard"><h4>ASISTENCIA DE HOY</h4>' + izq + '</div>'
+    + '<div class="botcard"><h4>CÓMO VENIMOS · ' + MN.toUpperCase() + ' ' + Y + '</h4><div class="cal">' + cal + '</div>'
+    + '<div class="caltot"><b>' + totF + '</b> faltas · <b>' + totT + '</b> llegadas tarde · ' + diasCon + ' días · ausentismo <b>' + pctF + '%</b> · F = faltas · T = llegadas tarde</div></div>'
+    + '</div>';
 }
 
 /* ====== ROTATION ====== */
