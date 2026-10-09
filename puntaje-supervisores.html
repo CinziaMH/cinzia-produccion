@@ -255,7 +255,7 @@ function traer(qs){
 }
 function dia(f, forzar){
   if (!forzar && CACHE[f]) return Promise.resolve(CACHE[f]);
-  return traer('?view=horaxhora&fecha='+f).then(function(j){ CACHE[f]=j; return j; });
+  return traer('?view=horaxhora&fecha='+f).then(function(j){ if (!j.err) CACHE[f]=j; return j; });
 }
 var QA = null;
 function calidad(forzar){
@@ -486,46 +486,68 @@ function marcarModo(){
   document.getElementById('vSem').className = modo==='sem'?'on':'';
 }
 
+var TURNO = 0;
 function pintar(forzar){
+  var turno = ++TURNO;
   var sel = document.getElementById('fecha').value;
   var hoyIso = iso(new Date());
   var semana = semanaDe(sel).filter(function(f){ return f<=hoyIso; });
   if (semana.indexOf(sel)<0) semana.push(sel);
   var st = document.getElementById('status');
-  st.style.display='flex';
-  st.innerHTML = '<div class="spin"></div><span>Consultando el hora a hora…</span>';
+  var R = {};   // fecha -> respuesta
+  var qa = null;
+  var faltan = semana.length;
 
-  Promise.all(semana.map(function(f){ return dia(f, forzar).then(function(j){ return {fecha:f, data:j}; }); })
-    .concat([calidad(forzar)])).then(function(r){
-    var qa = r.pop();
+  function estado(){
+    st.style.display='flex';
+    st.innerHTML = '<div class="spin"></div><span>Consultando el hora a hora… '+(semana.length-faltan)+' de '+semana.length+' días</span>';
+  }
+  function dibujar(){
+    if (turno !== TURNO) return;
+    var listos = semana.filter(function(f){ return R[f]; }).map(function(f){ return {fecha:f, data:R[f]}; });
     var porDia = {};
-    r.forEach(function(x){
+    listos.forEach(function(x){
       var ag = agregar([x], qa);
       if (ag.diasCon.length) porDia[x.fecha] = SUPS.map(function(s){ return calcular(s, ag); });
     });
-    var agSem = agregar(r, qa);
-    var total = agSem.diasCon.length ? SUPS.map(function(s){ return calcular(s, agSem); }) : null;
+    var total = null;
+    if (listos.length){
+      var agSem = agregar(listos, qa);
+      if (agSem.diasCon.length) total = SUPS.map(function(s){ return calcular(s, agSem); });
+    }
     pintarSemana(semanaDe(sel), porDia, total, modo==='dia'?sel:null);
 
-    var ag = modo==='dia' ? agregar(r.filter(function(x){ return x.fecha===sel; }), qa) : agSem;
+    var base = modo==='dia' ? (R[sel] ? [{fecha:sel, data:R[sel]}] : null) : (faltan===0 ? listos : null);
+    if (faltan>0) estado(); else st.style.display='none';
+    if (!base) return;
+    var ag = agregar(base, qa);
     if (!ag.diasCon.length){
-      st.innerHTML = '<span>⚠ '+(modo==='dia' ? 'Sin tareas cargadas el '+diaCorto(sel)+'.' : 'Sin tareas cargadas en la semana.')+'</span>';
+      st.style.display='flex';
+      st.innerHTML = '<span>⚠ '+(modo==='dia' ? 'Sin tareas cargadas el '+diaCorto(sel)+(sel===hoyIso?' (la jornada todavía no arrancó o no hay tareas cerradas)':'')+'. Tocá otro día en la tabla.' : 'Sin tareas cargadas en la semana.')+'</span>';
       document.getElementById('grid').innerHTML=''; document.getElementById('foot').innerHTML=''; return;
     }
-    st.style.display='none';
     pintarCards(SUPS.map(function(s){ return calcular(s, ag); }));
     document.getElementById('foot').innerHTML =
       (modo==='dia' ? 'Día: <b>'+diaCorto(sel)+'</b>' : 'Semana · días con datos: <b>'+ag.diasCon.map(diaCorto).join(' · ')+'</b>')+
       (ag.sinAsignar.length ? '<br>Con tareas pero sin supervisor asignado (no suman): '+esc(ag.sinAsignar.join(', ')) : '')+
       '<br>No cuentan como operarios: Yance, Rodrigo Orona, Facundo Orona, Agustín Quispe · actualizado '+new Date().toLocaleString('es-AR');
-  }).catch(function(e){
-    st.innerHTML = '<span>⚠ Error consultando el tablero: '+esc(e)+'</span>';
+  }
+
+  document.getElementById('grid').innerHTML=''; document.getElementById('foot').innerHTML='';
+  estado();
+  calidad(forzar).then(function(j){ qa=j; dibujar(); });
+  // primero el día elegido, después el resto de la semana
+  var orden = [sel].concat(semana.filter(function(f){ return f!==sel; }));
+  orden.forEach(function(f){
+    dia(f, forzar).then(function(j){ R[f]=j; faltan--; dibujar(); });
   });
 }
 
 (function(){
   var f = document.getElementById('fecha');
   var hoy = new Date();
+  // antes de las 10 todavía hay poco cargado: arranca mostrando el último día hábil
+  if (hoy.getHours() < 10) hoy.setDate(hoy.getDate()-1);
   if (hoy.getDay()===0) hoy.setDate(hoy.getDate()-1);   // domingo → sábado
   f.value = iso(hoy); f.max = iso(new Date());
   function mover(n){
