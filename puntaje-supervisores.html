@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Puntaje de Supervisores · DYFSA</title>
+<title>Scorecard · DYFSA</title>
 <style>
   :root{
     --bg:#f6f7f9; --surface:#fff; --surface-alt:#f2f4f7; --border:#e3e6ea;
@@ -94,7 +94,7 @@
   <a class="volver" href="./">← Portal de producción</a>
   <header class="top">
     <div>
-      <h1>Puntaje de Supervisores</h1>
+      <h1>Scorecard</h1>
       <div class="subtitle">Día a día · DYFSA · datos reales del hora a hora de Odoo</div>
     </div>
     <div class="ctrls">
@@ -108,7 +108,7 @@
   </header>
 
   <div class="note">
-    <b>Índice 0–100</b> = promedio simple de 3 métricas: productividad, % de tareas validadas y huecos sin tarea.
+    <b>Índice 0–100</b> = promedio simple de 4 métricas: productividad, % de tareas validadas, huecos sin tarea y 5S de sus sectores.
     El <b>DPU</b> (defectos por unidad) se muestra pero <b>todavía no suma al índice</b> — no tiene umbral.
     Cada supervisor se mide sobre <b>sus operarios</b> según el reparto de la validación de tareas.
     Tocá una métrica para ver el cálculo completo.
@@ -138,6 +138,7 @@ var SUPS = [
   { key:'yance', nombre:'Alejandro Yance',
     alcance:'Soldadura · S1 Control numérico · M1 Carpintería · S7 Tapicería',
     montajesDefecto:['M0','M1'],
+    sectores5S:['M0','S1','M1','S7'],
     ops:[
       {n:'Sergio Gimenez',     r:['gimenez'],           s:'Soldadura'},
       {n:'Enzo Ubilla',        r:['ubilla'],            s:'Pre ensamble 0'},
@@ -150,6 +151,9 @@ var SUPS = [
   { key:'orona', nombre:'Rodrigo Orona',
     alcance:'M2 · S2 · M3 · M4 · M5 · S5 · S6 · M7 Pintura · Control de calidad',
     montajesDefecto:'RESTO',
+    sectores5S:['M2','S2','M3','M4','M5','S5','S6','QC'],
+    sectores5SOpc:['PINT','M7'],   // Pintura: entra si el tour la trae
+    sinProductividad:['M0'],        // pedido Riki 10/10: a Orona no se le mide M0
     ops:[
       {n:'Gonzalo Molina',     r:['molina'],            s:'M2 Instalaciones 1'},
       {n:'Benjamín Barono',    r:['barono'],            s:'M2 Instalaciones 1'},
@@ -270,12 +274,14 @@ function agregar(listaDias, qa){
   var S = {};   // por supervisor
   SUPS.forEach(function(s){ S[s.key] = {M:{}, OP:{}, vehs:{}}; });
   var DEF = [], sinAsignar = {}, diasCon = [], diasSin = [];
+  var S5 = [];   // [{fecha, cs}] tour 5S de cada día con datos
 
   listaDias.forEach(function(x){
     var ops = (x.data && x.data.operarios) || [];
     var conTareas = ops.filter(function(o){ return (o.real||[]).length; });
     if (!conTareas.length){ diasSin.push(x.fecha); return; }
     diasCon.push(x.fecha);
+    if (x.data && x.data.cinco_s) S5.push({fecha:x.fecha, cs:x.data.cinco_s});
 
     conTareas.forEach(function(o){
       var rs = o.real.slice().sort(function(a,b){ return (a.ini||'').localeCompare(b.ini||''); });
@@ -323,7 +329,7 @@ function agregar(listaDias, qa){
   var visto={}, DEF2=[];
   DEF.forEach(function(d){ var k=d.fuente+'|'+d.mo+'|'+d.txt; if (visto[k]) return; visto[k]=1; DEF2.push(d); });
 
-  return {S:S, DEF:DEF2, sinAsignar:Object.keys(sinAsignar), diasCon:diasCon, diasSin:diasSin};
+  return {S:S, DEF:DEF2, S5:S5, sinAsignar:Object.keys(sinAsignar), diasCon:diasCon, diasSin:diasSin};
 }
 
 //=====================================================================
@@ -333,7 +339,8 @@ function calcular(sup, AG){
   var B = AG.S[sup.key];
 
   // 1. Productividad por montaje (tope 100 c/u)
-  var filasP = Object.keys(B.M).filter(function(k){ return B.M[k].real>0; }).sort().map(function(k){
+  var fuera = sup.sinProductividad || [];
+  var filasP = Object.keys(B.M).filter(function(k){ return B.M[k].real>0 && fuera.indexOf(k)<0; }).sort().map(function(k){
     var m=B.M[k]; return {m:k, obj:m.obj, real:m.real, n:m.n, mos:Object.keys(m.mos).length, efic:R(m.obj/m.real*100)};
   });
   var prom = filasP.length ? R(filasP.reduce(function(a,f){return a+f.efic;},0)/filasP.length) : null;
@@ -366,7 +373,24 @@ function calcular(sup, AG){
   var dpu = nVeh ? R2(defs.length/nVeh) : null;
   var porMont = {}; defs.forEach(function(d){ porMont[d.montaje]=(porMont[d.montaje]||0)+1; });
 
-  var val = [sP,sV,sH].filter(function(s){ return s!=null; });
+  // 5. Orden y limpieza (tour 5S de las 7:45): verde 100 · azul 50 · rojo 0 · sin relevar 0
+  var P5 = {verde:100, ok:100, azul:50, amarillo:50, rojo:0};
+  var filas5 = [], suma5 = 0, n5 = 0;
+  AG.S5.forEach(function(d){
+    // los sectores de cada supervisor salen del propio tour (campo encargado); si no viene, lista fija
+    var quien = sup.key==='yance' ? 'yance' : 'rodrigo';
+    var secs = Object.keys(d.cs).filter(function(k){ return String((d.cs[k]||{}).encargado||'').toLowerCase().indexOf(quien)>=0; });
+    if (!secs.length) secs = sup.sectores5S.filter(function(k){ return d.cs[k]; });
+    secs.forEach(function(k){
+      var it = d.cs[k], c = String((it && it.color) || '').toLowerCase();
+      var pts = P5.hasOwnProperty(c) ? P5[c] : 0;
+      filas5.push({fecha:d.fecha, k:k, color:c || 'sin relevar', pts:pts, nota:(it && it.nota) || ''});
+      suma5 += pts; n5++;
+    });
+  });
+  var s5 = n5 ? R(suma5/n5) : null;
+
+  var val = [sP,sV,sH,s5].filter(function(s){ return s!=null; });
   var indice = val.length ? R(val.reduce(function(a,b){return a+b;},0)/val.length) : null;
 
   return { sup:sup, indice:indice, nOps:ops.length, nPlant:sup.ops.length,
@@ -374,6 +398,7 @@ function calcular(sup, AG){
       {k:'prod', nombre:'Productividad', score:sP, raw: prom==null?'—':prom+'%', d:{tipo:'prod', filas:filasP, prom:prom, tope:tope}},
       {k:'val',  nombre:'% de tareas validadas', score:sV, raw: vTot? vOk+'/'+vTot : '—', d:{tipo:'val', ops:ops, ok:vOk, tot:vTot}},
       {k:'huec', nombre:'Huecos sin tarea', score:sH, raw: pctOcio==null?'—':pctOcio+'% ocioso', d:{tipo:'huec', ops:ops, gap:R(gap), disp:disp, pct:pctOcio}},
+      {k:'cinco', nombre:'5S de sus sectores', score:s5, raw: n5 ? filas5.filter(function(f){return f.pts===100;}).length+'/'+n5+' en verde' : '—', d:{tipo:'cinco', filas:filas5, score:s5}},
       {k:'dpu',  nombre:'DPU — defectos por unidad', score:null, info:true, raw: dpu==null?'—':dpu+' def/veh', d:{tipo:'dpu', defs:defs, nVeh:nVeh, dpu:dpu, porMont:porMont}}
     ]};
 }
@@ -438,7 +463,18 @@ function tDpu(d){
     '<div class="dblock"><p class="dlab">Uno por uno</p><div class="scroll"><table class="t"><thead><tr><th>Defecto</th><th>Orden</th><th>Fuente</th></tr></thead><tbody>'+li+'</tbody></table></div></div>'+
     '<span class="flag">⚠ El montaje de origen se deduce del texto. Solo informativo: todavía no suma al índice.</span>';
 }
-function detalle(d){ return d.tipo==='prod'?tProd(d):d.tipo==='val'?tVal(d):d.tipo==='huec'?tHuec(d):tDpu(d); }
+function t5S(d){
+  if (!d.filas.length) return '<div class="fx">Sin datos del tour 5S en el período.</div>';
+  var EM = {verde:'🟢', ok:'🟢', azul:'🔵', amarillo:'🔵', rojo:'🔴'};
+  var f = d.filas.map(function(r){
+    return '<tr><td>'+diaCorto(r.fecha)+'</td><td><span class="mcode">'+esc(r.k)+'</span></td><td>'+(EM[r.color]||'⚪')+' '+esc(r.color)+'</td><td>'+r.pts+'</td><td style="text-align:left">'+esc(r.nota)+'</td></tr>';
+  }).join('');
+  return '<div class="dblock"><p class="dlab">Por sector y día (ronda de las 7:45)</p><div class="scroll"><table class="t">'+
+    '<thead><tr><th>Día</th><th>Sector</th><th>Resultado</th><th>Puntos</th><th style="text-align:left">Nota</th></tr></thead><tbody>'+f+'</tbody></table></div></div>'+
+    '<div class="dblock"><div class="fx">verde = 100 · azul = 50 · rojo = 0 · sin relevar = 0 · puntaje = promedio = <b>'+d.score+'</b></div></div>'+
+    '<span class="flag">⚠ Un sector que no se relevó en la ronda cuenta como 0.</span>';
+}
+function detalle(d){ return d.tipo==='prod'?tProd(d):d.tipo==='val'?tVal(d):d.tipo==='huec'?tHuec(d):d.tipo==='cinco'?t5S(d):tDpu(d); }
 
 function pintarCards(res){
   document.getElementById('grid').innerHTML = res.map(function(r){
