@@ -300,6 +300,7 @@ function agregar(listaDias, qa){
       var op = B.OP[as.ficha.n] || (B.OP[as.ficha.n] = {n:as.ficha.n, s:as.ficha.s, opdias:0, gap:0, obj:0, real:0, ok:0, ng:0, sin:0});
       op.opdias++;
       var prevFin=null;
+      var dm = {};   // tiempo objetivo y real de este operario en este día, por montaje
       rs.forEach(function(w){
         var i = hhmm2min(w.ini), f = hhmm2min(w.fin);
         if (prevFin!=null && i!=null && i>prevFin) op.gap += (i-prevFin);
@@ -308,10 +309,13 @@ function agregar(listaDias, qa){
         var k = w.mwc || 'ND';
         var m = B.M[k] || (B.M[k] = {obj:0, real:0, n:0, mos:{}});
         m.n++; m.obj += (w.obj||0); m.real += (w.rmin||0); m.mos[w.mo]=1;
+        var d = dm[k] || (dm[k] = {obj:0, real:0}); d.obj += (w.obj||0); d.real += (w.rmin||0);
         B.vehs[w.mo]=1;
         op.obj += (w.obj||0); op.real += (w.rmin||0);
         if (w.val==='ok') op.ok++; else if (w.val==='ng') op.ng++; else op.sin++;
       });
+      // Regla Riki 13/10/2026: para promediar, ningún operario aporta más del 100 % en el día
+      Object.keys(dm).forEach(function(k){ var m = B.M[k]; m.objTope = (m.objTope||0) + Math.min(dm[k].obj, dm[k].real); });
     });
   });
 
@@ -341,10 +345,13 @@ function calcular(sup, AG){
   // 1. Productividad por montaje (tope 100 c/u)
   var fuera = sup.sinProductividad || [];
   var filasP = Object.keys(B.M).filter(function(k){ return B.M[k].real>0 && fuera.indexOf(k)<0; }).sort().map(function(k){
-    var m=B.M[k]; return {m:k, obj:m.obj, real:m.real, n:m.n, mos:Object.keys(m.mos).length, efic:R(m.obj/m.real*100)};
+    var m=B.M[k]; return {m:k, obj:m.obj, real:m.real, n:m.n, mos:Object.keys(m.mos).length, efic:R(m.obj/m.real*100),
+                          objTope:(m.objTope||0), punt:R((m.objTope||0)/m.real*100)};
   });
-  var prom = filasP.length ? R(filasP.reduce(function(a,f){return a+f.efic;},0)/filasP.length) : null;
-  var tope = filasP.length ? R(filasP.reduce(function(a,f){return a+Math.min(f.efic,100);},0)/filasP.length) : null;
+  var sReal = filasP.reduce(function(a,f){return a+f.real;},0), sObj = filasP.reduce(function(a,f){return a+f.obj;},0);
+  var sTope = filasP.reduce(function(a,f){return a+f.objTope;},0);
+  var prom = sReal ? R(sObj/sReal*100) : null;          // eficiencia tal cual (puede pasar 100)
+  var tope = sReal ? R(sTope/sReal*100) : null;         // con tope de 100 % por operario y día
   var sP = tope;
 
   // 2. Validadas (por operario)
@@ -418,12 +425,12 @@ function tProd(d){
   if (!d.filas.length) return '<div class="fx">Sin tareas cerradas en el período.</div>';
   var f = d.filas.map(function(r){
     return '<tr><td><span class="mcode">'+r.m+'</span> '+esc(MONT_NOMBRE[r.m]||'')+'</td><td>'+r.n+'</td><td>'+r.mos+'</td><td>'+h(r.obj)+'</td><td>'+h(r.real)+'</td>'+
-      '<td style="color:'+color(r.efic)+';font-weight:700">'+r.efic+'%</td><td>'+Math.min(r.efic,100)+'</td></tr>';
+      '<td style="color:'+color(r.efic)+';font-weight:700">'+r.efic+'%</td><td>'+r.punt+'</td></tr>';
   }).join('');
   return '<div class="dblock"><p class="dlab">Por montaje (según el centro de trabajo de la tarea)</p><table class="t">'+
     '<thead><tr><th>Montaje</th><th>Tareas</th><th>Veh.</th><th>Obj (h)</th><th>Real (h)</th><th>Efic.</th><th>Punt.</th></tr></thead><tbody>'+f+'</tbody>'+
-    '<tfoot><tr><td>Promedio</td><td colspan="4"></td><td>'+d.prom+'%</td><td>'+d.tope+'</td></tr></tfoot></table></div>'+
-    '<div class="dblock"><div class="fx">eficiencia = Σ tiempo objetivo ÷ Σ tiempo real × 100 · puntaje = promedio con tope 100 por montaje = <b>'+d.tope+'</b></div></div>';
+    '<tfoot><tr><td>Total</td><td colspan="4"></td><td>'+d.prom+'%</td><td>'+d.tope+'</td></tr></tfoot></table></div>'+
+    '<div class="dblock"><div class="fx">eficiencia = Σ tiempo objetivo ÷ Σ tiempo real × 100 · para el puntaje, cada operario aporta como máximo 100 % por día = <b>'+d.tope+'</b></div></div>';
 }
 function tVal(d){
   if (!d.tot) return '<div class="fx">Sin tareas cerradas en el período.</div>';
