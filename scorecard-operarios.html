@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scorecard operarios · DYFSA</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --surface:#fff; --surface-alt:#f2f4f7; --border:#e3e6ea;
+    --ink:#12161c; --muted:#6b7480; --accent:#E85D2C; --navy:#1E3A5F;
+    --good:#1a7f4b; --warn:#b7791f; --bad:#c0392b;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1280px;margin:0 auto;padding:20px 16px 60px}
+  a.volver{font-size:12px;color:var(--muted);text-decoration:none}
+  header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:6px 0 4px}
+  h1{font-size:21px;margin:0;letter-spacing:-.02em;color:var(--navy)}
+  .subtitle{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .ctrls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  input[type=date],select{font:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--border);
+    border-radius:8px;background:var(--surface);color:var(--ink)}
+  .btn{font:inherit;font-size:12.5px;padding:6px 11px;border:1px solid var(--border);border-radius:8px;
+    background:var(--surface);color:var(--ink);cursor:pointer}
+  .btn:hover{background:var(--surface-alt)}
+  .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .btn.sm{font-size:11.5px;padding:3px 8px}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .seg button{font:inherit;font-size:12.5px;padding:6px 11px;border:0;background:var(--surface);cursor:pointer;color:var(--ink)}
+  .seg button.on{background:var(--navy);color:#fff}
+  .note{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);
+    border-radius:10px;padding:10px 14px;font-size:12.5px;color:#333;margin:14px 0}
+  .status{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--muted);margin:14px 0}
+  .spin{width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  section.box{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-top:14px}
+  section.box h2{font-size:14px;margin:0 0 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  section.box h2 small{font-weight:500;color:var(--muted);font-size:12px}
+  .scrollx{overflow-x:auto}
+  table.rk{width:100%;border-collapse:collapse;font-size:13px}
+  table.rk th,table.rk td{padding:7px 6px;text-align:center;border-bottom:1px solid var(--border);white-space:nowrap}
+  table.rk th:nth-child(-n+3),table.rk td:nth-child(-n+3){text-align:left}
+  table.rk th{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:650;cursor:pointer;user-select:none}
+  table.rk th.inf{color:#8a93a0}
+  table.rk tbody tr.op{cursor:pointer}
+  table.rk tbody tr.op:hover{background:#fafbfc}
+  table.rk tbody tr.op.sel{background:#fff4ef}
+  table.rk td.inf{color:#555}
+  .chip{display:inline-block;min-width:40px;padding:2px 7px;border-radius:99px;font-weight:800;font-variant-numeric:tabular-nums}
+  .num{font-variant-numeric:tabular-nums}
+  .sub{font-size:11px;color:var(--muted);display:block;margin-top:-1px}
+  .pill{display:inline-block;font-size:10px;font-family:var(--mono);font-weight:700;padding:1px 6px;border-radius:99px;background:var(--surface-alt);border:1px solid var(--border)}
+  .pill.y{background:#eaf1fb;border-color:#cfdcf0;color:#1E3A5F}
+  .pill.r{background:#fdf0ea;border-color:#f4d3c4;color:#a0431c}
+  .pill.n{background:#f3f3f3;color:#777}
+  tr.det td{background:var(--surface-alt);padding:0;white-space:normal;text-align:left}
+  .detw{padding:14px 16px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:980px){.detw{grid-template-columns:1fr}}
+  .dcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 12px;min-width:0}
+  .dcard h4{margin:0 0 7px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--navy)}
+  .fx{font-family:var(--mono);font-size:11.5px;background:var(--surface-alt);border:1px solid var(--border);border-radius:7px;padding:6px 8px;color:#333;margin-top:7px}
+  table.t{width:100%;border-collapse:collapse;font-size:12px}
+  table.t th{text-align:right;font-weight:600;color:var(--muted);font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;padding:3px 5px;border-bottom:1px solid var(--border)}
+  table.t th:first-child,table.t td:first-child{text-align:left}
+  table.t td{padding:3px 5px;border-bottom:1px solid rgba(0,0,0,.045);text-align:right;font-variant-numeric:tabular-nums;white-space:normal}
+  .scroll{max-height:240px;overflow:auto}
+  .vacio{color:var(--muted);font-size:12px}
+  .flag{font-size:11.5px;color:var(--warn);margin-top:6px;display:block}
+  table.df{width:100%;border-collapse:collapse;font-size:12.5px}
+  table.df th{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:650;text-align:left;padding:6px;border-bottom:1px solid var(--border)}
+  table.df td{padding:6px;border-bottom:1px solid var(--border);vertical-align:top}
+  table.df td.who{min-width:220px}
+  .src{font-size:10.5px;font-weight:700;border-radius:99px;padding:1px 7px;border:1px solid}
+  .src.automatica{color:#1a7f4b;border-color:#bfe3cd;background:#eef8f2}
+  .src.manual{color:#1E3A5F;border-color:#cfdcf0;background:#eaf1fb}
+  .src.sin{color:#c0392b;border-color:#f1c8c2;background:#fdf0ee}
+  .asig{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:4px}
+  .asig select{font-size:12px;padding:3px 6px;max-width:210px}
+  .muted{color:var(--muted)}
+  footer{margin-top:22px;font-size:11.5px;color:var(--muted);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="volver" href="./">← Portal de producción</a>
+  <header class="top">
+    <div>
+      <h1>Scorecard operarios</h1>
+      <div class="subtitle">Desde principio de mes · DYFSA · datos reales de Odoo, hora a hora, asistencia y tour 5S</div>
+    </div>
+    <div class="ctrls">
+      <label class="muted" style="font-size:12px">Desde</label><input type="date" id="desde">
+      <label class="muted" style="font-size:12px">Hasta</label><input type="date" id="hasta">
+      <select id="fSup"><option value="">Todos</option><option value="yance">Yance</option><option value="orona">Rodrigo</option><option value="-">Sin supervisor</option></select>
+      <button class="btn primary" id="recargar">Actualizar</button>
+    </div>
+  </header>
+
+  <div class="note">
+    <b>Índice 0–100</b> = promedio simple de 5 métricas: <b>eficiencia</b> (tope 100 % por día), <b>huecos</b> sin tarea,
+    <b>puntualidad</b> (días sin falta ni llegada tarde), <b>5S de su sector</b> y <b>validación del supervisor</b> (Ok sobre Ok + No ok).
+    <b>Defectos</b>, <b>orden de operaciones de Odoo</b>, tareas críticas y minutos de retrabajo se muestran pero <b>todavía no suman</b>.
+    Tocá un operario para ver el detalle. Abajo, los defectos del período: los que quedaron <b>sin asignar</b> se le pueden asignar a alguien.
+  </div>
+
+  <div class="status" id="status"><div class="spin"></div><span>Cargando…</span></div>
+
+  <section class="box" id="rkBox" style="display:none">
+    <h2>Ranking del período <small id="rkSub"></small></h2>
+    <div class="scrollx"><table class="rk" id="rk"></table></div>
+  </section>
+
+  <section class="box" id="dfBox" style="display:none">
+    <h2>Defectos del período <small id="dfSub"></small>
+      <span class="seg" style="margin-left:auto"><button id="dfSin" class="on">Sin asignar</button><button id="dfTodos">Todos</button></span>
+    </h2>
+    <div class="scrollx"><table class="df" id="df"></table></div>
+    <span class="flag">Un retrabajo se le cuenta a quien hizo la operación original de ese vehículo (mismo pedido). Si la operación original no se reconoce por el nombre, queda sin asignar.</span>
+  </section>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+//=====================================================================
+// CONFIGURACIÓN
+//=====================================================================
+var EP = 'https://script.google.com/macros/s/AKfycbwXM4MiCi2efiRC81FBmke2RjaEkLmgiuYdgjkCbk8sAz_7Odmk1dI1y2mCg3u36uPrew/exec';
+var JORNADA_MIN = 450;
+
+// Mismo reparto que el Scorecard de supervisores y la app de validación
+var SUPS = [
+  { key:'yance', corto:'Yance', ops:[
+      {n:'Sergio Gimenez',     r:['gimenez'],           s:'Soldadura'},
+      {n:'Enzo Ubilla',        r:['ubilla'],            s:'Pre ensamble 0'},
+      {n:'Lucas Torres',       r:['torres'],            s:'S1 Control numérico'},
+      {n:'Facundo Fernández',  r:['fernandez'],         s:'S1 Control numérico'},
+      {n:'Guillermo González', r:['gonzal','guillermo'],s:'M1 Carpintería'},
+      {n:'Fabrizio Carrizo',   r:['carrizo'],           s:'M1 Carpintería'},
+      {n:'Gabriel Vega',       r:['vega','gabriel'],    s:'S7 Tapicería'}
+  ]},
+  { key:'orona', corto:'Rodrigo', ops:[
+      {n:'Gonzalo Molina',     r:['molina'],            s:'M2 Instalaciones 1'},
+      {n:'Benjamín Barono',    r:['barono'],            s:'M2 Instalaciones 1'},
+      {n:'Richard Balan',      r:['balan'],             s:'M2 Instalaciones 1'},
+      {n:'Ezequiel Galván',    r:['galvan'],            s:'M3 Revestimiento ext. 1'},
+      {n:'Mauro Vega',         r:['vega','mauro'],      s:'M3 Revestimiento ext. 1'},
+      {n:'Guillermo Vázquez',  r:['vazquez'],           s:'M3 Revestimiento ext. 1'},
+      {n:'Pablo Bravo',        r:['bravo'],             s:'S2 Aberturas'},
+      {n:'Mayco Aris',         r:['aris','mayco'],      s:'S2 Aberturas'},
+      {n:'Mariano Gómez',      r:['gomez'],             s:'S2 Aberturas'},
+      {n:'Axel Carreño',       r:['carreno'],           s:'S2 Aberturas'},
+      {n:'Mauro Rodríguez',    r:['rodriguez'],         s:'M4 Instalaciones 2/3'},
+      {n:'Lautaro Moreyra',    r:['moreyra'],           s:'M4 Instalaciones 2/3'},
+      {n:'Esteban Aris',       r:['aris','esteban'],    s:'M4 Instalaciones 2/3'},
+      {n:'Lucas Pradal',       r:['pradal'],            s:'M4 Instalaciones 2/3'},
+      {n:'Alan Aguilera',      r:['aguilera'],          s:'M4 Instalaciones 2/3'},
+      {n:'Jazmín Ibarba',      r:['ibarba'],            s:'M4 Instalaciones 2/3'},
+      {n:'Ignacio Heredia Bedoya', r:['bedoya'],        s:'M5 Revestimiento ext. 2'},
+      {n:'Jonathan Gordillo',  r:['gordillo'],          s:'S6 Ensanches'},
+      {n:'César Lazos',        r:['lazos'],             s:'S6 Ensanches'},
+      {n:'Eduardo Illesca',    r:['illesca'],           s:'M7 Pintura'},
+      {n:'Felipe Edelstein',   r:['edelstein'],         s:'Control de calidad'},
+      {n:'Javier Campo',       r:['campo'],             s:'Control de calidad'}
+  ]}
+];
+// Sin supervisor asignado todavía (aparecen igual en el ranking)
+var SUELTOS = [
+  {n:'Cari',    r:['cari'],    s:'S3'},
+  {n:'Sigampa', r:['sigampa'], s:'S3'},
+  {n:'Ormeño',  r:['ormeno'],  s:''}
+];
+var EXCLUIR = [['yance'],['orona'],['quispe']];
+
+// Sector de la ficha → código del tour 5S
+function sector5S(s){
+  s = String(s||'');
+  if (/soldadura|pre ensamble 0/i.test(s)) return ['M0'];
+  if (/control de calidad/i.test(s)) return ['QC'];
+  if (/^M7|pintura/i.test(s)) return ['PINT','M7'];
+  var m = s.match(/^([MS]\d)/i); return m ? [m[1].toUpperCase()] : [];
+}
+
+//=====================================================================
+// UTILIDADES
+//=====================================================================
+function R(x){ return Math.round(x); }
+function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+function color(p){ return p==null ? 'var(--muted)' : (p>=85 ? 'var(--good)' : (p>=65 ? 'var(--warn)' : 'var(--bad)')); }
+function fondo(p){ return p==null ? '#eef0f3' : (p>=85 ? '#e3f4ea' : (p>=65 ? '#fbf0dc' : '#fbe3e0')); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function hhmm2min(s){ var x = String(s||'').match(/(\d{1,2}):(\d{2})/); return x ? (+x[1])*60 + (+x[2]) : null; }
+function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function deIso(s){ var p=s.split('-'); return new Date(+p[0], +p[1]-1, +p[2]); }
+function fmtFecha(s){ var p=String(s).split('-'); return p[2]+'/'+p[1]; }
+var DIAS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function diaCorto(s){ return DIAS[deIso(s).getDay()]+' '+fmtFecha(s); }
+function norm(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z ]/g,' ').split(/\s+/).filter(Boolean); }
+function calza(nombre, regla){
+  var tk = norm(nombre);
+  return regla.every(function(p){ return tk.some(function(t){ return t.indexOf(p)===0; }); });
+}
+function chip(v){ return '<span class="chip" style="color:'+color(v)+';background:'+fondo(v)+'">'+(v==null?'—':v)+'</span>'; }
+
+//=====================================================================
+// PERSONAS
+//=====================================================================
+var FICHAS = [];
+SUPS.forEach(function(s){ s.ops.forEach(function(o){ FICHAS.push({n:o.n, r:o.r, s:o.s, sup:s.key}); }); });
+SUELTOS.forEach(function(o){ FICHAS.push({n:o.n, r:o.r, s:o.s, sup:'-'}); });
+
+// nombre de cualquier fuente → ficha | 'excluido' | null
+function persona(nom){
+  for (var i=0;i<EXCLUIR.length;i++) if (calza(nom, EXCLUIR[i])) return 'excluido';
+  for (var j=0;j<FICHAS.length;j++) if (calza(nom, FICHAS[j].r)) return FICHAS[j];
+  return null;
+}
+var EXTRA = {};   // operarios con tareas que no están en ninguna ficha
+function fichaDe(nom, sector){
+  var p = persona(nom);
+  if (p==='excluido') return null;
+  if (p) return p;
+  var k = norm(nom).join(' ');
+  if (!k) return null;
+  return EXTRA[k] || (EXTRA[k] = {n:nom, r:norm(nom), s:sector||'', sup:'-', extra:true});
+}
+
+//=====================================================================
+// DATOS
+//=====================================================================
+function traer(qs){
+  return fetch(EP+qs).then(function(r){ return r.json(); }).catch(function(e){ return {err:String(e)}; });
+}
+// Resumen de un día: primero la vista liviana (con memoria en el servidor); si no existe, el hora a hora completo
+function resumirHxh(fecha, hx){
+  var ops = ((hx && hx.operarios) || []).filter(function(o){ return (o.real||[]).length; }).map(function(o){
+    var rs = o.real.slice().sort(function(a,b){ return String(a.ini||'').localeCompare(String(b.ini||'')); });
+    var obj=0, real=0, gap=0, ok=0, ng=0, sin=0, n=0, crit=0, nc=0, prevFin=null;
+    rs.forEach(function(w){
+      var i = hhmm2min(w.ini), f = hhmm2min(w.fin);
+      if (prevFin!=null && i!=null && i>prevFin) gap += (i-prevFin);
+      if (f!=null) prevFin = prevFin==null ? f : Math.max(prevFin, f);
+      if (w.e==='nc' || w.mwc==='RETRAB'){ nc += (w.rmin||0); return; }
+      n++; obj += (w.obj||0); real += (w.rmin||0);
+      if (w.obj>0 && w.rmin > 2*w.obj) crit++;
+      if (w.val==='ok') ok++; else if (w.val==='ng') ng++; else sin++;
+    });
+    return {nom:o.nom, sector:o.sector, n:n, obj:R(obj), real:R(real), gap:R(gap), ok:ok, ng:ng, sin:sin, crit:crit, nc:R(nc)};
+  });
+  return {fecha:fecha, ops:ops, cinco_s:(hx && hx.cinco_s) || null};
+}
+function traerDia(f){
+  return traer('?view=scoredia&fecha='+f).then(function(j){
+    if (j && j.ops) return j;
+    return traer('?view=horaxhora&fecha='+f).then(function(hx){ return hx && !hx.err ? resumirHxh(f, hx) : {fecha:f, ops:[], err:true}; });
+  });
+}
+function diasDelRango(desde, hasta){
+  var out=[], d=deIso(desde), h=deIso(hasta), hoy=iso(new Date());
+  while (d<=h){ var f=iso(d); if (d.getDay()!==0 && f<=hoy) out.push(f); d.setDate(d.getDate()+1); }
+  return out;
+}
+
+//=====================================================================
+// CÁLCULO
+//=====================================================================
+var P5 = {verde:100, ok:100, azul:50, amarillo:50, rojo:0};
+
+function calcular(D){
+  var A = {};   // nombre ficha -> acumulado
+  function acc(f){
+    return A[f.n] || (A[f.n] = {f:f, dias:[], obj:0, real:0, tope:0, gap:0, opdias:0, ok:0, ng:0, sin:0, n:0, crit:0, nc:0,
+      faltas:[], tardes:[], diasHab:0, s5:[], defs:[], orden:null});
+  }
+  // 1. hora a hora por día
+  D.dias.forEach(function(d){
+    (d.ops||[]).forEach(function(o){
+      var f = fichaDe(o.nom, o.sector); if (!f) return;
+      var a = acc(f);
+      a.opdias++; a.obj+=o.obj; a.real+=o.real; a.tope+=Math.min(o.obj, o.real);
+      a.gap+=o.gap; a.ok+=o.ok; a.ng+=o.ng; a.sin+=o.sin; a.n+=o.n; a.crit+=o.crit; a.nc+=o.nc;
+      a.dias.push({fecha:d.fecha, obj:o.obj, real:o.real, gap:o.gap, n:o.n, ef:o.real?R(o.obj/o.real*100):null});
+    });
+  });
+  // 2. asistencia (días hábiles de lunes a viernes dentro del rango)
+  var habiles = (D.aus && D.aus.dias || []).filter(function(x){ return !x.sab && x.fecha>=D.desde && x.fecha<=D.hasta; });
+  // hoy antes de las 8:15 todavía no fichó nadie
+  var ahora = new Date(), hoy = iso(ahora);
+  if (ahora.getHours()*60+ahora.getMinutes() < 8*60+15) habiles = habiles.filter(function(x){ return x.fecha!==hoy; });
+  Object.keys(A).forEach(function(k){ A[k].diasHab = habiles.length; });
+  FICHAS.forEach(function(f){ acc(f).diasHab = habiles.length; });
+  habiles.forEach(function(x){
+    (x.ausentes_nombres||[]).forEach(function(nm){ var f=persona(nm); if (f && f!=='excluido') acc(f).faltas.push(x.fecha); });
+    (x.tardes_nombres||[]).forEach(function(t){
+      var p = String(t).split(' '), hh = /^\d{1,2}:\d{2}$/.test(p[p.length-1]) ? p.pop() : '';
+      var f = persona(p.join(' ')); if (f && f!=='excluido') acc(f).tardes.push({fecha:x.fecha, hora:hh});
+    });
+  });
+  // 3. 5S del sector
+  D.dias.forEach(function(d){
+    if (!d.cinco_s) return;
+    Object.keys(A).forEach(function(k){
+      var a = A[k], cods = sector5S(a.f.s), cod = null;
+      for (var i=0;i<cods.length;i++) if (d.cinco_s[cods[i]]){ cod = cods[i]; break; }
+      if (!cod) return;
+      if (!a.dias.some(function(x){ return x.fecha===d.fecha; })) return;   // solo los días que trabajó
+      var it = d.cinco_s[cod] || {}, c = String(it.color||'').toLowerCase();
+      a.s5.push({fecha:d.fecha, cod:cod, color:c||'sin relevar', pts:P5.hasOwnProperty(c)?P5[c]:0, nota:it.nota||''});
+    });
+  });
+  // 4. defectos
+  (D.def && D.def.items || []).forEach(function(it){
+    (it.operarios||[]).forEach(function(nm){ var f=persona(nm) || EXTRA[norm(nm).join(' ')]; if (f && f!=='excluido') acc(f).defs.push(it); });
+  });
+  // 5. orden de operaciones
+  (D.orden && D.orden.operarios || []).forEach(function(o){
+    var f = persona(o.nom) || EXTRA[norm(o.nom).join(' ')]; if (!f || f==='excluido') return;
+    var a = acc(f); a.orden = a.orden || {pares:0, en_orden:0, saltos:[]};
+    a.orden.pares += o.pares; a.orden.en_orden += o.en_orden; a.orden.saltos = a.orden.saltos.concat(o.saltos||[]);
+  });
+
+  return Object.keys(A).map(function(k){
+    var a = A[k];
+    var ef = a.real ? R(a.obj/a.real*100) : null;
+    var sEf = a.real ? R(a.tope/a.real*100) : null;
+    var ocio = a.opdias ? R(a.gap/(a.opdias*JORNADA_MIN)*100) : null;
+    var sHu = ocio==null ? null : clamp(100-ocio,0,100);
+    var malos = {}; a.faltas.forEach(function(f){ malos[f]=1; }); a.tardes.forEach(function(t){ malos[t.fecha]=1; });
+    var sPu = a.diasHab ? R((a.diasHab - Object.keys(malos).length)/a.diasHab*100) : null;
+    var s5 = a.s5.length ? R(a.s5.reduce(function(x,y){ return x+y.pts; },0)/a.s5.length) : null;
+    var sVa = (a.ok+a.ng) ? R(a.ok/(a.ok+a.ng)*100) : null;
+    var pOrd = a.orden && a.orden.pares ? R(a.orden.en_orden/a.orden.pares*100) : null;
+    var val = [sEf,sHu,sPu,s5,sVa].filter(function(v){ return v!=null; });
+    var indice = (a.opdias && val.length) ? R(val.reduce(function(x,y){ return x+y; },0)/val.length) : null;
+    return {a:a, f:a.f, ef:ef, sEf:sEf, ocio:ocio, sHu:sHu, sPu:sPu, s5:s5, sVa:sVa, pOrd:pOrd, indice:indice,
+            defPor100: a.n ? Math.round(a.defs.length/a.n*1000)/10 : null};
+  });
+}
+
+//=====================================================================
+// RENDER
+//=====================================================================
+var ESTADO = {filas:[], orden:'indice', asc:false, abierto:null, dfModo:'sin', D:null};
+var COLS = [
+  {k:'n',      t:'Operario'},
+  {k:'s',      t:'Sector'},
+  {k:'sup',    t:'Superv.'},
+  {k:'indice', t:'Índice'},
+  {k:'sEf',    t:'Eficiencia'},
+  {k:'sHu',    t:'Huecos'},
+  {k:'sPu',    t:'Puntualidad'},
+  {k:'s5',     t:'5S sector'},
+  {k:'sVa',    t:'Validación'},
+  {k:'defs',   t:'Defectos', inf:true},
+  {k:'pOrd',   t:'Orden Odoo', inf:true},
+  {k:'crit',   t:'Críticas', inf:true},
+  {k:'nc',     t:'Retrabajo', inf:true}
+];
+function valor(r,k){
+  if (k==='n') return r.f.n; if (k==='s') return r.f.s; if (k==='sup') return r.f.sup;
+  if (k==='defs') return r.a.defs.length; if (k==='crit') return r.a.crit; if (k==='nc') return r.a.nc;
+  return r[k];
+}
+function supPill(s){ return s==='yance' ? '<span class="pill y">Yance</span>' : s==='orona' ? '<span class="pill r">Rodrigo</span>' : '<span class="pill n">sin asignar</span>'; }
+
+function pintarRanking(){
+  var fs = document.getElementById('fSup').value;
+  var filas = ESTADO.filas.filter(function(r){ return r.a.opdias || r.a.faltas.length; })
+    .filter(function(r){ return !fs || r.f.sup===fs; });
+  var k = ESTADO.orden, asc = ESTADO.asc;
+  filas.sort(function(x,y){
+    var a=valor(x,k), b=valor(y,k);
+    if (a==null && b==null) return 0; if (a==null) return 1; if (b==null) return -1;
+    var c = typeof a==='string' ? a.localeCompare(b) : a-b; return asc ? c : -c;
+  });
+  var cab = '<thead><tr>'+COLS.map(function(c){
+    return '<th data-k="'+c.k+'" class="'+(c.inf?'inf':'')+'">'+c.t+(ESTADO.orden===c.k?(ESTADO.asc?' ▲':' ▼'):'')+'</th>'; }).join('')+'</tr></thead>';
+  var cuerpo = filas.map(function(r){
+    var a = r.a, sel = ESTADO.abierto===r.f.n;
+    var tr = '<tr class="op'+(sel?' sel':'')+'" data-n="'+esc(r.f.n)+'">'+
+      '<td><b>'+esc(r.f.n)+'</b><span class="sub">'+a.opdias+' días con tareas · '+a.n+' tareas</span></td>'+
+      '<td>'+esc(r.f.s||'—')+'</td><td>'+supPill(r.f.sup)+'</td>'+
+      '<td>'+chip(r.indice)+'</td>'+
+      '<td class="num"><b style="color:'+color(r.sEf)+'">'+(r.sEf==null?'—':r.sEf)+'</b><span class="sub">real '+(r.ef==null?'—':r.ef+'%')+'</span></td>'+
+      '<td class="num"><b style="color:'+color(r.sHu)+'">'+(r.sHu==null?'—':r.sHu)+'</b><span class="sub">'+(r.ocio==null?'':r.ocio+'% ocioso')+'</span></td>'+
+      '<td class="num"><b style="color:'+color(r.sPu)+'">'+(r.sPu==null?'—':r.sPu)+'</b><span class="sub">'+a.faltas.length+' F · '+a.tardes.length+' T</span></td>'+
+      '<td class="num"><b style="color:'+color(r.s5)+'">'+(r.s5==null?'—':r.s5)+'</b><span class="sub">'+(a.s5.length?a.s5.filter(function(x){return x.pts===100;}).length+'/'+a.s5.length+' verde':'')+'</span></td>'+
+      '<td class="num"><b style="color:'+color(r.sVa)+'">'+(r.sVa==null?'—':r.sVa)+'</b><span class="sub">'+a.ng+' no ok · '+a.sin+' sin val.</span></td>'+
+      '<td class="num inf">'+a.defs.length+'<span class="sub">'+(r.defPor100==null?'':r.defPor100+' c/100 tareas')+'</span></td>'+
+      '<td class="num inf">'+(r.pOrd==null?'<span class="muted">—</span>':'<b style="color:'+color(r.pOrd)+'">'+r.pOrd+'%</b><span class="sub">'+(r.a.orden.pares-r.a.orden.en_orden)+' saltos</span>')+'</td>'+
+      '<td class="num inf">'+a.crit+'</td>'+
+      '<td class="num inf">'+(a.nc?R(a.nc/6)/10+' h':'0')+'</td></tr>';
+    if (sel) tr += '<tr class="det"><td colspan="'+COLS.length+'">'+detalle(r)+'</td></tr>';
+    return tr;
+  }).join('');
+  var t = document.getElementById('rk');
+  t.innerHTML = cab + '<tbody>'+cuerpo+'</tbody>';
+  [].forEach.call(t.querySelectorAll('th'), function(th){
+    th.onclick = function(){ var k=th.getAttribute('data-k'); if (ESTADO.orden===k) ESTADO.asc=!ESTADO.asc; else { ESTADO.orden=k; ESTADO.asc=(k==='n'||k==='s'||k==='sup'); } pintarRanking(); };
+  });
+  var det = t.querySelector('tr.det'); if (det){ det.onclick = function(e){ e.stopPropagation(); }; enganchar(det); }
+  [].forEach.call(t.querySelectorAll('tr.op'), function(tr){
+    tr.onclick = function(){ var n=tr.getAttribute('data-n'); ESTADO.abierto = ESTADO.abierto===n ? null : n; pintarRanking(); };
+  });
+  document.getElementById('rkSub').textContent = filas.length+' operarios · '+fmtFecha(ESTADO.D.desde)+' al '+fmtFecha(ESTADO.D.hasta)+' · tocá un encabezado para ordenar';
+  document.getElementById('rkBox').style.display='';
+}
+
+function detalle(r){
+  var a = r.a;
+  // eficiencia día por día
+  var ds = a.dias.slice().sort(function(x,y){ return x.fecha<y.fecha?-1:1; });
+  var tEf = ds.length ? '<div class="scroll"><table class="t"><thead><tr><th>Día</th><th>Tareas</th><th>Obj (h)</th><th>Real (h)</th><th>Efic.</th><th>Hueco</th></tr></thead><tbody>'+
+    ds.map(function(d){ return '<tr><td>'+diaCorto(d.fecha)+'</td><td>'+d.n+'</td><td>'+R(d.obj/6)/10+'</td><td>'+R(d.real/6)/10+'</td><td style="color:'+color(d.ef==null?null:Math.min(d.ef,100))+';font-weight:700">'+(d.ef==null?'—':d.ef+'%')+'</td><td>'+d.gap+' min</td></tr>'; }).join('')+
+    '</tbody></table></div><div class="fx">puntaje = Σ mín(obj, real) por día ÷ Σ real = <b>'+(r.sEf==null?'—':r.sEf)+'</b> (sin tope: '+(r.ef==null?'—':r.ef+'%')+')</div>'
+    : '<div class="vacio">Sin tareas en el período.</div>';
+  // asistencia
+  var tAs = '<div><b>'+a.faltas.length+'</b> faltas · <b>'+a.tardes.length+'</b> llegadas tarde · '+a.diasHab+' días hábiles</div>'+
+    (a.faltas.length ? '<div style="margin-top:5px">Faltó: '+a.faltas.map(diaCorto).join(' · ')+'</div>' : '')+
+    (a.tardes.length ? '<div style="margin-top:5px">Tarde: '+a.tardes.map(function(t){ return diaCorto(t.fecha)+(t.hora?' ('+t.hora+')':''); }).join(' · ')+'</div>' : '')+
+    '<div class="fx">días sin falta ni tardanza ÷ días hábiles = <b>'+(r.sPu==null?'—':r.sPu)+'</b></div>';
+  // 5S
+  var EM = {verde:'🟢', ok:'🟢', azul:'🔵', amarillo:'🔵', rojo:'🔴'};
+  var t5 = a.s5.length ? '<div class="scroll"><table class="t"><thead><tr><th>Día</th><th>Sector</th><th>Resultado</th></tr></thead><tbody>'+
+    a.s5.map(function(x){ return '<tr><td>'+diaCorto(x.fecha)+'</td><td>'+esc(x.cod)+'</td><td>'+(EM[x.color]||'⚪')+' '+esc(x.color)+(x.nota?' · '+esc(x.nota):'')+'</td></tr>'; }).join('')+
+    '</tbody></table></div><div class="fx">verde 100 · azul 50 · rojo o sin relevar 0 = <b>'+r.s5+'</b></div>'
+    : '<div class="vacio">Sin datos del tour 5S para su sector'+(sector5S(r.f.s).length?' ('+sector5S(r.f.s).join('/')+')':'')+'.</div>';
+  // validación
+  var tVa = '<div><b>'+a.ok+'</b> Ok · <b>'+a.ng+'</b> No ok · '+a.sin+' sin validar · '+a.crit+' tareas críticas (más del doble del tiempo objetivo)</div>'+
+    '<div class="fx">Ok ÷ (Ok + No ok) = <b>'+(r.sVa==null?'—':r.sVa)+'</b> · lo sin validar no le cuenta en contra al operario</div>';
+  // defectos
+  var tDf = a.defs.length ? '<div class="scroll"><table class="t"><thead><tr><th>Retrabajo</th><th>Operación original</th><th>Si no fue él</th></tr></thead><tbody>'+
+    a.defs.map(function(d){ return '<tr><td>'+esc(d.retrabajo)+'<span class="sub">'+esc(d.pedido||d.mo)+' · '+fmtFecha(d.fecha)+'</span></td><td>'+esc(d.original||'(asignado a mano)')+'<span class="sub">'+esc(d.fuente)+(d.asignado_por?' · '+esc(d.asignado_por):'')+'</span></td>'+
+      '<td class="who"><div class="asig"><select data-id="'+d.id+'">'+opcionesOperarios()+'</select><button class="btn sm" data-id="'+d.id+'">Reasignar</button></div></td></tr>'; }).join('')+
+    '</tbody></table></div>' : '<div class="vacio">Sin defectos atribuidos en el período.</div>';
+  // orden
+  var tOr = !a.orden ? '<div class="vacio">'+(ESTADO.D.orden ? 'Sin pares de operaciones en una misma orden.' : 'Dato todavía no disponible (falta publicar el backend).')+'</div>' :
+    '<div><b>'+a.orden.en_orden+'</b> de <b>'+a.orden.pares+'</b> veces arrancó la operación siguiente en el orden de la ruta</div>'+
+    (a.orden.saltos.length ? '<div class="scroll" style="margin-top:6px"><table class="t"><thead><tr><th>Cuándo</th><th>Hizo antes</th><th>Y después (saltó atrás)</th></tr></thead><tbody>'+
+      a.orden.saltos.map(function(s){ return '<tr><td>'+esc(s.fecha)+'<span class="sub">'+esc(s.mo)+'</span></td><td>'+esc(s.antes)+'</td><td>'+esc(s.despues)+'</td></tr>'; }).join('')+'</tbody></table></div>' : '');
+  return '<div class="detw">'+
+    '<div class="dcard"><h4>Eficiencia y huecos</h4>'+tEf+'</div>'+
+    '<div class="dcard"><h4>Asistencia</h4>'+tAs+'<h4 style="margin-top:12px">Validación del supervisor</h4>'+tVa+'</div>'+
+    '<div class="dcard"><h4>5S de su sector</h4>'+t5+'</div>'+
+    '<div class="dcard" style="grid-column:span 2">'+'<h4>Defectos atribuidos ('+a.defs.length+')</h4>'+tDf+'</div>'+
+    '<div class="dcard"><h4>Orden de operaciones de Odoo</h4>'+tOr+'</div>'+
+    '</div>';
+}
+
+function opcionesOperarios(){
+  var nombres = FICHAS.map(function(f){ return f.n; }).concat(Object.keys(EXTRA).map(function(k){ return EXTRA[k].n; }));
+  nombres.sort(function(a,b){ return a.localeCompare(b); });
+  return '<option value="">— elegir operario —</option>'+nombres.map(function(n){ return '<option>'+esc(n)+'</option>'; }).join('')+
+    '<option value="No corresponde">No corresponde a nadie</option>';
+}
+function enganchar(t){
+  var items = (ESTADO.D.def && ESTADO.D.def.items) || [];
+  [].forEach.call(t.querySelectorAll('button[data-id]'), function(b){
+    b.onclick = function(){
+      var id = b.getAttribute('data-id'), sel = t.querySelector('select[data-id="'+id+'"]'), op = sel.value;
+      if (!op){ sel.focus(); return; }
+      var por = '';
+      try { por = localStorage.getItem('scoreop_por') || ''; } catch(e){}
+      if (!por){ por = (window.prompt('¿Quién asigna? (queda registrado)') || '').trim(); if (!por) return; try { localStorage.setItem('scoreop_por', por); } catch(e){} }
+      b.disabled = true; b.textContent = 'Guardando…';
+      traer('?view=defasignar&id='+encodeURIComponent(id)+'&op='+encodeURIComponent(op)+'&por='+encodeURIComponent(por)).then(function(j){
+        if (j && j.ok===false){ b.disabled=false; b.textContent='Reintentar'; alert('No se pudo guardar: '+(j.error||'')); return; }
+        var it = items.filter(function(x){ return String(x.id)===String(id); })[0];
+        if (it){ it.operarios = [op]; it.fuente = 'manual'; it.asignado_por = por; }
+        ESTADO.filas = calcular(ESTADO.D); pintarRanking(); pintarDefectos();
+      });
+    };
+  });
+}
+function pintarDefectos(){
+  var D = ESTADO.D, items = (D.def && D.def.items) || [];
+  var box = document.getElementById('dfBox');
+  if (!D.def || D.def.ok===false){ box.style.display=''; document.getElementById('df').innerHTML='<tr><td class="muted">No se pudieron traer los defectos'+(D.def&&D.def.error?': '+esc(D.def.error):'')+'</td></tr>'; return; }
+  var nSin = items.filter(function(i){ return i.fuente==='sin asignar'; }).length;
+  var nAut = items.filter(function(i){ return i.fuente==='automatica'; }).length;
+  var nMan = items.filter(function(i){ return i.fuente==='manual'; }).length;
+  document.getElementById('dfSub').textContent = items.length+' retrabajos · '+nAut+' asignados solos · '+nMan+' a mano · '+nSin+' sin asignar';
+  var lista = ESTADO.dfModo==='sin' ? items.filter(function(i){ return i.fuente==='sin asignar'; }) : items;
+  var opts = opcionesOperarios();
+  var html = '<thead><tr><th>Fecha</th><th>Retrabajo</th><th>Vehículo</th><th>Lo arregló</th><th>Operación original</th><th>A quién se le cuenta</th></tr></thead><tbody>'+
+    (lista.length ? lista.map(function(it){
+      var cls = it.fuente==='automatica'?'automatica':it.fuente==='manual'?'manual':'sin';
+      return '<tr><td>'+fmtFecha(it.fecha)+'</td><td>'+esc(it.retrabajo)+'</td><td>'+esc(it.pedido||'')+'<span class="sub">'+esc(it.mo)+'</span></td>'+
+        '<td>'+esc((it.reparo||[]).join(', '))+'</td>'+
+        '<td>'+(it.original?esc(it.original)+'<span class="sub">'+esc(it.mo_original||'')+' · coincidencia '+it.coincidencia+'%'+(it.fuente==='sin asignar'?' · nadie le cargó tiempo en Odoo':'')+'</span>':'<span class="muted">no se reconoció</span>')+'</td>'+
+        '<td class="who"><span class="src '+cls+'">'+esc(it.fuente)+'</span> '+esc((it.operarios||[]).join(' + '))+
+          (it.asignado_por?'<span class="sub">asignó '+esc(it.asignado_por)+'</span>':'')+
+          '<div class="asig"><select data-id="'+it.id+'">'+opts+'</select><button class="btn sm" data-id="'+it.id+'">'+(it.fuente==='sin asignar'?'Asignar':'Cambiar')+'</button></div></td></tr>';
+    }).join('') : '<tr><td colspan="6" class="muted">'+(ESTADO.dfModo==='sin'?'No quedan defectos sin asignar en el período. ✓':'Sin retrabajos en el período.')+'</td></tr>')+'</tbody>';
+  var t = document.getElementById('df'); t.innerHTML = html;
+  enganchar(t);
+  box.style.display='';
+}
+
+//=====================================================================
+// ARRANQUE
+//=====================================================================
+var TURNO = 0;
+function cargar(){
+  var turno = ++TURNO;
+  var desde = document.getElementById('desde').value, hasta = document.getElementById('hasta').value;
+  if (!desde || !hasta || desde>hasta) return;
+  var dias = diasDelRango(desde, hasta);
+  var D = {desde:desde, hasta:hasta, dias:[], aus:null, def:null, orden:null};
+  ESTADO.D = D; ESTADO.abierto = null; EXTRA = {};
+  var st = document.getElementById('status');
+  var faltan = dias.length, extras = 3;
+  function estado(){
+    if (turno!==TURNO) return;
+    var listo = faltan===0 && extras===0;
+    st.style.display = listo ? 'none' : 'flex';
+    st.innerHTML = '<div class="spin"></div><span>Trayendo datos… '+(dias.length-faltan)+' de '+dias.length+' días'+(extras?' · asistencia, defectos y orden de operaciones':'')+'</span>';
+  }
+  function dibujar(){
+    if (turno!==TURNO) return;
+    D.dias.sort(function(a,b){ return a.fecha<b.fecha?-1:1; });
+    ESTADO.filas = calcular(D);
+    pintarRanking();
+    if (D.def) pintarDefectos();
+    estado();
+    var sinDatos = D.dias.filter(function(d){ return !(d.ops||[]).length; }).map(function(d){ return diaCorto(d.fecha); });
+    document.getElementById('foot').innerHTML = 'Período '+fmtFecha(desde)+' al '+fmtFecha(hasta)+' · '+D.dias.length+' días consultados'+
+      (sinDatos.length?' · sin tareas: '+sinDatos.join(', '):'')+
+      '<br>No cuentan como operarios: Yance, Rodrigo Orona, Facundo Orona, Agustín Quispe · actualizado '+new Date().toLocaleString('es-AR');
+  }
+  document.getElementById('rkBox').style.display='none'; document.getElementById('dfBox').style.display='none';
+  estado();
+  traer('?view=ausmes').then(function(j){ D.aus = j && j.dias ? j : null; extras--; dibujar(); });
+  traer('?view=defectos&desde='+desde+'&hasta='+hasta).then(function(j){ D.def = j && j.items ? j : {ok:false, error:(j&&(j.error||j.err))||'sin respuesta'}; extras--; dibujar(); });
+  traer('?view=scoreorden&desde='+desde+'&hasta='+hasta).then(function(j){ D.orden = j && j.operarios ? j : null; extras--; dibujar(); });
+  // de a 4 días por vez
+  var cola = dias.slice().reverse(), activos = 0;
+  function siguiente(){
+    while (activos<4 && cola.length){
+      var f = cola.shift(); activos++;
+      (function(f){
+        traerDia(f).then(function(j){ if (turno!==TURNO) return; activos--; faltan--; D.dias.push(j); dibujar(); siguiente(); });
+      })(f);
+    }
+  }
+  siguiente();
+}
+
+(function(){
+  var hoy = new Date();
+  document.getElementById('desde').value = iso(new Date(hoy.getFullYear(), hoy.getMonth(), 1));
+  document.getElementById('hasta').value = iso(hoy);
+  document.getElementById('hasta').max = iso(hoy);
+  document.getElementById('recargar').onclick = cargar;
+  document.getElementById('desde').onchange = cargar;
+  document.getElementById('hasta').onchange = cargar;
+  document.getElementById('fSup').onchange = function(){ if (ESTADO.D) pintarRanking(); };
+  document.getElementById('dfSin').onclick = function(){ ESTADO.dfModo='sin'; this.className='on'; document.getElementById('dfTodos').className=''; pintarDefectos(); };
+  document.getElementById('dfTodos').onclick = function(){ ESTADO.dfModo='todos'; this.className='on'; document.getElementById('dfSin').className=''; pintarDefectos(); };
+  cargar();
+})();
+</script>
+</body>
+</html>
