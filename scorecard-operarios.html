@@ -80,6 +80,10 @@
   .asig{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:4px}
   .asig select{font-size:12px;padding:3px 6px;max-width:210px}
   .muted{color:var(--muted)}
+  .msj{white-space:pre-wrap;font-size:12.5px;line-height:1.5;background:var(--surface-alt);border:1px solid var(--border);border-radius:8px;padding:9px 11px;max-height:320px;overflow:auto}
+  .est{font-size:10.5px;font-weight:700;border-radius:99px;padding:1px 7px;border:1px solid}
+  .est.enviado{color:#1a7f4b;border-color:#bfe3cd;background:#eef8f2}
+  .est.error{color:#c0392b;border-color:#f1c8c2;background:#fdf0ee}
   footer{margin-top:22px;font-size:11.5px;color:var(--muted);text-align:center}
 </style>
 </head>
@@ -119,6 +123,12 @@
     </h2>
     <div class="scrollx"><table class="df" id="df"></table></div>
     <span class="flag">Un retrabajo se le cuenta a quien hizo la operación original de ese vehículo (mismo pedido). Si la operación original no se reconoce por el nombre, queda sin asignar.</span>
+  </section>
+
+  <section class="box" id="msBox" style="display:none">
+    <h2>Mensajes de los sábados <small id="msSub"></small></h2>
+    <div class="scrollx"><table class="df" id="ms"></table></div>
+    <span class="flag">Cada sábado a las 13:30 a cada operario con tareas en la semana le llega este mensaje en Conversaciones de Odoo. Tocá un renglón para leerlo completo.</span>
   </section>
 
   <footer id="foot"></footer>
@@ -273,7 +283,7 @@ function calcular(D){
   var A = {};   // nombre ficha -> acumulado
   function acc(f){
     return A[f.n] || (A[f.n] = {f:f, dias:[], obj:0, real:0, tope:0, gap:0, opdias:0, ok:0, ng:0, sin:0, n:0, crit:0, nc:0,
-      faltas:[], tardes:[], diasHab:0, s5:[], defs:[], orden:null});
+      faltas:[], tardes:[], diasHab:0, s5:[], defs:[], orden:null, msjs:[]});
   }
   // 1. hora a hora por día
   D.dias.forEach(function(d){
@@ -314,6 +324,11 @@ function calcular(D){
   // 4. defectos
   (D.def && D.def.items || []).forEach(function(it){
     (it.operarios||[]).forEach(function(nm){ var f=persona(nm) || EXTRA[norm(nm).join(' ')]; if (f && f!=='excluido') acc(f).defs.push(it); });
+  });
+  // 6. mensajes de los sábados
+  (D.msjs && D.msjs.mensajes || []).forEach(function(mj){
+    var f = persona(mj.operario) || EXTRA[norm(mj.operario).join(' ')]; if (!f || f==='excluido') return;
+    acc(f).msjs.push(mj);
   });
   // 5. orden de operaciones
   (D.orden && D.orden.operarios || []).forEach(function(o){
@@ -447,9 +462,27 @@ function detalle(r){
     '<div class="dcard"><h4>5S de su sector</h4>'+t5+'</div>'+
     '<div class="dcard" style="grid-column:span 2">'+'<h4>Defectos atribuidos ('+a.defs.length+')</h4>'+tDf+'</div>'+
     '<div class="dcard"><h4>Orden de operaciones de Odoo</h4>'+tOr+'</div>'+
+    '<div class="dcard" style="grid-column:1/-1"><h4>Mensajes que se le mandaron ('+a.msjs.length+')</h4>'+
+      (a.msjs.length ? a.msjs.slice().sort(function(x,y){ return x.fecha_envio<y.fecha_envio?1:-1; }).map(function(mj){
+        return '<div style="margin-bottom:8px"><div class="muted" style="font-size:11.5px;margin-bottom:3px">Semana '+fmtFecha(mj.semana_desde)+' al '+fmtFecha(mj.semana_hasta)+' · enviado '+esc(mj.fecha_envio)+' <span class="est '+esc(mj.estado)+'">'+esc(mj.estado)+'</span>'+(mj.estado==='error'?' '+esc(mj.detalle):'')+'</div><div class="msj">'+esc(mj.mensaje)+'</div></div>'; }).join('')
+        : '<div class="vacio">Todavía no se le mandó ningún mensaje en este período (salen los sábados a las 13:30).</div>')+'</div>'+
     '</div>';
 }
 
+function pintarMensajes(){
+  var D = ESTADO.D, L = (D.msjs && D.msjs.mensajes) || [];
+  var box = document.getElementById('msBox'); box.style.display='';
+  var ok = L.filter(function(x){ return x.estado==='enviado'; }).length;
+  document.getElementById('msSub').textContent = L.length ? ok+' enviados · '+(L.length-ok)+' con error' : 'todavía no salió ninguno en el período';
+  var t = document.getElementById('ms');
+  t.innerHTML = '<thead><tr><th>Semana</th><th>Operario</th><th>Superv.</th><th>Puntaje</th><th>Estado</th><th>Mensaje</th></tr></thead><tbody>'+
+    (L.length ? L.slice().sort(function(x,y){ return x.fecha_envio<y.fecha_envio?1:(x.fecha_envio>y.fecha_envio?-1:x.operario.localeCompare(y.operario)); }).map(function(mj,i){
+      return '<tr class="msr" data-i="'+i+'" style="cursor:pointer"><td>'+fmtFecha(mj.semana_desde)+' al '+fmtFecha(mj.semana_hasta)+'<span class="sub">'+esc(mj.fecha_envio)+'</span></td><td>'+esc(mj.operario)+'</td><td>'+esc(mj.supervisor||'—')+'</td><td>'+chip(mj.puntaje===''?null:+mj.puntaje)+'</td>'+
+        '<td><span class="est '+esc(mj.estado)+'">'+esc(mj.estado)+'</span>'+(mj.estado==='error'?'<span class="sub">'+esc(mj.detalle)+'</span>':'')+'</td>'+
+        '<td><div class="msj" style="max-height:3.2em;overflow:hidden">'+esc(mj.mensaje)+'</div></td></tr>'; }).join('')
+      : '<tr><td colspan="6" class="muted">Sin mensajes en el período.</td></tr>')+'</tbody>';
+  [].forEach.call(t.querySelectorAll('tr.msr .msj'), function(d){ d.parentNode.parentNode.onclick = function(){ d.style.maxHeight = d.style.maxHeight ? '' : '3.2em'; }; });
+}
 function opcionesOperarios(){
   var nombres = FICHAS.map(function(f){ return f.n; }).concat(Object.keys(EXTRA).map(function(k){ return EXTRA[k].n; }));
   nombres.sort(function(a,b){ return a.localeCompare(b); });
@@ -509,10 +542,10 @@ function cargar(){
   var desde = document.getElementById('desde').value, hasta = document.getElementById('hasta').value;
   if (!desde || !hasta || desde>hasta) return;
   var dias = diasDelRango(desde, hasta);
-  var D = {desde:desde, hasta:hasta, dias:[], aus:null, def:null, orden:null};
+  var D = {desde:desde, hasta:hasta, dias:[], aus:null, def:null, orden:null, msjs:null};
   ESTADO.D = D; ESTADO.abierto = null; EXTRA = {};
   var st = document.getElementById('status');
-  var faltan = dias.length, extras = 3;
+  var faltan = dias.length, extras = 4;
   function estado(){
     if (turno!==TURNO) return;
     var listo = faltan===0 && extras===0;
@@ -525,17 +558,19 @@ function cargar(){
     ESTADO.filas = calcular(D);
     pintarRanking();
     if (D.def) pintarDefectos();
+    if (D.msjs) pintarMensajes();
     estado();
     var sinDatos = D.dias.filter(function(d){ return !(d.ops||[]).length; }).map(function(d){ return diaCorto(d.fecha); });
     document.getElementById('foot').innerHTML = 'Período '+fmtFecha(desde)+' al '+fmtFecha(hasta)+' · '+D.dias.length+' días consultados'+
       (sinDatos.length?' · sin tareas: '+sinDatos.join(', '):'')+
       '<br>No cuentan como operarios: Yance, Rodrigo Orona, Facundo Orona, Agustín Quispe · actualizado '+new Date().toLocaleString('es-AR');
   }
-  document.getElementById('rkBox').style.display='none'; document.getElementById('dfBox').style.display='none';
+  document.getElementById('rkBox').style.display='none'; document.getElementById('dfBox').style.display='none'; document.getElementById('msBox').style.display='none';
   estado();
   traer('?view=ausmes').then(function(j){ D.aus = j && j.dias ? j : null; extras--; dibujar(); });
   traer('?view=defectos&desde='+desde+'&hasta='+hasta).then(function(j){ D.def = j && j.items ? j : {ok:false, error:(j&&(j.error||j.err))||'sin respuesta'}; extras--; dibujar(); });
   traer('?view=scoreorden&desde='+desde+'&hasta='+hasta).then(function(j){ D.orden = j && j.operarios ? j : null; extras--; dibujar(); });
+  traer('?view=mensajes&desde='+desde+'&hasta='+hasta).then(function(j){ D.msjs = j && j.mensajes ? j : {mensajes:[]}; extras--; dibujar(); });
   // de a 4 días por vez
   var cola = dias.slice().reverse(), activos = 0;
   function siguiente(){
