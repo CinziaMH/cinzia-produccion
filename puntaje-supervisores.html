@@ -108,7 +108,7 @@
   </header>
 
   <div class="note">
-    <b>Índice 0–100</b> = promedio simple de 4 métricas: productividad, % de tareas validadas, huecos sin tarea y 5S de sus sectores.
+    <b>Índice 0–100</b> = promedio simple de 4 métricas: productividad, % de tareas validadas, inactividad de su gente (minutos de jornada sin tarea abierta; tolerancia 5 %, cada punto de más resta 4) y 5S de sus sectores.
     El <b>DPU</b> (defectos por unidad) se muestra pero <b>todavía no suma al índice</b> — no tiene umbral.
     Cada supervisor se mide sobre <b>sus operarios</b> según el reparto de la validación de tareas.
     Tocá una métrica para ver el cálculo completo.
@@ -229,6 +229,17 @@ function calza(nombre, regla){
   var tk = norm(nombre);
   return regla.every(function(p){ return tk.some(function(t){ return t.indexOf(p)===0; }); });
 }
+// Inactividad estricta (Riki 14/10/2026): minutos de jornada sin NINGUNA tarea abierta (entrada tarde, huecos, salida temprana)
+function bloquesDe(fecha){ var dow=deIso(fecha).getDay(); return dow===6 ? [[480,780]] : [[490,720],[780,1020]]; }
+function inactividad(fecha, real){
+  var hoyIso=iso(new Date()), d=new Date(), tope = fecha===hoyIso ? d.getHours()*60+d.getMinutes() : 1440;
+  var bl = bloquesDe(fecha).map(function(b){ return [b[0], Math.min(b[1], tope)]; }).filter(function(b){ return b[1]>b[0]; });
+  var jorn = bl.reduce(function(a,b){ return a+b[1]-b[0]; },0);
+  var iv = (real||[]).map(function(w){ return [hhmm2min(w.ini), w.fin ? hhmm2min(w.fin) : tope]; }).filter(function(x){ return x[0]!=null && x[1]!=null; }).sort(function(a,b){ return a[0]-b[0]; });
+  var cub=0; bl.forEach(function(b){ var cur=b[0]; iv.forEach(function(x){ var s=Math.max(x[0],cur), e=Math.min(x[1],b[1]); if(e>s){ cub+=e-s; cur=e; } }); });
+  return {inact: Math.max(0, jorn-cub), jorn: jorn};
+}
+function puntajeInact(pct){ return pct==null ? null : clamp(R(100 - 4*Math.max(0, pct-5)), 0, 100); }
 function semanaDe(s){
   var d = deIso(s), dow = (d.getDay()+6)%7, out=[];
   d.setDate(d.getDate()-dow);
@@ -297,8 +308,9 @@ function agregar(listaDias, qa){
       if (!as){ sinAsignar[o.nom]=1; return; }
       var B = S[as.sup];
 
-      var op = B.OP[as.ficha.n] || (B.OP[as.ficha.n] = {n:as.ficha.n, s:as.ficha.s, opdias:0, gap:0, obj:0, real:0, ok:0, ng:0, sin:0});
+      var op = B.OP[as.ficha.n] || (B.OP[as.ficha.n] = {n:as.ficha.n, s:as.ficha.s, opdias:0, gap:0, inact:0, jorn:0, obj:0, real:0, ok:0, ng:0, sin:0});
       op.opdias++;
+      var ia = inactividad(x.fecha, o.real); op.inact += ia.inact; op.jorn += ia.jorn;
       var prevFin=null;
       var dm = {};   // tiempo objetivo y real de este operario en este día, por montaje
       rs.forEach(function(w){
@@ -362,9 +374,9 @@ function calcular(sup, AG){
 
   // 3. Huecos (por operario)
   var gap=0, disp=0;
-  ops.forEach(function(o){ gap+=o.gap; disp+=o.opdias*JORNADA_MIN; });
+  ops.forEach(function(o){ gap+=o.inact; disp+=o.jorn; });
   var pctOcio = disp ? R(gap/disp*100) : null;
-  var sH = pctOcio==null ? null : clamp(100-pctOcio,0,100);
+  var sH = puntajeInact(pctOcio);
 
   // 4. DPU (solo informativo)
   var propios = sup.montajesDefecto;
@@ -404,7 +416,7 @@ function calcular(sup, AG){
     metricas:[
       {k:'prod', nombre:'Productividad', score:sP, raw: prom==null?'—':prom+'%', d:{tipo:'prod', filas:filasP, prom:prom, tope:tope}},
       {k:'val',  nombre:'% de tareas validadas', score:sV, raw: vTot? vOk+'/'+vTot : '—', d:{tipo:'val', ops:ops, ok:vOk, tot:vTot}},
-      {k:'huec', nombre:'Huecos sin tarea', score:sH, raw: pctOcio==null?'—':pctOcio+'% ocioso', d:{tipo:'huec', ops:ops, gap:R(gap), disp:disp, pct:pctOcio}},
+      {k:'huec', nombre:'Inactividad de su gente', score:sH, raw: pctOcio==null?'—':pctOcio+'% sin tarea', d:{tipo:'huec', ops:ops, gap:R(gap), disp:disp, pct:pctOcio}},
       {k:'cinco', nombre:'5S de sus sectores', score:s5, raw: n5 ? filas5.filter(function(f){return f.pts===100;}).length+'/'+n5+' en verde' : '—', d:{tipo:'cinco', filas:filas5, score:s5}},
       {k:'dpu',  nombre:'DPU — defectos por unidad', score:null, info:true, raw: dpu==null?'—':dpu+' def/veh', d:{tipo:'dpu', defs:defs, nVeh:nVeh, dpu:dpu, porMont:porMont}}
     ]};
@@ -448,14 +460,14 @@ function tVal(d){
 function tHuec(d){
   if (!d.disp) return '<div class="fx">Sin operarios con tareas en el período.</div>';
   var f = d.ops.map(function(o){
-    var ds=o.opdias*JORNADA_MIN, p=R(o.gap/ds*100);
-    return '<tr><td>'+esc(o.n)+' <span class="pill">'+esc(o.s)+'</span></td><td>'+o.opdias+'</td><td>'+ds+'</td><td>'+R(o.gap)+'</td><td style="color:'+color(100-p)+';font-weight:700">'+p+'%</td></tr>';
+    var p=o.jorn?R(o.inact/o.jorn*100):0;
+    return '<tr><td>'+esc(o.n)+' <span class="pill">'+esc(o.s)+'</span></td><td>'+o.opdias+'</td><td>'+o.jorn+'</td><td>'+R(o.inact)+'</td><td style="color:'+(p>15?'var(--bad)':(p>5?'var(--warn)':'var(--good)'))+';font-weight:700">'+p+'%'+(p>15?' ⚠':'')+'</td></tr>';
   }).join('');
   return '<div class="dblock"><p class="dlab">Por operario</p><div class="scroll"><table class="t">'+
-    '<thead><tr><th>Operario</th><th>Días</th><th>Disp (min)</th><th>Hueco (min)</th><th>% ocioso</th></tr></thead><tbody>'+f+'</tbody>'+
+    '<thead><tr><th>Operario</th><th>Días</th><th>Jornada (min)</th><th>Sin tarea (min)</th><th>%</th></tr></thead><tbody>'+f+'</tbody>'+
     '<tfoot><tr><td>Total</td><td></td><td>'+d.disp+'</td><td>'+d.gap+'</td><td>'+d.pct+'%</td></tr></tfoot></table></div></div>'+
-    '<div class="dblock"><div class="fx">hueco = minutos entre el fin de una tarea y el inicio de la siguiente · 100 − ('+d.gap+' ÷ '+d.disp+' × 100) = <b>'+clamp(100-d.pct,0,100)+'</b></div></div>'+
-    '<span class="flag">⚠ Disponible = '+JORNADA_MIN+' min por operario y día con tareas. En el día en curso el hueco todavía está incompleto.</span>';
+    '<div class="dblock"><div class="fx">inactividad = minutos de la jornada sin ninguna tarea abierta en Odoo (entrada tarde, huecos y salida temprana) ÷ jornada = '+d.pct+'% · puntaje = 100 − 4 × ('+d.pct+' − 5) = <b>'+puntajeInact(d.pct)+'</b></div></div>'+
+    '<span class="flag">⚠ Tolerancia 5 % de la jornada. Más de 15 % = llamado de atención. En el día en curso se cuenta hasta la hora actual.</span>';
 }
 function tDpu(d){
   if (!d.defs.length) return '<div class="fx">Sin defectos registrados en el período ('+d.nVeh+' vehículos trabajados).</div>';
