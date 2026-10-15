@@ -210,6 +210,8 @@ verde en tiempo · naranja ef 80–100% · rojo ef < 80% */
 .gm .vchip .lb{font-size:9px;font-weight:900;opacity:.85;margin-right:4px}
 .fila.sintarea{box-shadow:inset 6px 0 0 #ef4444;background:rgba(239,68,68,.10)}
 .fila.sintarea .det{color:#fca5a5;font-weight:800}
+.blk .vpro{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#fbbf24;color:#78350f;font-size:8px;font-weight:900;margin-right:3px;vertical-align:middle}
+.blk .vret{display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:50%;background:#a855f7;color:#fff;font-size:10px;font-weight:900;margin-right:3px;vertical-align:middle}
 </style>
 </head>
 <body>
@@ -340,10 +342,10 @@ var ctl=document.getElementById('shCtl');
 if(k!=='plan'&&b.getAttribute('data-mof')){
 CUR=b;
 var val=b.getAttribute('data-val');
-if(val){
+if(esVal(val)){
 ctl.innerHTML='<div class="stx" style="color:#22c55e">✓ Ya validada: '+esc(val)+' (desde la app o este tablero)</div>';
 }else{
-ctl.innerHTML='<div class="btns"><button class="bok" onclick="valHxH(\'OK\')">✔ OK</button><button class="bng" onclick="valHxH(\'NG\')">✘ NG</button></div>'
+ctl.innerHTML=(val?'<div class="stx" style="color:#fbbf24">● El supervisor la marcó: '+esc(val)+'</div>':'')+'<div class="btns"><button class="bok" onclick="valHxH(\'OK\')">✔ OK</button><button class="bng" onclick="valHxH(\'NG\')">✘ NG</button></div>'
 +(inef?'<select id="shCz" class="warn"><option value="">⚠ Causal de ineficiencia (obligatorio)…</option><option>Operario</option><option>Material</option><option>Diseño</option><option>Montaje anterior</option><option>Herramienta</option></select>':'')
 +'<input type="text" id="shNota" placeholder="Nota (opcional)"><div class="stx" id="shSt"></div>';
 }
@@ -487,7 +489,9 @@ function _foldNom(s){return String(s||'').toLowerCase().replace(/[áàä]/g,'a')
 function excluido(nom){var k=_foldNom(nom);return EXCLUIR_OPERARIO.some(function(x){return _foldNom(x).split(' ').every(function(tok){return tok && k.indexOf(tok)>=0;});});}
 var NOMBRES_PILA=new Set(['lucas','mauro','ezequiel','lautaro','javier','juan','juani','fabricio','agustin','agustín','mateo','ignacio','sergio','eduardo','alejandro','enzo','felipe','mariano','mario','pablo','luis','luís','esteban','jonatan','jonathan','martin','martín','nicolas','nicolás','marcos','matias','matías','franco','tomas','tomás','santiago','gabriel','diego','emanuel','facundo','joaquin','joaquín','ramiro','rodrigo','leonel','dylan','maximiliano','cristian','german','germán','gonzalo','ivan','iván','brian','kevin','lionel','luciano','gaston','gastón','damian','damián','ariel','fernando','sebastian','sebastián','walter','pedro','jorge','carlos','miguel','angel','ángel','ana','marta','raul','raúl','oscar','ruben','rubén','hector','héctor','nahuel','thiago','bruno','elias','elías','david','daniel','abel','axel','uriel','ismael','joel','milton','nestor','néstor','omar','claudio','marcelo']);
 function formatName(nom){var raw=String(nom||'').trim().replace(/\s+\d+$/,'');if(!raw)return '';var ape='',ini='';if(raw.indexOf(',')>=0){var pp=raw.split(',');ape=pp[0].trim();ini=(pp[1]||'').trim().charAt(0);}else{var toks=raw.split(/\s+/).filter(Boolean);if(toks.length<=1)return raw;var names=[],others=[];toks.forEach(function(t){(NOMBRES_PILA.has(t.toLowerCase())?names:others).push(t);});if(others.length&&names.length){ape=others.join(' ');ini=names[0].charAt(0);}else{ape=toks[0];ini=(toks[1]||'').charAt(0);}}return ape+(ini?(' '+ini.toUpperCase()+'.'):'');}
-function valBadge(v){if(!v)return '';return /ng/i.test(v)?'<span class="vng">✕</span>':'<span class="vok">✓</span>';}
+function esVal(v){v=String(v||'').toLowerCase();return v==='ok'||v==='ng';}
+/* En proceso / Retrabajando (Riki 15/10/2026): símbolo distinto al tilde de validada */
+function valBadge(v){v=String(v||'').toLowerCase();if(!v)return '';if(v==='ng')return '<span class="vng">✕</span>';if(v.indexOf('proceso')===0)return '<span class="vpro" title="En proceso (visto por el supervisor)">●</span>';if(v.indexOf('retrabaj')===0)return '<span class="vret" title="Retrabajando">↺</span>';return '<span class="vok">✓</span>';}
 var WO_PREFIX=/^(MH[A-Z0-9]?|CMD|CR|CS|CD|STD|RET|OPC|ESP|RES)[\s/\-–.]+/i;
 var WO_ABBR=[[/\bINSTALACI[OÓ]N(ES)?\b/gi,'I.'],[/\bINSTALAR\b/gi,'I.'],[/\bINSTAL\b/gi,'I.'],[/\bCOLOCACI[OÓ]N(ES)?\b/gi,'C.'],[/\bCOLOCAR\b/gi,'C.'],[/\bRUTE(O|AR|ADO)\b/gi,'R.']];
 function shortWO(s){s=String(s==null?'':s).trim();var g=0;while(WO_PREFIX.test(s)&&g++<4){s=s.replace(WO_PREFIX,'').trim();}WO_ABBR.forEach(function(a){s=s.replace(a[0],a[1]);});return s.trim();}
@@ -591,7 +595,7 @@ var lst=bySec[code]; lst.sort(function(a,b){if(!!a.sin_tarea!==!!b.sin_tarea)ret
 var _sPA=0,_sR=0,_tT=0,_tV=0,_inact=0,_planta=0;
 h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>@@EFF:'+code+'@@<span class="cnt" style="margin-left:8px">'+lst.length+' operarios</span></span></div>';
 lst.forEach(function(o){
-o.real=mergeReal(o.real); annotateAcum(o.real); (o.real||[]).forEach(function(r){if(r.e!=='curso'){_tT++;if(r.val)_tV++;}});
+o.real=mergeReal(o.real); annotateAcum(o.real); (o.real||[]).forEach(function(r){if(r.e!=='curso'){_tT++;if(esVal(r.val))_tV++;}});
 var reg=0, mos={}, ordenMos=[];
 (o.real||[]).forEach(function(r){var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)reg+=b-a; if(r.mo&&!mos[r.mo]){mos[r.mo]=1;ordenMos.push(r.mo)}});
 var durs=[]; ordenMos.forEach(function(mo){(moPlan[mo]||[]).forEach(function(p){durs.push({n:mo+' · '+shortWO(p.wo),d:toMin(p.fin)-toMin(p.ini)})})});
@@ -613,7 +617,7 @@ planOps.forEach(function(p){h+='<div class="pb" data-k="plan" data-h="'+fmtM(p.a
 }else{
 SEGS.forEach(function(sg){h+='<div class="pb" style="left:'+((sg[0]-480)/60*COLP)+'px;width:'+((sg[1]-sg[0])/60*COLP)+'px" title="sin plan pendiente — jornada esperada">sin plan pendiente · jornada</div>'});
 }
-(o.real||[]).forEach(function(r){var ov=ovAttrs(r);h+='<div class="blk '+r.e+ov.cls+(r.val?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||o.nom)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(code)+'"'+ov.attr+' style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo)+' · '+esc(r.wo)+'">'+valBadge(r.val)+esc(shortWO(r.wo))+'</div>'});
+(o.real||[]).forEach(function(r){var ov=ovAttrs(r);h+='<div class="blk '+r.e+ov.cls+(esVal(r.val)?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||o.nom)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(code)+'"'+ov.attr+' style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.mo)+' · '+esc(r.wo)+'">'+valBadge(r.val)+esc(shortWO(r.wo))+'</div>'});
 if((o.real||[]).length||o.sin_tarea){ _planta+=plantaMinDe(o,nowM,SEGS); gapsDe(o,nowM,SEGS).forEach(function(g){
 _inact+=(g[1]-g[0]);
 var gk=D.fecha+'|'+o.nom+'|'+g[0], ak=GAPACK[gk];
@@ -637,7 +641,7 @@ var _sPA=0,_sR=0,_tT=0,_tV=0,_inact=0,_planta=0;
 (D.operarios||[]).forEach(function(o){ if(excluido(o.nom)||sectorDe(o)!==g.code) return; if(!(o.real&&o.real.length)&&!o.sin_tarea) return; o.real=mergeReal(o.real); _planta+=plantaMinDe(o,nowM,SEGS); gapsDe(o,nowM,SEGS).forEach(function(gg){_inact+=(gg[1]-gg[0]);}); });
 h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span>@@EFFG:'+g.code+'@@<span class="cnt" style="margin-left:8px">'+g.mos.length+' órdenes</span></span></div>';
 g.mos.forEach(function(m){
-m.real=mergeReal(m.real); annotateAcum(m.real); (m.real||[]).forEach(function(r){if(r.e!=='curso'){_tT++;if(r.val)_tV++;}});
+m.real=mergeReal(m.real); annotateAcum(m.real); (m.real||[]).forEach(function(r){if(r.e!=='curso'){_tT++;if(esVal(r.val))_tV++;}});
 var planDia=0, planAhora=0, realHecho=0;
 (m.plan||[]).forEach(function(p){var a=toMin(p.ini),b=toMin(p.fin);planDia+=b-a;var v=Math.min(b,nowM)-a;if(v>0)planAhora+=v});
 (m.real||[]).forEach(function(r){if(r.e==='nc')return;var a=toMin(r.ini),b=Math.min(toMin(r.fin),nowM);if(b>a)realHecho+=b-a});
@@ -654,7 +658,7 @@ h+='<div class="fila"><div class="info"><div class="who"><div class="mo">'+esc(m
 for(var c=0;c<NHC;c++) h+='<div class="cell'+(c===almIdx?' alm':'')+'"></div>';
 h+='<span class="lane-tag" style="top:10px">PLAN</span><span class="lane-tag" style="top:36px">REAL</span>';
 (m.plan||[]).forEach(function(p){h+='<div class="pb" data-k="plan" data-h="'+esc(p.ini)+'–'+esc(p.fin)+'" style="left:'+x(p.ini)+'px;width:'+w(p.ini,p.fin)+'px" title="PLAN: '+esc(p.wo)+'">'+esc(shortWO(p.wo))+'</div>'});
-(m.real||[]).forEach(function(r){var ov=ovAttrs(r);h+='<div class="blk '+r.e+ov.cls+(r.val?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+' · '+esc(r.op)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||r.op)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(g.code)+'"'+ov.attr+' style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.wo)+' · '+esc(r.op)+'">'+valBadge(r.val)+esc(shortWO(r.wo))+'</div>'});
+(m.real||[]).forEach(function(r){var ov=ovAttrs(r);h+='<div class="blk '+r.e+ov.cls+(esVal(r.val)?' valdone':'')+'" data-k="'+r.e+'" data-h="'+esc(r.ini)+'–'+esc(r.fin)+' · '+esc(r.op)+'" data-mof="'+esc(r.mof||'')+'" data-opn="'+esc(r.opn||r.op)+'" data-wof="'+esc(r.wof||r.wo)+'" data-obj="'+(r.obj||0)+'" data-rmin="'+(r.rmin||0)+'" data-mwc="'+esc(r.mwc||'')+'" data-val="'+esc(r.val||'')+'" data-sec="'+esc(g.code)+'"'+ov.attr+' style="left:'+x(r.ini)+'px;width:'+w(r.ini,r.fin)+'px" title="'+esc(r.wo)+' · '+esc(r.op)+'">'+valBadge(r.val)+esc(shortWO(r.wo))+'</div>'});
 h+='<div class="ahora" style="left:'+x(D.hora)+'px"></div>';
 h+='</div></div>';
 });
