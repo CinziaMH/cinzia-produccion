@@ -221,6 +221,7 @@ verde en tiempo · naranja ef 80–100% · rojo ef < 80% */
 <div class="chip">A ESTA HORA: plan <b id="cPa">—</b> · real <b id="cRa">—</b></div>
 <div class="chip" id="cDesv">DESVÍO <b>—</b></div>
 <div class="chip" id="cSup" style="background:rgba(255,255,255,.22)">SUPERVISORES <b>—</b></div>
+<div class="chip" id="cRondas" style="display:none;background:rgba(255,255,255,.22);cursor:pointer" onclick="verRondas()" title="Estado de las rondas · tocá para ver el detalle">RONDAS <b>—</b></div>
 <div class="chip" id="cGap" style="display:none;background:#fff;color:#b91c1c;border-color:#fff">⚠ INACTIVIDAD <b>0</b></div>
 <div class="chip" id="cAus" style="display:none;background:#7f1d1d;color:#fecaca;border-color:#b91c1c">🚫 AUSENTES <b>0</b></div>
 <div class="chip" id="supAck" style="display:none;background:#dc2626;color:#fff;border-color:#fff;cursor:pointer" onclick="ackSup()">📢 Aviso al supervisor · silenciar</div>
@@ -934,6 +935,52 @@ if(n.getDay()!==0 && n.getHours()>=16 && n.getHours()<18 && !(MAN&&MAN.ack)){ MA
 else checkMananaBar();
 },5*60*1000);
 setTimeout(function(){ fetchManana(); },3000); // al cargar: trae estado de validación (pinta el botón MAÑANA verde si ya está validado)
+</script>
+
+<div id="rondasPanel" style="display:none;position:fixed;top:70px;right:16px;z-index:60;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:12px;padding:14px 16px;max-width:560px;max-height:75vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:13px"></div>
+<script>
+/* ===== Estado de las rondas de supervisores (Riki 15/10/2026) =====
+   Completa = tocó al menos una tarea de cada operario suyo en la ronda (En proceso alcanza). */
+var RONDAS_D=null;
+var R_EST={completa:['#16a34a','#fff','Completa'],parcial:['#f59e0b','#1f2937','Parcial'],nula:['#dc2626','#fff','Nula'],en_curso:['#ea580c','#fff','En curso'],pendiente:['rgba(255,255,255,.18)','#e2e8f0','Pendiente'],sin_operarios:['rgba(255,255,255,.18)','#e2e8f0','Sin gente']};
+function _rEsc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function cargarRondas(){
+  if(typeof HIST!=='undefined' && HIST) return;
+  fetch(URL_EXEC+'?view=rondas&t='+Date.now(),{cache:'no-store',redirect:'follow'}).then(function(r){return r.json();}).then(function(j){
+    if(!j||!j.ok||!j.rodrigo) return; RONDAS_D=j; pintarRondas();
+  }).catch(function(){});
+}
+function pintarRondas(){
+  var el=document.getElementById('cRondas'); if(!el||!RONDAS_D) return;
+  var h='RONDAS ';
+  [['R','rodrigo'],['Y','yance']].forEach(function(p){
+    var arr=RONDAS_D[p[1]]||[]; if(!arr.length) return;
+    h+='<b style="margin-left:6px">'+p[0]+'</b> ';
+    arr.forEach(function(x){ var st=R_EST[x.estado]||R_EST.pendiente; var n=(x.estado==='parcial'||x.estado==='en_curso')?(' '+x.hechos+'/'+x.total):(x.estado==='completa'?' ✓':(x.estado==='nula'?' ✗':''));
+      h+='<span title="'+_rEsc(x.h+' · '+st[2]+(x.total?(' '+x.hechos+'/'+x.total):'')+(x.minutos!=null?(' · '+x.inicio+'–'+x.fin+' · '+x.minutos+' min'):''))+'" style="display:inline-block;margin-left:3px;padding:1px 6px;border-radius:6px;font-size:11px;font-weight:800;background:'+st[0]+';color:'+st[1]+'">'+x.h+n+'</span>'; });
+  });
+  el.innerHTML=h; el.style.display='';
+  if(document.getElementById('rondasPanel').style.display!=='none') verRondas(true);
+}
+function verRondas(soloRefrescar){
+  var p=document.getElementById('rondasPanel'); if(!p) return;
+  if(!soloRefrescar && p.style.display!=='none'){ p.style.display='none'; return; }
+  if(!RONDAS_D){ p.innerHTML='Cargando rondas…'; p.style.display='block'; return; }
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b style="font-size:15px">Rondas de supervisores · '+_rEsc(RONDAS_D.fecha)+'</b><span style="cursor:pointer;font-weight:800" onclick="verRondas()">✕</span></div>';
+  h+='<div style="color:#94a3b8;margin-bottom:8px">Completa = tocó al menos una tarea de cada operario suyo (En proceso alcanza). Tiempo = del primer al último toque de la ronda.</div>';
+  [['Rodrigo','rodrigo'],['Alejandro Yance','yance']].forEach(function(p2){
+    var arr=RONDAS_D[p2[1]]||[];
+    h+='<div style="font-weight:900;margin:10px 0 4px">'+p2[0]+'</div><table style="width:100%;border-collapse:collapse">';
+    h+='<tr style="color:#94a3b8;text-align:left"><th style="padding:3px 4px">Ronda</th><th>Estado</th><th>Operarios</th><th>Primer–último toque</th><th>Tiempo</th></tr>';
+    arr.forEach(function(x){ var st=R_EST[x.estado]||R_EST.pendiente;
+      h+='<tr style="border-top:1px solid #1e293b"><td style="padding:4px">'+x.h+'</td><td><span style="padding:1px 7px;border-radius:6px;font-weight:800;background:'+st[0]+';color:'+st[1]+'">'+st[2]+'</span></td><td>'+(x.total?(x.hechos+'/'+x.total):'—')+'</td><td>'+(x.inicio?(x.inicio+'–'+x.fin):'—')+'</td><td>'+(x.minutos!=null?(x.minutos+' min'):'—')+'</td></tr>';
+      if(x.faltan&&x.faltan.length&&(x.estado==='parcial'||x.estado==='en_curso'||x.estado==='nula')) h+='<tr><td></td><td colspan="4" style="color:#fca5a5;padding:0 4px 4px">Faltó pasar por: '+x.faltan.map(_rEsc).join(', ')+'</td></tr>';
+    });
+    h+='</table>';
+  });
+  p.innerHTML=h; p.style.display='block';
+}
+cargarRondas(); setInterval(cargarRondas,180000);
 </script>
 </body>
 </html>
