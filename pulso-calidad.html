@@ -316,7 +316,7 @@ function alertaHtml(a){
   var t=a.tiempo_productivo||{};
   h+='<div class="abox"><div class="bl">⏱ Tiempo real vs objetivo</div><div class="bv">';
   if(t.real_min>0&&t.objetivo_min>0){
-    h+=triTag(t.en_tiempo,'En tiempo','Fuera de tiempo','s/d')+'<div style="margin-top:4px">obj <b>'+t.objetivo_min+'</b> min · real <b>'+t.real_min+'</b> min'+(t.eficiencia!=null?' · efic. <b>'+t.eficiencia+'%</b>':'')+'</div><div class="mm">'+esc(t.alcance||'')+'</div>';
+    h+=triTag(t.en_tiempo,'En tiempo','Fuera de tiempo','s/d')+'<div style="margin-top:4px">obj <b>'+t.objetivo_min+'</b> min · real <b>'+t.real_min+'</b> min'+(t.eficiencia!=null?' · prod. <b>'+t.eficiencia+'%</b>':'')+'</div><div class="mm">'+esc(t.alcance||'')+'</div>';
   } else h+=tag('neut','Sin tiempos cargados para comparar');
   h+='</div></div>';
   // Recurrencia

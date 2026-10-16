@@ -104,7 +104,7 @@
   </header>
 
   <div class="note">
-    <b>Índice 0–100</b> = promedio simple de 5 métricas: <b>eficiencia</b> (tope 100 % por día), <b>inactividad</b> (minutos de la jornada sin ninguna tarea abierta en Odoo, desde la entrada hasta la salida; tolerancia 5 %, cada punto de más resta 4; más de 15 % = llamado de atención),
+    <b>Índice 0–100</b> = promedio simple de 5 métricas: <b>productividad</b> (objetivo ÷ real, tope 100 % por tarea), <b>inactividad</b> (minutos de la jornada sin ninguna tarea abierta en Odoo, desde la entrada hasta la salida; tolerancia 5 %, cada punto de más resta 4; más de 15 % = llamado de atención),
     <b>puntualidad</b> (días sin falta ni llegada tarde), <b>5S de su sector</b> y <b>validación del supervisor</b> (Ok sobre Ok + No ok).
     <b>Defectos</b>, <b>orden de operaciones de Odoo</b>, tareas críticas y minutos de retrabajo se muestran pero <b>todavía no suman</b>.
     Tocá un operario para ver el detalle. Abajo, los defectos del período: los que quedaron <b>sin asignar</b> se le pueden asignar a alguien.
@@ -295,7 +295,7 @@ var P5 = {verde:100, ok:100, azul:50, amarillo:50, rojo:0};
 function calcular(D){
   var A = {};   // nombre ficha -> acumulado
   function acc(f){
-    return A[f.n] || (A[f.n] = {f:f, dias:[], obj:0, real:0, tope:0, gap:0, inact:0, jorn:0, opdias:0, ok:0, ng:0, sin:0, n:0, crit:0, nc:0,
+    return A[f.n] || (A[f.n] = {f:f, dias:[], obj:0, real:0, tope:0, realp:0, gap:0, inact:0, jorn:0, opdias:0, ok:0, ng:0, sin:0, n:0, crit:0, nc:0,
       faltas:[], tardes:[], diasHab:0, s5:[], defs:[], orden:null, msjs:[]});
   }
   // 1. hora a hora por día
@@ -303,9 +303,11 @@ function calcular(D){
     (d.ops||[]).forEach(function(o){
       var f = fichaDe(o.nom, o.sector); if (!f) return;
       var a = acc(f);
-      a.opdias++; a.obj+=o.obj; a.real+=o.real; a.tope+=Math.min(o.obj, o.real);
+      /* PRODUCTIVIDAD (regla única, Riki 16/10/2026): Σ mín(obj, real) POR TAREA ÷ Σ real; el servidor manda tope/realp por día */
+      var _tp=(o.tope!=null?o.tope:Math.min(o.obj, o.real)), _rp=(o.realp!=null?o.realp:o.real);
+      a.opdias++; a.obj+=o.obj; a.real+=o.real; a.tope+=_tp; a.realp+=_rp;
       a.gap+=o.gap; a.inact+=(o.inact||0); a.jorn+=(o.jorn||0); a.ok+=o.ok; a.ng+=o.ng; a.sin+=o.sin; a.n+=o.n; a.crit+=o.crit; a.nc+=o.nc;
-      a.dias.push({fecha:d.fecha, obj:o.obj, real:o.real, gap:o.gap, inact:o.inact, jorn:o.jorn, n:o.n, ef:o.real?R(o.obj/o.real*100):null});
+      a.dias.push({fecha:d.fecha, obj:_tp, real:_rp, gap:o.gap, inact:o.inact, jorn:o.jorn, n:o.n, ef:_rp?R(_tp/_rp*100):null});
     });
   });
   // 2. asistencia (días hábiles de lunes a viernes dentro del rango)
@@ -352,8 +354,8 @@ function calcular(D){
 
   return Object.keys(A).map(function(k){
     var a = A[k];
-    var ef = a.real ? R(a.obj/a.real*100) : null;
-    var sEf = a.real ? R(a.tope/a.real*100) : null;
+    var sEf = a.realp ? R(a.tope/a.realp*100) : null;
+    var ef = sEf;
     var ocio = a.jorn ? R(a.inact/a.jorn*100) : null;
     var sHu = puntajeInact(ocio);
     var malos = {}; a.faltas.forEach(function(f){ malos[f]=1; }); a.tardes.forEach(function(t){ malos[t.fecha]=1; });
@@ -377,7 +379,7 @@ var COLS = [
   {k:'s',      t:'Sector'},
   {k:'sup',    t:'Superv.'},
   {k:'indice', t:'Índice'},
-  {k:'sEf',    t:'Eficiencia'},
+  {k:'sEf',    t:'Productividad'},
   {k:'sHu',    t:'Inactividad'},
   {k:'sPu',    t:'Puntualidad'},
   {k:'s5',     t:'5S sector'},
@@ -412,7 +414,7 @@ function pintarRanking(){
       '<td><b>'+esc(r.f.n)+'</b><span class="sub">'+a.opdias+' días con tareas · '+a.n+' tareas</span></td>'+
       '<td>'+esc(r.f.s||'—')+'</td><td>'+supPill(r.f.sup)+'</td>'+
       '<td>'+chip(r.indice)+'</td>'+
-      '<td class="num"><b style="color:'+color(r.sEf)+'">'+(r.sEf==null?'—':r.sEf)+'</b><span class="sub">real '+(r.ef==null?'—':r.ef+'%')+'</span></td>'+
+      '<td class="num"><b style="color:'+color(r.sEf)+'">'+(r.sEf==null?'—':r.sEf)+'</b></td>'+
       '<td class="num"><b style="color:'+color(r.sHu)+'">'+(r.sHu==null?'—':r.sHu)+'</b><span class="sub">'+(r.ocio==null?'':r.ocio+'% sin tarea'+(r.ocio>15?' ⚠':''))+'</span></td>'+
       '<td class="num"><b style="color:'+color(r.sPu)+'">'+(r.sPu==null?'—':r.sPu)+'</b><span class="sub">'+a.faltas.length+' F · '+a.tardes.length+' T</span></td>'+
       '<td class="num"><b style="color:'+color(r.s5)+'">'+(r.s5==null?'—':r.s5)+'</b><span class="sub">'+(a.s5.length?a.s5.filter(function(x){return x.pts===100;}).length+'/'+a.s5.length+' verde':'')+'</span></td>'+
@@ -439,11 +441,11 @@ function pintarRanking(){
 
 function detalle(r){
   var a = r.a;
-  // eficiencia día por día
+  // productividad día por día
   var ds = a.dias.slice().sort(function(x,y){ return x.fecha<y.fecha?-1:1; });
-  var tEf = ds.length ? '<div class="scroll"><table class="t"><thead><tr><th>Día</th><th>Tareas</th><th>Obj (h)</th><th>Real (h)</th><th>Efic.</th><th>Sin tarea</th></tr></thead><tbody>'+
+  var tEf = ds.length ? '<div class="scroll"><table class="t"><thead><tr><th>Día</th><th>Tareas</th><th>Obj (h)</th><th>Real (h)</th><th>Prod.</th><th>Sin tarea</th></tr></thead><tbody>'+
     ds.map(function(d){ return '<tr><td>'+diaCorto(d.fecha)+'</td><td>'+d.n+'</td><td>'+R(d.obj/6)/10+'</td><td>'+R(d.real/6)/10+'</td><td style="color:'+color(d.ef==null?null:Math.min(d.ef,100))+';font-weight:700">'+(d.ef==null?'—':d.ef+'%')+'</td><td style="'+(d.jorn&&d.inact/d.jorn>0.15?'color:var(--bad);font-weight:700':'')+'">'+(d.inact==null?'—':d.inact+' min'+(d.jorn?' ('+R(d.inact/d.jorn*100)+'%)':''))+'</td></tr>'; }).join('')+
-    '</tbody></table></div><div class="fx">puntaje = Σ mín(obj, real) por día ÷ Σ real = <b>'+(r.sEf==null?'—':r.sEf)+'</b> (sin tope: '+(r.ef==null?'—':r.ef+'%')+')<br>inactividad = minutos de jornada sin tarea abierta ÷ jornada = '+(r.ocio==null?'—':r.ocio+'%')+' → puntaje 100 − 4 × (% − 5) = <b>'+(r.sHu==null?'—':r.sHu)+'</b></div>'
+    '</tbody></table></div><div class="fx">productividad = Σ mín(obj, real) por tarea ÷ Σ real (los retrabajos suman real con objetivo 0) = <b>'+(r.sEf==null?'—':r.sEf)+'</b><br>inactividad = minutos de jornada sin tarea abierta ÷ jornada = '+(r.ocio==null?'—':r.ocio+'%')+' → puntaje 100 − 4 × (% − 5) = <b>'+(r.sHu==null?'—':r.sHu)+'</b></div>'
     : '<div class="vacio">Sin tareas en el período.</div>';
   // asistencia
   var tAs = '<div><b>'+a.faltas.length+'</b> faltas · <b>'+a.tardes.length+'</b> llegadas tarde · '+a.diasHab+' días hábiles</div>'+
@@ -470,7 +472,7 @@ function detalle(r){
     (a.orden.saltos.length ? '<div class="scroll" style="margin-top:6px"><table class="t"><thead><tr><th>Cuándo</th><th>Hizo antes</th><th>Y después (saltó atrás)</th></tr></thead><tbody>'+
       a.orden.saltos.map(function(s){ return '<tr><td>'+esc(s.fecha)+'<span class="sub">'+esc(s.mo)+'</span></td><td>'+esc(s.antes)+'</td><td>'+esc(s.despues)+'</td></tr>'; }).join('')+'</tbody></table></div>' : '');
   return '<div class="detw">'+
-    '<div class="dcard"><h4>Eficiencia e inactividad</h4>'+tEf+'</div>'+
+    '<div class="dcard"><h4>Productividad e inactividad</h4>'+tEf+'</div>'+
     '<div class="dcard"><h4>Asistencia</h4>'+tAs+'<h4 style="margin-top:12px">Validación del supervisor</h4>'+tVa+'</div>'+
     '<div class="dcard"><h4>5S de su sector</h4>'+t5+'</div>'+
     '<div class="dcard" style="grid-column:span 2">'+'<h4>Defectos atribuidos ('+a.defs.length+')</h4>'+tDf+'</div>'+

@@ -79,7 +79,7 @@
   <div class="card"><h2>Comparativa día a día <span class="tag" id="efrange"></span></h2><div class="chartbox"><canvas id="chMain"></canvas></div></div>
 
   <div class="grid2">
-    <div class="card"><h2>Eficiencia por montaje <span class="tag">promedio del rango</span></h2><div class="chartbox sm"><canvas id="chMon"></canvas></div></div>
+    <div class="card"><h2>Productividad por montaje <span class="tag">de menor a mayor · tope 100 % por tarea</span></h2><div class="chartbox sm"><canvas id="chMon"></canvas></div></div>
     <div class="card"><h2>5S por sector <span class="tag" id="cincoHora"></span></h2><div id="cinco"></div></div>
   </div>
 
@@ -104,22 +104,21 @@
 var API='https://script.google.com/macros/s/AKfycbwXM4MiCi2efiRC81FBmke2RjaEkLmgiuYdgjkCbk8sAz_7Odmk1dI1y2mCg3u36uPrew/exec';
 function $(id){return document.getElementById(id);}
 function dm(f){var p=String(f).split('-');return p[2]+'/'+p[1];}
-function efClass(p){if(p>=85)return 'g';if(p>=60)return 'a';return 'r';}
+function efClass(p){if(p>=80)return 'g';if(p>=70)return 'a';return 'r';}
 function dadd(s,n){var d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
 function span(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000)+1;}
 var gridC='rgba(255,255,255,.06)';
 Chart.defaults.color='#93a3bd';Chart.defaults.font.size=11;
 
 var METRICS=[
-  {key:'ef',label:'Eficiencia',u:'%',color:'#22c55e',axis:'y',agg:'avg',good:'up'},
-  {key:'prod',label:'Productividad',u:'%',color:'#3b82f6',axis:'y',agg:'avg',good:'up'},
+  {key:'prod',label:'Productividad',u:'%',color:'#22c55e',axis:'y',agg:'avg',good:'up'},
   {key:'cinco',label:'5S',u:'',color:'#a855f7',axis:'y',agg:'avg',good:null,group:[{k:'cinco_verde',label:'5S Verde',color:'#22c55e'},{k:'cinco_amar',label:'5S Amarillo',color:'#eab308'},{k:'cinco_rojo',label:'5S Rojo',color:'#ef4444'}]},
   {key:'nc_pct',label:'NC (% s/total)',u:'%',color:'#ef4444',axis:'y',agg:'ratio',num:'nc_h',den:'real_h',good:'down'},
   {key:'faltas',label:'Faltas',u:'',color:'#f59e0b',axis:'y1',agg:'sum',good:'down'},
   {key:'tardes',label:'Llegadas tarde',u:'',color:'#eab308',axis:'y1',agg:'sum',good:'down'},
   {key:'hosp_pers',label:'Hospital (pers.)',u:'',color:'#14b8a6',axis:'y1',agg:'avg',good:null}
 ];
-var active={ef:true,prod:true};
+var active={prod:true};
 var ALLF=[],BYDATE={},chMain=null,chMon=null,DASH=null,REP=null;
 var rA={desde:'',hasta:''},rB={desde:'',hasta:''},cmpOn=false,preset='sem';
 
@@ -213,16 +212,16 @@ function renderMain(){
 }
 
 function renderMontaje(){
-  var m=(REP.por_montaje||[]).slice().sort(function(a,b){return b.ef-a.ef;});
+  var m=(REP.por_montaje||[]).slice().sort(function(a,b){return a.ef-b.ef;});
   if(chMon)chMon.destroy();
-  chMon=new Chart($('chMon'),{type:'bar',data:{labels:m.map(function(x){return x.montaje;}),datasets:[{data:m.map(function(x){return x.ef;}),backgroundColor:m.map(function(x){return x.ef>=85?'#22c55e':x.ef>=60?'#f59e0b':'#ef4444';})}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.y+'%';}}}},scales:{y:{grid:{color:gridC},ticks:{callback:function(v){return v+'%';}}},x:{grid:{display:false}}}}});
+  chMon=new Chart($('chMon'),{type:'bar',data:{labels:m.map(function(x){return x.montaje;}),datasets:[{data:m.map(function(x){return x.ef;}),backgroundColor:m.map(function(x){return x.ef>=80?'#22c55e':x.ef>=70?'#f59e0b':'#ef4444';})}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return c.parsed.y+'%';}}}},scales:{y:{grid:{color:gridC},ticks:{callback:function(v){return v+'%';}}},x:{grid:{display:false}}}}});
 }
 
 function renderTabla(){
   var FA=fechasIn(rA);
-  var th='<tr><th>Fecha</th><th>Efic.</th><th>Prod.</th><th>5S</th><th>NC %</th><th>Faltas</th><th>Tarde</th><th>Hosp.</th><th>Oper.</th></tr>';
+  var th='<tr><th>Fecha</th><th>Prod.</th><th>5S</th><th>NC %</th><th>Faltas</th><th>Tarde</th><th>Hosp.</th><th>Oper.</th></tr>';
   var rows=FA.slice().reverse().map(function(f){var x=BYDATE[f]||{};
-    return '<tr><td>'+dm(f)+'</td><td><span class="pill '+efClass(x.ef)+'">'+x.ef+'%</span></td><td>'+x.prod+'%</td><td>'+x.cinco_pct+'%</td><td>'+x.nc_pct+'%</td><td>'+x.faltas+'</td><td>'+x.tardes+'</td><td>'+x.hosp_pers+'</td><td>'+x.oper+'</td></tr>';
+    return '<tr><td>'+dm(f)+'</td><td><span class="pill '+efClass(x.prod)+'">'+x.prod+'%</span></td><td>'+x.cinco_pct+'%</td><td>'+x.nc_pct+'%</td><td>'+x.faltas+'</td><td>'+x.tardes+'</td><td>'+x.hosp_pers+'</td><td>'+x.oper+'</td></tr>';
   }).join('');
   $('tbEf').innerHTML=th+rows;
 }

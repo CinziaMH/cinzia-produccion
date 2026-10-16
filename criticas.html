@@ -175,7 +175,7 @@ function render(){ _sortVIEW();
   if(!VIEW.length){ document.getElementById('cont').innerHTML='<div class="empty">Sin operaciones críticas para los filtros elegidos.</div>'; return; }
   var h='<table><thead><tr>'
     +''+_th('Fecha','fecha')+''+_th('Montaje','montaje')+''+_th('Orden','mo')+''+_th('Operación','wo')+''+_th('Operario','operario')+''
-    +''+_th('Estánd.','obj',1)+''+_th('Real','real',1)+''+_th('Ef%','ef',1)+''
+    +''+_th('Estánd.','obj',1)+''+_th('Real','real',1)+''+_th('Prod%','ef',1)+''
     +''+_th('Causa (supervisor)','causal')+''+_th('Acción correctiva','accion')+''+_th('Responsable','responsable')+'</tr></thead><tbody>';
   VIEW.forEach(function(r,i){
     var esGap = r.tipo==='inactividad';

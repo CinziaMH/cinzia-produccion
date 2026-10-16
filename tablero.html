@@ -292,6 +292,9 @@ function renderIndicadores() {
   const ef = D.eficiencia || {};
   const ay = D.ayer || {};
   const cs = D.cinco_s_hoy || {};
+  // PRODUCTIVIDAD (única métrica, Riki 16/10/2026): objetivo ÷ real con tope 100 % por tarea. El servidor la manda
+  // en eficiencia.productividad_pct; ayer / mes / tendencia vienen en los campos eficiencia_* (alias de productividad).
+  const prodHoy = (ef.productividad_pct != null ? ef.productividad_pct : D.eficiencia_hoy_pct);
   const ray = ay.rondas_rodrigo || {}, yay = ay.rondas_yance || {};
 
   const delta = (a, h, unit, invertido) => {
@@ -306,7 +309,7 @@ function renderIndicadores() {
     + '<span class="rtag">REUNIÓN 11 AM</span>'
     + '<h3>Cierre de ayer (' + esc(ay.fecha || '—') + ') + 5S de hoy</h3>'
     + '<div class="rgrid">'
-    + '<div class="rcell"><div class="k">EFICIENCIA AYER</div><div class="v">' + (ay.eficiencia_pct ?? '—') + '%</div><div class="d">' + delta(ay.eficiencia_pct, D.eficiencia_hoy_pct, '%') + '</div></div>'
+    + '<div class="rcell"><div class="k">PRODUCTIVIDAD AYER</div><div class="v">' + (ay.eficiencia_pct ?? '—') + '%</div><div class="d">' + delta(ay.eficiencia_pct, prodHoy, '%') + '</div></div>'
     + '<div class="rcell"><div class="k">HOSPITAL AYER</div><div class="v">' + (ay.hospital_count ?? '—') + ' p</div><div class="d">' + esc((ay.hospital_personas || []).slice(0, 3).join(' · ') || ('hoy: ' + D.hospital_count + ' p')) + '</div></div>'
     + '<div class="rcell"><div class="k">AUSENTES AYER</div><div class="v">' + (ay.ausentes_count ?? '—') + ' p</div><div class="d">' + delta(ay.ausentes_count, (D.ausentes || []).length, 'p', true) + '</div></div>'
     + (function () {
@@ -328,17 +331,15 @@ function renderIndicadores() {
     + '<div class="kpi"><div class="k">TAKT OBJETIVO</div><div class="v">' + D.takt_dias + ' días</div><div class="s">Pegasso 4d · CONFIG</div></div>'
     + '<div class="kpi"><div class="k">EN FABRICACIÓN</div><div class="v">' + D.en_fabricacion + ' MOs</div><div class="s">con actividad hoy</div></div>'
     + '<div class="kpi' + (hospBad ? ' bad' : ' good') + '"><div class="k">HOSPITAL / QC</div><div class="v">' + D.hospital_count + '</div><div class="s">' + esc((D.hospital_mos || []).map(h => (String(h.mo).match(/(\d{3,6})/) || [])[1] || h.mo).join(' · ') || 'sin unidades') + ' · target ≤ ' + D.hospital_target + '</div></div>'
-    + '<div class="kpi ' + efClass(D.eficiencia_hoy_pct) + '"><div class="k">EFICIENCIA HOY (PARCIAL)</div><div class="v">' + D.eficiencia_hoy_pct + '%</div><div class="s">prom. mes ' + D.eficiencia_mes_pct + '% (' + (D.eficiencia_mes_dias || 0) + ' días) · ayer ' + (ay.eficiencia_pct ?? '—') + '%</div></div>'
+    + '<div class="kpi ' + efClass(prodHoy) + '"><div class="k">PRODUCTIVIDAD HOY (PARCIAL)</div><div class="v">' + prodHoy + '%</div><div class="s">prom. mes ' + D.eficiencia_mes_pct + '% (' + (D.eficiencia_mes_dias || 0) + ' días) · ayer ' + (ay.eficiencia_pct ?? '—') + '%</div></div>'
     + '</div>';
 
-  // eficiencia detalle
+  // productividad detalle
   h += '<div class="efgrid">'
-    + '<div class="efcell"><div class="k">EFICIENCIA HOY</div><div class="v">' + D.eficiencia_hoy_pct + '%</div><div class="s">Earned ÷ jornada transcurrida (' + (ef.jornada_min ?? 0) + ' min/op)</div></div>'
-    + '<div class="efcell"><div class="k">REAL</div><div class="v">' + (ef.real_h ?? 0) + 'h</div><div class="s">cronómetro Odoo</div></div>'
-    + '<div class="efcell"><div class="k">EARNED</div><div class="v">' + (ef.earned_h ?? 0) + 'h</div><div class="s">tiempo objetivo</div></div>'
-    + '<div class="efcell"><div class="k">DISPONIBLE</div><div class="v">' + (ef.disponible_h ?? 0) + 'h</div><div class="s">' + (ef.operarios ?? 0) + ' ops × transcurrido</div></div>'
-    + '<div class="efcell"><div class="k">PRODUCTIVIDAD</div><div class="v">' + (ef.productividad_pct ?? 0) + '%</div><div class="s">Earned/Real</div></div>'
-    + '<div class="efcell final"><div class="k">EFICIENCIA</div><div class="v">' + (ef.eficiencia_pct ?? 0) + '%</div><div class="s">parcial del día</div></div>'
+    + '<div class="efcell final"><div class="k">PRODUCTIVIDAD HOY</div><div class="v">' + prodHoy + '%</div><div class="s">objetivo ÷ real · tope 100 % por tarea</div></div>'
+    + '<div class="efcell"><div class="k">OBJETIVO</div><div class="v">' + (ef.prod_obj_h ?? ef.earned_h ?? 0) + 'h</div><div class="s">tiempo estándar de las tareas</div></div>'
+    + '<div class="efcell"><div class="k">REAL</div><div class="v">' + (ef.prod_real_h ?? ef.real_h ?? 0) + 'h</div><div class="s">cronómetro Odoo de esas tareas</div></div>'
+    + '<div class="efcell"><div class="k">OPERARIOS</div><div class="v">' + (ef.operarios ?? 0) + '</div><div class="s">con tareas hoy</div></div>'
     + '</div>';
 
   // bottom: tendencia + ausentes + NC
@@ -360,7 +361,7 @@ function renderIndicadores() {
   (D.nc_personas || []).slice(0, 4).forEach(p => { nc += '<div class="li"><b>' + esc(p.operario) + '</b><span>' + p.horas + ' h</span></div>'; });
 
   h += '<div class="bot">'
-    + '<div class="botcard"><h4>TENDENCIA SEMANAL · EFICIENCIA DIARIA</h4><div class="tend">' + tend + '</div></div>'
+    + '<div class="botcard"><h4>TENDENCIA SEMANAL · PRODUCTIVIDAD DIARIA</h4><div class="tend">' + tend + '</div></div>'
     + '<div class="botcard"><h4>AUSENTES HOY · ' + (D.ausentes || []).length + '</h4><div class="lista">' + aus + '</div></div>'
     + '<div class="botcard"><h4>NO CONFORMIDAD HOY</h4><div class="lista">' + nc + '</div></div>'
     + '</div>';
@@ -505,16 +506,36 @@ fetchData();
   var NAVE1 = {M0:1,S1:1,S2:1,S7:1};
   var naveDe = function(c){ return NAVE1[String(c||'').toUpperCase()] ? '1' : '2'; };
 
-  function efNave(P){
-    var A={'1':{o:0,r:0},'2':{o:0,r:0}};
-    (P.grupos||[]).forEach(function(g){
-      var nv=naveDe(g.code);
-      (g.mos||[]).forEach(function(mm){ (mm.real||[]).forEach(function(t){
-        if(t.e!=='nc' && t.e!=='curso'){ A[nv].o+=(+t.obj||0); A[nv].r+=(+t.rmin||0); }
-      });});
+/* ===== PRODUCTIVIDAD — única métrica oficial DYFSA (Riki 16/10/2026) =====
+     Productividad = Σ min(objetivo, real) POR TAREA ÷ Σ real. Tarea = operario + orden + operación
+     del día (los tramos de la misma tarea se suman: pausar y retomar NO vuelve a sumar el objetivo).
+     Cuentan terminadas, en curso ya pasadas del estándar y retrabajos: el retrabajo suma su tiempo real
+     con objetivo 0 (no es trabajo productivo), así que baja la productividad.
+     Las en curso que todavía van dentro del estándar no cuentan hasta pasarse o cerrarse.
+     Mismo cálculo en el servidor (_computeEficiencia) → todas las pantallas dan el mismo número. */
+  function _pFold(s){return String(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
+  function prodAcum(acc,opn,segs){
+    (segs||[]).forEach(function(t){
+      var k=_pFold(opn||t.opn||t.op)+'|'+String(t.mo||t.mof||'').replace(/\D/g,'')+'|'+_pFold(t.wof||t.wo);
+      var x=acc[k]||(acc[k]={obj:0,real:0,ab:false,nc:false});
+      if(!x.obj) x.obj=+t.obj||0;
+      x.real+=+t.rmin||0;
+      if(t.e==='curso'||t.e==='curso_inef') x.ab=true;
+      if(t.e==='nc'||/^(RETRAB|NC)$/i.test(String(t.mwc||''))) x.nc=true;
     });
-    return { n1:(A['1'].r>0?Math.min(100,Math.round(A['1'].o*100/A['1'].r)):null),
-             n2:(A['2'].r>0?Math.min(100,Math.round(A['2'].o*100/A['2'].r)):null) };
+    return acc;
+  }
+  function prodRes(acc){
+    var o=0,r=0,n=0;
+    for(var k in acc){ var x=acc[k]; if(x.nc){ r+=x.real; n++; continue; } if(x.ab && !(x.obj>0 && x.real>x.obj)) continue; o+=Math.min(x.obj,x.real); r+=x.real; n++; }
+    return {obj:o,real:r,n:n,p:(r>0?Math.min(100,Math.round(o*100/r)):null)};
+  }
+  
+  /* PRODUCTIVIDAD por nave — regla única (prodAcum), por montaje de la tarea */
+  function efNave(P){
+    var A={'1':{},'2':{}};
+    (P.operarios||[]).forEach(function(o){ (o.real||[]).forEach(function(t){ prodAcum(A[naveDe(t.mwc)],o.nom,[t]); }); });
+    return { n1:prodRes(A['1']).p, n2:prodRes(A['2']).p };
   }
   function ayerStr2(){ try{ if(D && D.ayer && D.ayer.fecha) return D.ayer.fecha; }catch(e){}
     var d=new Date(); d.setDate(d.getDate()-1);
@@ -564,7 +585,7 @@ fetchData();
         +   '<div class="v" style="color:'+(bad?'#fff':col(h.n2))+'">'+vp(h.n2)+'</div>'
         +   '<div class="d">ayer '+vp(a.n2)+'</div></div></div>';
       var old = document.getElementById('cEfNave');
-      var html = cellHTML('cEfNave','EFICIENCIA POR NAVE (est/real · meta 80%)', body, '', bad);
+      var html = cellHTML('cEfNave','PRODUCTIVIDAD POR NAVE (meta 80%)', body, '', bad);
       if(old) old.outerHTML = html;
       else {
         var tmp = document.createElement('div'); tmp.innerHTML = html;

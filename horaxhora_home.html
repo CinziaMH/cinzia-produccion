@@ -110,30 +110,50 @@ var DESCS={
 /* Prioridad de Riki 18/8: QC primero, después M1 y M4. El resto atrás. */
 var CARDS_MONT=['QC','M1','M4','M0','M2'];
 
-/* ===== EF HOY por sector: idéntico criterio que el TV (tope 100% por tarea,
-   retrabajos/NC cuentan, ponderado por minutos reales; excluidos y overrides aplicados) ===== */
+/* ===== PRODUCTIVIDAD — única métrica oficial DYFSA (Riki 16/10/2026) =====
+   Productividad = Σ min(objetivo, real) POR TAREA ÷ Σ real. Tarea = operario + orden + operación
+   del día (los tramos de la misma tarea se suman: pausar y retomar NO vuelve a sumar el objetivo).
+   Cuentan terminadas, en curso ya pasadas del estándar y retrabajos: el retrabajo suma su tiempo real
+   con objetivo 0 (no es trabajo productivo), así que baja la productividad.
+   Las en curso que todavía van dentro del estándar no cuentan hasta pasarse o cerrarse.
+   Mismo cálculo en el servidor (_computeEficiencia) → todas las pantallas dan el mismo número. */
+function _pFold(s){return String(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
+function prodAcum(acc,opn,segs){
+  (segs||[]).forEach(function(t){
+    var k=_pFold(opn||t.opn||t.op)+'|'+String(t.mo||t.mof||'').replace(/\D/g,'')+'|'+_pFold(t.wof||t.wo);
+    var x=acc[k]||(acc[k]={obj:0,real:0,ab:false,nc:false});
+    if(!x.obj) x.obj=+t.obj||0;
+    x.real+=+t.rmin||0;
+    if(t.e==='curso'||t.e==='curso_inef') x.ab=true;
+    if(t.e==='nc'||/^(RETRAB|NC)$/i.test(String(t.mwc||''))) x.nc=true;
+  });
+  return acc;
+}
+function prodRes(acc){
+  var o=0,r=0,n=0;
+  for(var k in acc){ var x=acc[k]; if(x.nc){ r+=x.real; n++; continue; } if(x.ab && !(x.obj>0 && x.real>x.obj)) continue; o+=Math.min(x.obj,x.real); r+=x.real; n++; }
+  return {obj:o,real:r,n:n,p:(r>0?Math.min(100,Math.round(o*100/r)):null)};
+}
+/* PRODUCTIVIDAD HOY por sector y por nave — regla única (prodAcum), igual que el hora a hora y el TV */
 function efPorSector(D){
-  var acc={}; // code -> {ob, re}
+  var S={}, out={};
   (D.operarios||[]).forEach(function(o){
     if(excluido(o.nom)) return;
     var sc=String(sectorDe(o)||'').toUpperCase(); if(!sc) return;
-    var real=mergeReal(o.real);
-    var a=acc[sc]=acc[sc]||{ob:0,re:0};
-    real.forEach(function(r){ if(r.e!=='curso'){ var ob=+r.obj||0, rm=+r.rmin||0; a.ob+=Math.min(ob,rm); a.re+=rm; } });
+    prodAcum(S[sc]||(S[sc]={}),o.nom,o.real);
   });
-  var out={};
-  for(var c in acc){ out[c]=acc[c].re>0?Math.min(100,Math.round(acc[c].ob*100/acc[c].re)):null; }
+  for(var c in S){ out[c]=prodRes(S[c]).p; }
   return out;
 }
 function efNave(D,nave){
-  var ob=0,re=0;
+  var acc={};
   (D.operarios||[]).forEach(function(o){
     if(excluido(o.nom)) return;
     var sc=String(sectorDe(o)||'').toUpperCase(); if(!sc) return;
     if(nave!=='all' && naveOf(sc)!==nave) return;
-    mergeReal(o.real).forEach(function(r){ if(r.e!=='curso'){ var v=+r.obj||0, rm=+r.rmin||0; ob+=Math.min(v,rm); re+=rm; } });
+    prodAcum(acc,o.nom,o.real);
   });
-  return re>0?Math.min(100,Math.round(ob*100/re)):null;
+  return prodRes(acc).p;
 }
 function efPill(lbl,v){
   var cls=v==null?'m':(v>=80?'g':(v>=70?'o':'r'));
@@ -157,14 +177,14 @@ function cardMont(code,D,EF,EFA){
   var efa=(EFA&&EFA[code]!=null)?EFA[code]:null; // EF de ayer: la manda el backend cuando esté (D.ef_ayer)
   var url='horaxhora_tv.html?montaje='+code;
   return '<a class="card" href="'+url+'">'
-    +'<div class="ef">'+efPill('HOY',ef)+efPill('AYER',efa)+s5Pill(D,code)+'</div>'
+    +'<div class="ef">'+efPill('PROD. HOY',ef)+efPill('AYER',efa)+s5Pill(D,code)+'</div>'
     +'<div class="top"><span class="ico">'+(ICONS[code]||'🏭')+'</span><span class="tit">'+esc(code==='QC'?'CONTROL FINAL':('MONTAJE '+code.replace(/^M/,'')))+'</span></div>'
     +'<div class="des">'+esc(DESCS[code]||((NOMS[code]||code)+' — operarios del sector.'))+'</div>'
     +'<div class="url">'+url+'</div></a>';
 }
 function cardNave(tit,ico,des,qs,ef){
   return '<a class="card" href="horaxhora_tv.html'+qs+'">'
-    +'<div class="ef">'+(ef!==undefined?efPill('HOY',ef):'')+'</div>'
+    +'<div class="ef">'+(ef!==undefined?efPill('PROD. HOY',ef):'')+'</div>'
     +'<div class="top"><span class="ico">'+ico+'</span><span class="tit">'+tit+'</span></div>'
     +'<div class="des">'+des+'</div>'
     +'<div class="url">horaxhora_tv.html'+qs+'</div></a>';
@@ -183,7 +203,7 @@ function render(D){
   n+=cardNave('TODA LA PLANTA','🗺️','Nave 1 + Nave 2 juntas, vista completa.','?nave=all',D?efNave(D,'all'):null);
   n+=cardNave('VISTA POR MONTAJE','📦','Filas = órdenes de fabricación en vez de operarios.','?vista=montaje');
   document.getElementById('cardsNave').innerHTML=n;
-  document.getElementById('foot').textContent=D?('Datos del día '+(D.fecha||'')+' · actualizado '+(D.hora||'')+' · eficiencia con regla DYFSA (tope 100% por tarea, retrabajos incluidos)'):'sin datos';
+  document.getElementById('foot').textContent=D?('Datos del día '+(D.fecha||'')+' · actualizado '+(D.hora||'')+' · productividad = objetivo ÷ real, tope 100 % por tarea, retrabajos incluidos'):'sin datos';
 }
 
 function _mostrarErr(msg){

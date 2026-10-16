@@ -219,9 +219,10 @@ verde en tiempo · naranja ef 80–100% · rojo ef < 80% */
 <span class="lg" style="background:#fff;border-radius:10px;padding:5px 10px;display:inline-flex;align-items:center"><img src="cinzia%20logo.png" onerror="this.parentNode.style.display='none'" alt="CINZIA" style="height:26px;display:block"></span>
 <h1 id="h1t">HORA A HORA · POR MONTAJE</h1>
 <div><div class="reloj" id="reloj">--:--</div><div class="sub" id="sub">cargando…</div></div>
-<div class="chip">PLAN HOY <b id="cPlan">—</b></div>
-<div class="chip">A ESTA HORA: plan <b id="cPa">—</b> · real <b id="cRa">—</b></div>
-<div class="chip" id="cDesv">DESVÍO <b>—</b></div>
+<div class="chip" style="display:none">PLAN HOY <b id="cPlan">—</b></div>
+<div class="chip" style="display:none">A ESTA HORA: plan <b id="cPa">—</b> · real <b id="cRa">—</b></div>
+<div class="chip" id="cDesv" style="display:none">DESVÍO <b>—</b></div>
+<div class="chip" id="cProd" style="cursor:pointer" onclick="verProd()" title="Productividad del día (objetivo ÷ real, tope 100 % por tarea) · tocá para ver montaje por montaje">PRODUCTIVIDAD HOY <b>—</b></div>
 <div class="chip" id="cSup" style="background:rgba(255,255,255,.22)">SUPERVISORES <b>—</b></div>
 <div class="chip" id="cRondas" style="display:none;background:rgba(255,255,255,.22);cursor:pointer" onclick="verRondas()" title="Estado de las rondas · tocá para ver el detalle">RONDAS <b>—</b></div>
 <div class="chip" id="cGap" style="display:none;background:#fff;color:#b91c1c;border-color:#fff">⚠ INACTIVIDAD <b>0</b></div>
@@ -255,11 +256,11 @@ verde en tiempo · naranja ef 80–100% · rojo ef < 80% */
 <div class="wrap"><div class="grid" id="grid"><div class="spin"></div></div></div>
 <div class="leg">
 <span><i style="background:#33415588;border:1px solid #64748b;height:8px"></i> Carril superior: tareas teóricas del día (plan 7:45 de sus órdenes)</span>
-<span><i style="background:#16a34a"></i> En tiempo (ef ≥ 100%)</span>
-<span><i style="background:linear-gradient(180deg,#f97316,#ea580c)"></i> Ineficiente leve (ef 80–100%)</span>
-<span><i style="background:linear-gradient(180deg,#dc2626,#b91c1c)"></i> Ineficiente grave (ef 50–80%)</span>
-<span><i style="background:linear-gradient(180deg,#7f1d1d,#450a0a);outline:2px solid #fde047"></i> ⚠ Crítico · +200% del estándar (ef &lt; 50%)</span>
-<span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso (las ineficientes palpitan)</span>
+<span><i style="background:#16a34a"></i> En tiempo (prod. 100%)</span>
+<span><i style="background:linear-gradient(180deg,#f97316,#ea580c)"></i> Baja productividad leve (80–100%)</span>
+<span><i style="background:linear-gradient(180deg,#dc2626,#b91c1c)"></i> Baja productividad grave (50–80%)</span>
+<span><i style="background:linear-gradient(180deg,#7f1d1d,#450a0a);outline:2px solid #fde047"></i> ⚠ Crítico · +200% del estándar (prod. &lt; 50%)</span>
+<span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso (las de baja productividad palpitan)</span>
 <span><i style="background:repeating-linear-gradient(45deg,#64748b,#64748b 4px,#475569 4px,#475569 8px)"></i> Retrabajo / NC (zebra · color = estado)</span>
 <span style="color:#ef4444;font-weight:800">│ AHORA</span>
 </div>
@@ -303,7 +304,7 @@ if(obj<=0||elap<=obj) return {over:false,warn:false,ef:(obj>0&&elap>0?Math.round
 var ef=Math.round(obj*100/elap);
 return {over:true,warn:ef>=80,crit:ef<50,ef:ef,elap:elap}; // warn=NARANJA 80–100% · crit=+200% estándar (ef<50%) · si no, rojo
 }
-var KLAB={ok:['Terminada en tiempo','#16a34a'],ko:['Terminada ineficiente grave (ef 50–80%)','#dc2626'],koWarn:['Terminada ineficiente leve (ef 80–100%)','#f97316'],koCrit:['Terminada CRÍTICA · +200% del estándar (ef < 50%)','#7f1d1d'],curso:['En curso','#0ea5e9'],over:['En curso · ineficiente leve (ef 80–100%)','#f97316'],overHard:['En curso · ineficiente grave (ef 50–80%)','#dc2626'],overCrit:['En curso · CRÍTICO · +200% del estándar (ef < 50%)','#7f1d1d'],nc:['NC / Retrabajo','#dc2626'],ncCrit:['NC / Retrabajo CRÍTICO · +200% del estándar','#7f1d1d'],plan:['Tarea planificada (teórico)','#475569']};
+var KLAB={ok:['Terminada en tiempo','#16a34a'],ko:['Terminada con baja productividad grave (50–80%)','#dc2626'],koWarn:['Terminada con baja productividad leve (80–100%)','#f97316'],koCrit:['Terminada CRÍTICA · +200% del estándar (prod. < 50%)','#7f1d1d'],curso:['En curso','#0ea5e9'],over:['En curso · con baja productividad leve (80–100%)','#f97316'],overHard:['En curso · con baja productividad grave (50–80%)','#dc2626'],overCrit:['En curso · CRÍTICO · +200% del estándar (prod. < 50%)','#7f1d1d'],nc:['NC / Retrabajo','#dc2626'],ncCrit:['NC / Retrabajo CRÍTICO · +200% del estándar','#7f1d1d'],plan:['Tarea planificada (teórico)','#475569']};
 function cerrarDet(){document.getElementById('sheet').classList.remove('on');document.getElementById('shade').classList.remove('on')}
 var URL_EXEC='https://script.google.com/macros/s/AKfycbwXM4MiCi2efiRC81FBmke2RjaEkLmgiuYdgjkCbk8sAz_7Odmk1dI1y2mCg3u36uPrew/exec';
 var CUR=null;
@@ -328,15 +329,15 @@ var obj=+(b.getAttribute('data-obj')||0), rmin=+(b.getAttribute('data-rmin')||0)
 var elap=+(b.getAttribute('data-elap')||0);
 var inef=(obj>0&&rmin>obj)||over, ef=(obj>0&&rmin>0)?Math.round(obj*100/rmin):null;
 var meta=(who?who+' · ':'')+(b.getAttribute('data-h')||'');
-if(over&&obj>0){ var efc=elap>0?Math.round(obj*100/elap):0; meta+=' · lleva '+elap+'m / estándar '+obj+'m (+'+(elap-obj)+'m · ef '+efc+'%'+(crit?' · CRÍTICO +200%':(warn?'':' · GRAVE'))+')'; }
+if(over&&obj>0){ var efc=elap>0?Math.round(obj*100/elap):0; meta+=' · lleva '+elap+'m / estándar '+obj+'m (+'+(elap-obj)+'m · prod. '+efc+'%'+(crit?' · CRÍTICO +200%':(warn?'':' · GRAVE'))+')'; }
 else{
 if(rmin>0) meta+=' · real '+rmin+'m'+(obj>0?' / obj '+obj+'m':'');
-if(ef!=null) meta+=' · ef '+ef+'%'+((obj>0&&rmin>obj)?' · INEFICIENTE':'');
+if(ef!=null) meta+=' · prod. '+ef+'%'+((obj>0&&rmin>obj)?' · BAJA PRODUCTIVIDAD':'');
 }
 var suf='';
 if(crit) suf=' <b style="color:#fde047;background:#7f1d1d;padding:1px 7px;border-radius:5px">‼ CRÍTICO · +200% del estándar</b>';
-else if(over) suf=' <b style="color:#ef4444">INEFICIENTE · AÚN EN CURSO — revisar ahora</b>';
-else if(obj>0&&rmin>obj) suf=' <b style="color:#ef4444">INEFICIENTE</b>';
+else if(over) suf=' <b style="color:#ef4444">BAJA PRODUCTIVIDAD · AÚN EN CURSO — revisar ahora</b>';
+else if(obj>0&&rmin>obj) suf=' <b style="color:#ef4444">BAJA PRODUCTIVIDAD</b>';
 document.getElementById('shM').innerHTML=esc(meta)+suf;
 var ctl=document.getElementById('shCtl');
 if(k!=='plan'&&b.getAttribute('data-mof')){
@@ -346,7 +347,7 @@ if(esVal(val)){
 ctl.innerHTML='<div class="stx" style="color:#22c55e">✓ Ya validada: '+esc(val)+' (desde la app o este tablero)</div>';
 }else{
 ctl.innerHTML=(val?'<div class="stx" style="color:#fbbf24">● El supervisor la marcó: '+esc(val)+'</div>':'')+'<div class="btns"><button class="bok" onclick="valHxH(\'OK\')">✔ OK</button><button class="bng" onclick="valHxH(\'NG\')">✘ NG</button></div>'
-+(inef?'<select id="shCz" class="warn"><option value="">⚠ Causal de ineficiencia (obligatorio)…</option><option>Operario</option><option>Material</option><option>Diseño</option><option>Montaje anterior</option><option>Herramienta</option></select>':'')
++(inef?'<select id="shCz" class="warn"><option value="">⚠ Causal de baja productividad (obligatorio)…</option><option>Operario</option><option>Material</option><option>Diseño</option><option>Montaje anterior</option><option>Herramienta</option></select>':'')
 +'<input type="text" id="shNota" placeholder="Nota (opcional)"><div class="stx" id="shSt"></div>';
 }
 }else{CUR=null;ctl.innerHTML='';}
@@ -359,7 +360,7 @@ var b=CUR, st=document.getElementById('shSt');
 var obj=+(b.getAttribute('data-obj')||0), rmin=+(b.getAttribute('data-rmin')||0);
 var inef=(obj>0&&rmin>obj)||b.getAttribute('data-over')==='1';
 var cz=document.getElementById('shCz'); var causal=cz?cz.value:'';
-if(inef&&!causal){st.textContent='⚠ Elegí el causal de la ineficiencia';st.style.color='#ef4444';return}
+if(inef&&!causal){st.textContent='⚠ Elegí el causal de la baja productividad';st.style.color='#ef4444';return}
 var sec=b.getAttribute('data-sec')||'';
 var payload={user:(sec==='M0'?'yance':'rodrigo'), mo:b.getAttribute('data-mof'), operario:b.getAttribute('data-opn'),
 wo:b.getAttribute('data-wof'), montaje:(b.getAttribute('data-mwc')||sec), obj_min:obj, real_min:rmin,
@@ -479,7 +480,32 @@ cerrarDet(); CURGAP=null; recomputeAlarm();
 }
 
 
-/* ===== helpers agregados (nombres, tareas, eficiencia, fusión Odoo) ===== */
+/* ===== PRODUCTIVIDAD — única métrica oficial DYFSA (Riki 16/10/2026) =====
+   Productividad = Σ min(objetivo, real) POR TAREA ÷ Σ real. Tarea = operario + orden + operación
+   del día (los tramos de la misma tarea se suman: pausar y retomar NO vuelve a sumar el objetivo).
+   Cuentan terminadas, en curso ya pasadas del estándar y retrabajos: el retrabajo suma su tiempo real
+   con objetivo 0 (no es trabajo productivo), así que baja la productividad.
+   Las en curso que todavía van dentro del estándar no cuentan hasta pasarse o cerrarse.
+   Mismo cálculo en el servidor (_computeEficiencia) → todas las pantallas dan el mismo número. */
+function _pFold(s){return String(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
+function prodAcum(acc,opn,segs){
+  (segs||[]).forEach(function(t){
+    var k=_pFold(opn||t.opn||t.op)+'|'+String(t.mo||t.mof||'').replace(/\D/g,'')+'|'+_pFold(t.wof||t.wo);
+    var x=acc[k]||(acc[k]={obj:0,real:0,ab:false,nc:false});
+    if(!x.obj) x.obj=+t.obj||0;
+    x.real+=+t.rmin||0;
+    if(t.e==='curso'||t.e==='curso_inef') x.ab=true;
+    if(t.e==='nc'||/^(RETRAB|NC)$/i.test(String(t.mwc||''))) x.nc=true;
+  });
+  return acc;
+}
+function prodRes(acc){
+  var o=0,r=0,n=0;
+  for(var k in acc){ var x=acc[k]; if(x.nc){ r+=x.real; n++; continue; } if(x.ab && !(x.obj>0 && x.real>x.obj)) continue; o+=Math.min(x.obj,x.real); r+=x.real; n++; }
+  return {obj:o,real:r,n:n,p:(r>0?Math.min(100,Math.round(o*100/r)):null)};
+}
+
+/* ===== helpers agregados (nombres, tareas, productividad, fusión Odoo) ===== */
 var SECTOR_OVERRIDE={'pradal':'M4','moreyra':'M4','vega gabriel':'S7'};
 function sectorDe(o){var k=String(o.nom||'').toLowerCase().replace(/\s+/g,' ').trim();for(var key in SECTOR_OVERRIDE){if(k.indexOf(key)>=0)return SECTOR_OVERRIDE[key];}return o.sector;}
 // Mayer y Yance son supervisores (no se cargan como operarios). Lopez Agustin ya no trabaja en la empresa.
@@ -498,22 +524,21 @@ function shortWO(s){s=String(s==null?'':s).trim();var g=0;while(WO_PREFIX.test(s
 function normWO(s){return String(s==null?'':s).replace(/\s+/g,' ').trim().toUpperCase();}
 function mergeReal(arr){if(arr&&arr.__merged)return arr;var src=(arr||[]).slice().sort(function(a,b){return toMin(a.ini)-toMin(b.ini)});var out=[];src.forEach(function(r){var p=out[out.length-1];var m=p&&p.mo===r.mo&&normWO(p.wo)===normWO(r.wo)&&(p.e==='nc')===(r.e==='nc');var peg=p&&(toMin(r.ini)-toMin(p.fin)<=3);if(m&&peg){if(toMin(r.fin)>toMin(p.fin))p.fin=r.fin;p.rmin=(+p.rmin||0)+(+r.rmin||0);p.obj=Math.max(+p.obj||0,+r.obj||0);if(r.e==='curso')p.e='curso';if(r.val)p.val=r.val;if(r.acum)p.acum=Math.max(+p.acum||0,+r.acum||0);}else out.push(Object.assign({},r));});out.forEach(function(r){if(r.e!=='curso'&&r.e!=='nc'){r.e=((+r.obj||0)>0&&(+r.rmin||0)>(+r.obj||0))?'ko':'ok';}});out.__merged=true;return out;}
 function effCls(e){return e==null?'m':(e>=80?'g':(e>=70?'o':'r'));}
-function effChip(sPA,sR){var e=sPA>0?Math.round(sR*100/sPA):null;return '<span class="eff '+effCls(e)+'"><span class="lb">EFIC. MONTAJE</span>'+(e==null?'—':e+'%')+'</span>';}
-// EFIC. MONTAJE = eficiencia estándar/real por montaje, calculada en el front sobre las tareas mostradas.
+function effChip(sPA,sR){var e=sPA>0?Math.round(sR*100/sPA):null;return '<span class="eff '+effCls(e)+'"><span class="lb">PROD. MONTAJE</span>'+(e==null?'—':e+'%')+'</span>';}
+// PROD. MONTAJE = productividad por montaje (regla única DYFSA, ver prodAcum).
 // Cuenta terminadas (ok/ko) + en curso YA pasadas del estándar (curso_inef, las rojas) para que las lentas
 // bajen el %. NO cuenta las 'curso' que todavía van dentro del estándar (aún no ganaron su obj) ni las 'nc'.
 // TOPE 100% (nunca muestra >100). Mismo cálculo en el pie de línea → coinciden. Editá el tope/estados acá.
 var EFMON=null; // mapa {code: pct} recalculado en cada render desde D.grupos
 function efMontajeMap(D){
-  var m={};
-  (D.grupos||[]).forEach(function(g){
-    var o=0,r=0;
-    (g.mos||[]).forEach(function(mm){(mm.real||[]).forEach(function(t){ if(t.e!=='nc' && t.e!=='curso'){ o+=(+t.obj||0); r+=(+t.rmin||0); } });});
-    m[g.code] = r>0 ? Math.min(100, Math.round(o*100/r)) : null;
-  });
+  // PROD. MONTAJE = productividad de las tareas de ese montaje (regla única, ver prodAcum). Mismo número que el panel del encabezado.
+  // Si el montaje no tiene tareas propias (S1, S6, S7…) se mide sobre las tareas que muestra su fila.
+  var m={}, P=prodPorSector(D,true);
+  P.mon.forEach(function(x){ m[x.code]=x.p; });
+  (D.grupos||[]).forEach(function(g){ if(m[g.code]!=null) return; var acc={}; (g.mos||[]).forEach(function(mm){ prodAcum(acc,null,mm.real); }); m[g.code]=prodRes(acc).p; });
   return m;
 }
-function effChipMon(code){ var e=(EFMON && EFMON[code]!=null)?EFMON[code]:null; return '<span class="eff '+effCls(e)+'"><span class="lb">EFIC. MONTAJE</span>'+(e==null?'—':e+'%')+'</span>'; }
+function effChipMon(code){ var e=(EFMON && EFMON[code]!=null)?EFMON[code]:null; return '<span class="eff '+effCls(e)+'"><span class="lb">PROD. MONTAJE</span>'+(e==null?'—':e+'%')+'</span>'; }
 // chip INACTIVIDAD = hs sin actividad (huecos >15min) / hs en planta. Verde ≤10%, naranja ≤20%, rojo >20%
 function inactCls(p){return p==null?'m':(p<=1?'g':(p<=3?'o':'r'));}
 function inactChip(inact,planta){var p=planta>0?Math.round(inact*100/planta):null;var t=planta>0?(hN(inact/60)+' h sin actividad / '+hN(planta/60)+' h en planta'):'sin datos';return '<span class="eff inactv '+inactCls(p)+'" title="'+t+'"><span class="lb">INACTIV.</span>'+(p==null?'—':p+'%')+'</span>';}
@@ -548,7 +573,8 @@ document.getElementById('cRa').textContent=raH+' h';
 var dv=hN(raH-paH), dvp=paH>0?Math.round(dv*100/paH):0;
 var cD=document.getElementById('cDesv');
 cD.innerHTML='DESVÍO <b>'+(dv>=0?'+':'')+dv+' h ('+(dvp>=0?'+':'')+dvp+'%)</b>';
-cD.style.background=dv>=0?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)';
+cD.style.background=dv>=0?'rgba(34,197,94,.3)':'rgba(239,68,68,.3)'; /* PLAN HOY · A ESTA HORA · DESVÍO ocultos a pedido de Riki (16/10/2026) */
+pintaProd(D);
 
 var NHC=D.sab?5:9, almIdx=D.sab?-1:4;
 var hrs=[]; for(var i=0;i<NHC;i++) hrs.push(8+i);
@@ -941,6 +967,7 @@ else checkMananaBar();
 setTimeout(function(){ fetchManana(); },3000); // al cargar: trae estado de validación (pinta el botón MAÑANA verde si ya está validado)
 </script>
 
+<div id="prodPanel" style="display:none;position:fixed;top:70px;left:16px;z-index:61;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:12px;padding:14px 16px;width:min(620px,calc(100vw - 32px));max-height:80vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:14px"></div>
 <div id="rondasPanel" style="display:none;position:fixed;top:70px;right:16px;z-index:60;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:12px;padding:14px 16px;max-width:560px;max-height:75vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:13px"></div>
 <script>
 /* ===== Estado de las rondas de supervisores (Riki 15/10/2026) =====
@@ -965,6 +992,53 @@ function pintarRondas(){
   });
   el.innerHTML=h; el.style.display='';
   if(document.getElementById('rondasPanel').style.display!=='none') verRondas(true);
+}
+/* ===== PRODUCTIVIDAD HOY (encabezado) + panel montaje por montaje, de menor a mayor ===== */
+/* Por montaje de la TAREA (centro de trabajo de Odoo: M0…M6, QC, OTROS, RETRAB) — igual que el servidor y el reporte. */
+var PNOM={M0:'Soldadura',S1:'Armado Muebles',M1:'Revest. Interior',M2:'Inst. Eléctricas',S2:'Fibra',M3:'Revest. Exterior',M4:'Agua / Gas',M5:'Montaje 5',M6:'Slide Out',S5:'Aberturas / Toldos',S6:'Slide Out',S7:'Tapicería',QC:'Control Final',HOSP:'Hospital',OTROS:'Otros / pre-ensambles',RETRAB:'Retrabajos',NC:'Retrabajos'};
+function prodPorSector(D,todos){
+  var S={}, T={};
+  (D&&D.operarios||[]).forEach(function(o){
+    if(excluido(o.nom)) return;
+    (o.real||[]).forEach(function(r){
+      var mc=String(r.mwc||'OTROS').toUpperCase();
+      if(!todos && FILTRO && mc!==FILTRO) return;
+      prodAcum(S[mc]||(S[mc]={}),o.nom,[r]);
+      prodAcum(T,o.nom,[r]);
+    });
+  });
+  return {tot:prodRes(T), mon:Object.keys(S).map(function(c){ var r=prodRes(S[c]); r.code=c; return r; })};
+}
+function _pCol(p){ return p==null?'#64748b':(p>=80?'#16a34a':(p>=70?'#f97316':'#dc2626')); }
+function pintaProd(D){
+  var c=document.getElementById('cProd'); if(!c) return;
+  var P=prodPorSector(D,false); window.__PROD=P; window.__PRODF=D.fecha;
+  var p=P.tot.p;
+  c.innerHTML='PRODUCTIVIDAD '+(HIST?'DEL DÍA':'HOY')+(FILTRO?(' '+FILTRO):'')+' <b>'+(p==null?'—':p+'%')+'</b> ▾';
+  c.style.background=p==null?'rgba(255,255,255,.15)':(p>=80?'rgba(22,163,74,.75)':(p>=70?'rgba(234,88,12,.8)':'rgba(185,28,28,.85)'));
+  var pp=document.getElementById('prodPanel'); if(pp && pp.style.display!=='none') verProd(true);
+}
+function verProd(solo){
+  var p=document.getElementById('prodPanel'); if(!p) return;
+  if(!solo && p.style.display!=='none'){ p.style.display='none'; return; }
+  var P=window.__PROD;
+  if(!P){ p.textContent='Cargando…'; p.style.display='block'; return; }
+  var L=P.mon.filter(function(x){return x.p!=null;}).sort(function(a,b){ return a.p-b.p || b.real-a.real; });
+  var sin=P.mon.filter(function(x){return x.p==null;}).map(function(x){return x.code;});
+  var hh=function(m){ return (Math.round(m/6)/10).toString().replace('.',','); };
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><b style="font-size:16px">Productividad por montaje · '+_rEsc(window.__PRODF||'')+'</b><span style="cursor:pointer;font-weight:800;font-size:18px;padding:0 4px" onclick="verProd()">✕</span></div>';
+  h+='<div style="color:#94a3b8;margin-bottom:10px;font-size:12px">De menor a mayor. Productividad = horas objetivo ÷ horas reales, con tope 100 % por tarea. Cuentan las tareas terminadas, las en curso ya pasadas del estándar y los retrabajos.</div>';
+  h+='<table style="width:100%;border-collapse:collapse"><tr style="color:#94a3b8;text-align:left;font-size:12px"><th style="padding:4px">Montaje</th><th style="padding:4px;width:42%">Productividad</th><th style="padding:4px;text-align:right">Objetivo</th><th style="padding:4px;text-align:right">Real</th><th style="padding:4px;text-align:right">Tareas</th></tr>';
+  L.forEach(function(x){
+    var col=_pCol(x.p);
+    h+='<tr style="border-top:1px solid #1e293b"><td style="padding:6px 4px;white-space:nowrap"><b>'+_rEsc(x.code)+'</b> <span style="color:#94a3b8">'+_rEsc(PNOM[x.code]||'')+'</span></td>'
+      +'<td style="padding:6px 4px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:12px;background:#1e293b;border-radius:6px;overflow:hidden"><div style="height:100%;width:'+x.p+'%;background:'+col+'"></div></div><b style="color:'+col+';min-width:42px;text-align:right">'+x.p+'%</b></div></td>'
+      +'<td style="padding:6px 4px;text-align:right;white-space:nowrap">'+hh(x.obj)+' h</td><td style="padding:6px 4px;text-align:right;white-space:nowrap">'+hh(x.real)+' h</td><td style="padding:6px 4px;text-align:right">'+x.n+'</td></tr>';
+  });
+  var t=P.tot;
+  h+='<tr style="border-top:2px solid #334155;font-weight:800"><td style="padding:6px 4px">Total'+(FILTRO?(' '+_rEsc(FILTRO)):' planta')+'</td><td style="padding:6px 4px;color:'+_pCol(t.p)+'">'+(t.p==null?'—':t.p+'%')+'</td><td style="padding:6px 4px;text-align:right;white-space:nowrap">'+hh(t.obj)+' h</td><td style="padding:6px 4px;text-align:right;white-space:nowrap">'+hh(t.real)+' h</td><td style="padding:6px 4px;text-align:right">'+t.n+'</td></tr></table>';
+  if(sin.length) h+='<div style="color:#94a3b8;margin-top:8px;font-size:12px">Sin tareas para medir todavía: '+sin.map(_rEsc).join(', ')+'</div>';
+  p.innerHTML=h; p.style.display='block';
 }
 function verRondas(soloRefrescar){
   var p=document.getElementById('rondasPanel'); if(!p) return;

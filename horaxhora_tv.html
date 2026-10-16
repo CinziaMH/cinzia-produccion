@@ -230,7 +230,7 @@ body.bigrows .pb{white-space:normal;line-height:1.15;background:#42546f;border-c
 <span class="lg" style="background:#fff;border-radius:7px;padding:3px 7px;display:inline-flex;align-items:center"><img src="cinzia%20logo.png" onerror="this.parentNode.style.display='none'" alt="CINZIA" style="height:21px;display:block"></span>
 <h1 id="h1t">HORA A HORA</h1>
 <div><div class="reloj" id="reloj">--:--</div><div class="sub" id="sub">cargando…</div></div>
-<span class="efbig m" id="efHoyBox"><span class="l">EFIC. HOY</span><span class="n" id="efHoyN">—</span></span>
+<span class="efbig m" id="efHoyBox"><span class="l">PROD. HOY</span><span class="n" id="efHoyN">—</span></span>
 <span class="efbig m" id="efAyerBox"><span class="l">AYER</span><span class="n" id="efAyerN">—</span></span>
 <span class="efbig m" id="s5Box" title="5S del día — ronda 7:45"><span class="l">5S HOY</span><span class="n" id="s5N">—</span></span>
 <div class="navsel navsel-nave">
@@ -266,8 +266,8 @@ body.bigrows .pb{white-space:normal;line-height:1.15;background:#42546f;border-c
 <div class="leg">
 <span><i style="background:#33415588;border:1px solid #64748b;height:9px"></i> Plan teórico (7:45)</span>
 <span><i style="background:#16a34a"></i> En tiempo</span>
-<span><i style="background:linear-gradient(180deg,#f97316,#ea580c)"></i> Ineficiente leve</span>
-<span><i style="background:linear-gradient(180deg,#dc2626,#b91c1c)"></i> Ineficiente grave</span>
+<span><i style="background:linear-gradient(180deg,#f97316,#ea580c)"></i> Baja productividad leve</span>
+<span><i style="background:linear-gradient(180deg,#dc2626,#b91c1c)"></i> Baja productividad grave</span>
 <span><i style="background:linear-gradient(180deg,#7f1d1d,#450a0a);outline:2px solid #fde047"></i> ⚠ Crítico</span>
 <span><i style="background:#0ea5e9;outline:2px solid #7dd3fc"></i> En curso</span>
 <span><i style="background:repeating-linear-gradient(45deg,#64748b,#64748b 4px,#475569 4px,#475569 8px)"></i> Retrabajo / NC</span>
@@ -380,20 +380,36 @@ var COLORS={M0:'#dc2626',S1:'#b45309',M1:'#d97706',M2:'#f59e0b',S2:'#65a30d',M3:
 var EF_UMBRAL=80;
 var H0=8*60, COLP=120, NHC=9, ALMIDX=4;
 var NOWG=0, LASTD=null, AUTOSCROLL=true;
-// EFIC. MONTAJE = eficiencia estándar/real por montaje, calculada en el front sobre las tareas mostradas.
-// Cuenta terminadas (ok/ko) + en curso ya pasadas del estándar (curso_inef, las rojas); NO cuenta 'curso'
-// (van dentro del estándar) ni 'nc'. TOPE 100%. Mismo cálculo que el pie de línea → coinciden.
-var EFMON=null; // mapa {code: pct} recalculado en cada render desde D.grupos
-function efMontajeMap(D){
-  var m={};
-  (D.grupos||[]).forEach(function(g){
-    var o=0,r=0;
-    /* TOPE 100% POR TAREA: una tarea más rápida que el estándar acredita como máximo su tiempo real
-       (min(obj,rmin)), así NO compensa a las pasadas de tiempo ni infla el promedio del montaje.
-       Los retrabajos/NC SÍ cuentan (pedido Riki 14/8): el tiempo comido en retrabajo baja la eficiencia. */
-    (g.mos||[]).forEach(function(mm){(mm.real||[]).forEach(function(t){ if(t.e!=='curso'){ var ob=+t.obj||0, rm=+t.rmin||0; o+=Math.min(ob,rm); r+=rm; } });});
-    m[g.code] = r>0 ? Math.min(100, Math.round(o*100/r)) : null;
+/* ===== PRODUCTIVIDAD — única métrica oficial DYFSA (Riki 16/10/2026) =====
+   Productividad = Σ min(objetivo, real) POR TAREA ÷ Σ real. Tarea = operario + orden + operación
+   del día (los tramos de la misma tarea se suman: pausar y retomar NO vuelve a sumar el objetivo).
+   Cuentan terminadas, en curso ya pasadas del estándar y retrabajos: el retrabajo suma su tiempo real
+   con objetivo 0 (no es trabajo productivo), así que baja la productividad.
+   Las en curso que todavía van dentro del estándar no cuentan hasta pasarse o cerrarse.
+   Mismo cálculo en el servidor (_computeEficiencia) → todas las pantallas dan el mismo número. */
+function _pFold(s){return String(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
+function prodAcum(acc,opn,segs){
+  (segs||[]).forEach(function(t){
+    var k=_pFold(opn||t.opn||t.op)+'|'+String(t.mo||t.mof||'').replace(/\D/g,'')+'|'+_pFold(t.wof||t.wo);
+    var x=acc[k]||(acc[k]={obj:0,real:0,ab:false,nc:false});
+    if(!x.obj) x.obj=+t.obj||0;
+    x.real+=+t.rmin||0;
+    if(t.e==='curso'||t.e==='curso_inef') x.ab=true;
+    if(t.e==='nc'||/^(RETRAB|NC)$/i.test(String(t.mwc||''))) x.nc=true;
   });
+  return acc;
+}
+function prodRes(acc){
+  var o=0,r=0,n=0;
+  for(var k in acc){ var x=acc[k]; if(x.nc){ r+=x.real; n++; continue; } if(x.ab && !(x.obj>0 && x.real>x.obj)) continue; o+=Math.min(x.obj,x.real); r+=x.real; n++; }
+  return {obj:o,real:r,n:n,p:(r>0?Math.min(100,Math.round(o*100/r)):null)};
+}
+// PROD. MONTAJE = productividad del sector (regla única, ver prodAcum). Coincide con las filas y el encabezado.
+var EFMON=null; // mapa {code: pct} recalculado en cada render
+function efMontajeMap(D){
+  var S={}, m={};
+  (D&&D.operarios||[]).forEach(function(o){ if(excluido(o.nom)) return; var sc=String(sectorDe(o)||'').toUpperCase(); if(!sc) return; prodAcum(S[sc]||(S[sc]={}),o.nom,o.real); });
+  Object.keys(S).forEach(function(c){ m[c]=prodRes(S[c]).p; });
   return m;
 }
 /* mapa de tiempo no lineal: la hora de almuerzo (12–13) va comprimida */
@@ -711,7 +727,7 @@ function render(D){
       totRows+=lst.length;
       var nv=naveOf(code);
       /* ---- pre-cálculo por operario + agregado del montaje ---- */
-      var rows=[], secPlanAhora=0, secReal=0, secElap=0, secReg=0, secTerm=0, secTermV=0, secInact=0, secPlanta=0, secEfOb=0, secEfRe=0;
+      var rows=[], secPlanAhora=0, secReal=0, secElap=0, secReg=0, secTerm=0, secTermV=0, secInact=0, secPlanta=0, secEfOb=0, secEfRe=0, secAcc={};
       lst.forEach(function(o){
         o.real=mergeReal(o.real); annotateAcum(o.real); (o.real||[]).forEach(function(r){if(r.e!=='curso'){secTerm++;if(esVal(r.val))secTermV++;}});
         if((o.real||[]).length||o.sin_tarea){ secPlanta+=plantaMinDe(o,nowM,SEGS); gapsDe(o,nowM,SEGS).forEach(function(g){secInact+=(g[1]-g[0]);}); }
@@ -729,20 +745,19 @@ function render(D){
         /* eficiencia del operario = estándar/real de sus tareas TERMINADAS (mismo criterio que EFIC. MONTAJE),
            con tope 100% POR TAREA (min(obj,rmin)) para que una tarea rápida no compense a una pasada de tiempo.
            Los retrabajos/NC SÍ cuentan: registrar horas en retrabajo no es eficiencia 100. */
-        var eOb=0,eRe=0;
-        (o.real||[]).forEach(function(r){if(r.e!=='curso'){var ob=+r.obj||0, rm=+r.rmin||0; eOb+=Math.min(ob,rm); eRe+=rm;}});
-        var efOp=eRe>0?Math.min(100,Math.round(eOb*100/eRe)):null;
-        secEfOb+=eOb; secEfRe+=eRe;
+        /* productividad del operario: regla única (prodAcum) — tope 100 % por tarea, retrabajos incluidos */
+        var _pa=prodAcum({},o.nom,o.real); var efOp=prodRes(_pa).p;
+        for(var _pk in _pa) secAcc[_pk]=_pa[_pk];
         if(planDia>0){secPlanAhora+=planAhora; secReal+=realHecho;} secReg+=reg; secElap+=elapsed;
         kpiPlanDia+=planDia; kpiPlanAhora+=planAhora; kpiReal+=(planDia>0?realHecho:reg);
         rows.push({o:o,mos:mos,planOps:planOps,planDia:planDia,planAhora:planAhora,realHecho:realHecho,avance:avance,reg:reg,efOp:efOp});
       });
       /* eficiencia del montaje EN VISTA OPERARIO = promedio ponderado de los operarios mostrados
          (mismo criterio por tarea: tope 100%, retrabajos incluidos) → coincide con los EF de las filas */
-      var _em = secEfRe>0 ? Math.min(100, Math.round(secEfOb*100/secEfRe)) : ((EFMON && EFMON[code]!=null)?EFMON[code]:null);
+      var _em = prodRes(secAcc).p; if(_em==null) _em=(EFMON && EFMON[code]!=null)?EFMON[code]:null;
       var effCls = _em==null?'m':(_em>=80?'g':(_em>=70?'o':'r'));
       var effTxt = _em==null?'—':_em+'%';
-      h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span>'+inactChip(secInact,secPlanta)+valChip(secTerm,secTermV)+'<span class="cnt">'+lst.length+' operarios</span></span></div>';
+      h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[code]||'#666')+'">'+esc(code)+'</span><span class="nom">'+esc(NOMS[code]||code)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">PROD. MONTAJE</span>'+effTxt+'</span>'+inactChip(secInact,secPlanta)+valChip(secTerm,secTermV)+'<span class="cnt">'+lst.length+' operarios</span></span></div>';
       rows.forEach(function(R){
         var o=R.o, planOps=R.planOps, planDia=R.planDia, planAhora=R.planAhora, reg=R.reg;
         var pReg=elapsed>0?Math.round(reg*100/elapsed):0;
@@ -761,7 +776,7 @@ function render(D){
             +'<div class="v '+(ok?'g':'r')+'">'+pReg+'% del tiempo'+(reg===0?' · ⚠ s/registro':'')+'</div></div>';
         }
         var efCls=R.efOp==null?'':(R.efOp>=EF_UMBRAL?' effgreen':' effred');
-        var efBadge=R.efOp==null?'':'<span class="efb '+(R.efOp>=EF_UMBRAL?'g':'r')+'" title="eficiencia del día: estándar/real de tareas terminadas">EF '+R.efOp+'%</span>';
+        var efBadge=R.efOp==null?'':'<span class="efb '+(R.efOp>=EF_UMBRAL?'g':'r')+'" title="productividad del día: objetivo ÷ real, tope 100 % por tarea">PROD '+R.efOp+'%</span>';
         h+='<div class="fila'+efCls+(o.sin_tarea?' sintarea':'')+'"><div class="info"><div class="who"><div class="mo" title="'+esc(o.nom)+'">'+esc(formatName(o.nom))+efBadge+'</div><div class="det">'+esc((o.sin_tarea?('⚠ PRESENTE SIN TAREA'+(o.ci?' · fichó '+o.ci:'')):(Object.keys(R.mos).join(' · ')||'sin órdenes')))+'</div></div>'+stat+'</div><div class="tl">';
         for(var c=0;c<NHC;c++) h+='<div class="cell'+(c===ALMIDX?' alm':'')+'"></div>';
         h+='<span class="lane-tag esp">ESP</span><span class="lane-tag real">REAL</span>';
@@ -819,7 +834,7 @@ function render(D){
     var _em=(EFMON && EFMON[g.code]!=null)?EFMON[g.code]:null;
     var effCls = _em==null?'m':(_em>=80?'g':(_em>=70?'o':'r'));
     var effTxt = _em==null?'—':_em+'%';
-    h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">EFIC. MONTAJE</span>'+effTxt+'</span>'+inactChip(secInact,secPlanta)+valChip(secTerm,secTermV)+'<span class="cnt">'+g.mos.length+' órdenes</span></span></div>';
+    h+='<div class="gm"><span class="gmL"><span class="pill" style="background:'+(COLORS[g.code]||'#666')+'">'+esc(g.code)+'</span><span class="nom">'+esc(g.name)+'</span>'+(NAVE==='all'?'<span class="nave">Nave '+nv+'</span>':'')+'<span class="eff '+effCls+'"><span class="lb">PROD. MONTAJE</span>'+effTxt+'</span>'+inactChip(secInact,secPlanta)+valChip(secTerm,secTermV)+'<span class="cnt">'+g.mos.length+' órdenes</span></span></div>';
     rows.forEach(function(R){
       var m=R.m, planDia=R.planDia, planAhora=R.planAhora, realHecho=R.realHecho;
       var pPA=planDia>0?Math.round(planAhora*100/planDia):0;
@@ -863,16 +878,17 @@ function render(D){
 var LASTA=null;
 function ayerHabil(){ var d=new Date(); do{ d.setDate(d.getDate()-1); }while(d.getDay()===0); var m=d.getMonth()+1, dd=d.getDate(); return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(dd<10?'0':'')+dd; }
 function efVisible(D){
+  /* PRODUCTIVIDAD del alcance visible (montaje/nave) — regla única, ver prodAcum */
   if(!D||!D.operarios) return null;
-  var ob=0,re=0;
+  var acc={};
   D.operarios.forEach(function(o){
     if(excluido(o.nom)) return;
     var sc=String(sectorDe(o)||'').toUpperCase(); if(!sc) return;
     if(MONT!=='all'){ if(sc!==MONT) return; }
     else if(NAVE!=='all' && naveOf(sc)!==NAVE) return;
-    mergeReal(o.real).forEach(function(r){ if(r.e!=='curso'){ var v=+r.obj||0, rm=+r.rmin||0; ob+=Math.min(v,rm); re+=rm; } });
+    prodAcum(acc,o.nom,o.real);
   });
-  return re>0?Math.min(100,Math.round(ob*100/re)):null;
+  return prodRes(acc).p;
 }
 function pintaEfBox(bid,nid,v){ var b=document.getElementById(bid), n=document.getElementById(nid); if(!b||!n) return; n.textContent=(v==null?'—':v+'%'); b.className='efbig '+(v==null?'m':(v>=EF_UMBRAL?'g':(v>=70?'o':'r'))); }
 function _s5em(c){ c=String(c||'').toLowerCase(); if(c==='verde'||c==='ok')return'🟢'; if(c==='rojo')return'🔴'; if(c==='azul')return'🔵'; return'⚪'; }
