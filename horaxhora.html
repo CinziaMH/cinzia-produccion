@@ -13,12 +13,26 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px;display:flex;flex-direction:column;height:100vh;overflow:hidden}
-.hdr{display:flex;align-items:center;gap:14px;padding:8px 18px;background:linear-gradient(90deg,var(--nar),#9a3412);z-index:30;flex-wrap:wrap;flex:0 0 auto}
-.hdr h1{font-size:18px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
+.hdr{display:flex;align-items:center;gap:14px;padding:6px 14px;background:linear-gradient(90deg,var(--nar),#9a3412);z-index:30;flex:0 0 auto}
+/* encabezado compacto (Riki 16/10/2026): reloj a la izquierda + 2 renglones (título y navegación / estado del día) */
+.hcol{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.hrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hsp{flex:1}
+.h1r{flex-wrap:wrap}
+@media(max-width:1300px){.hdr h1,.hdr .lg{display:none!important}}
+.h1r>*{flex:0 0 auto}
+.hclk{min-width:0;flex:0 1 auto!important;overflow:hidden}
+.hclk .sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr h1{font-size:15px}
+/* lo más importante después del reloj: rondas y supervisores */
+.chip.hkey{font-size:14px;padding:5px 12px}
+.chip.hkey span{font-size:13px!important;padding:2px 7px!important}
+.hdr .reloj{font-size:24px;line-height:1}
+.hdr h1{font-size:15px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
 .hdr .sub{font-size:11px;opacity:.9}
 .chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:9px;padding:4px 11px;font-weight:800;font-size:12px;white-space:nowrap}
 /* reloj de PRODUCTIVIDAD HOY (como el velocímetro de un auto) — pedido Riki 16/10/2026 */
-.gauge{width:200px;flex:0 0 auto;background:radial-gradient(circle at 50% 85%,#1f2937,#030712 75%);border:2px solid rgba(255,255,255,.45);border-radius:16px;padding:4px 8px 0;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.45),inset 0 0 12px rgba(0,0,0,.6)}
+.gauge{width:170px;flex:0 0 auto;background:radial-gradient(circle at 50% 85%,#1f2937,#030712 75%);border:2px solid rgba(255,255,255,.45);border-radius:16px;padding:4px 8px 0;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.45),inset 0 0 12px rgba(0,0,0,.6)}
 .gauge:hover{border-color:#fff}
 /* debajo de 60 %: el reloj titila en rojo */
 .gauge.alarma{animation:gAlarma 1s steps(1,end) infinite}
@@ -225,24 +239,31 @@ verde en tiempo · naranja ef 80–100% · rojo ef < 80% */
 </head>
 <body>
 <div class="hdr">
+<div class="gauge" id="cProd" onclick="verProd()" title="Productividad del día (objetivo ÷ real, tope 100 % por tarea) · tocá para ver montaje por montaje"></div>
+<div class="hcol">
+<div class="hrow h1r">
 <span class="lg" style="background:#fff;border-radius:10px;padding:5px 10px;display:inline-flex;align-items:center"><img src="cinzia%20logo.png" onerror="this.parentNode.style.display='none'" alt="CINZIA" style="height:26px;display:block"></span>
 <h1 id="h1t">HORA A HORA · POR MONTAJE</h1>
-<div><div class="reloj" id="reloj">--:--</div><div class="sub" id="sub">cargando…</div></div>
+<div class="hclk"><div class="reloj" id="reloj">--:--</div><div class="sub" id="sub">cargando…</div></div>
+<span class="hsp"></span>
+<div class="chip" id="cGap" style="display:none;background:#fff;color:#b91c1c;border-color:#fff">⚠ INACTIVIDAD <b>0</b></div>
+<div class="chip" id="cAus" style="display:none;background:#7f1d1d;color:#fecaca;border-color:#b91c1c">🚫 AUSENTES <b>0</b></div>
+<div class="chip" style="background:rgba(255,255,255,.1);cursor:pointer" onclick="diaAnterior()">◀ día ant.</div>
+<div class="chip" id="cHoyBtn" style="background:#16a34a;border-color:#22c55e;display:none;cursor:pointer" onclick="diaHoy()">Hoy ▶</div>
+<div class="chip" id="mananaBtn" style="background:#6d28d9;border-color:#a78bfa;cursor:pointer" onclick="openManana()">📅 MAÑANA</div>
+<a class="chip" href="reporte.html" style="background:rgba(255,255,255,.1);text-decoration:none;color:#fff" title="Reporte de reunión">📊 Reporte</a>
+<a class="chip" href="./" style="background:rgba(255,255,255,.1);text-decoration:none;color:#fff" title="Volver al portal">🏠</a>
+<div class="chip" style="background:rgba(255,255,255,.1);cursor:pointer" onclick="cargar()" title="Actualizar ahora">↻</div>
+</div>
+<div class="hrow">
+<div class="chip hkey" id="cRondas" style="display:none;background:rgba(255,255,255,.22);cursor:pointer" onclick="verRondas()" title="Estado de las rondas · tocá para ver el detalle">RONDAS <b>—</b></div>
+<div class="chip hkey" id="cSup" style="background:rgba(255,255,255,.22)">SUPERVISORES <b>—</b></div>
+<div class="chip" id="supAck" style="display:none;background:#dc2626;color:#fff;border-color:#fff;cursor:pointer" onclick="ackSup()">📢 Aviso al supervisor · silenciar</div>
 <div class="chip" style="display:none">PLAN HOY <b id="cPlan">—</b></div>
 <div class="chip" style="display:none">A ESTA HORA: plan <b id="cPa">—</b> · real <b id="cRa">—</b></div>
 <div class="chip" id="cDesv" style="display:none">DESVÍO <b>—</b></div>
-<div class="gauge" id="cProd" onclick="verProd()" title="Productividad del día (objetivo ÷ real, tope 100 % por tarea) · tocá para ver montaje por montaje"></div>
-<div class="chip" id="cSup" style="background:rgba(255,255,255,.22)">SUPERVISORES <b>—</b></div>
-<div class="chip" id="cRondas" style="display:none;background:rgba(255,255,255,.22);cursor:pointer" onclick="verRondas()" title="Estado de las rondas · tocá para ver el detalle">RONDAS <b>—</b></div>
-<div class="chip" id="cGap" style="display:none;background:#fff;color:#b91c1c;border-color:#fff">⚠ INACTIVIDAD <b>0</b></div>
-<div class="chip" id="cAus" style="display:none;background:#7f1d1d;color:#fecaca;border-color:#b91c1c">🚫 AUSENTES <b>0</b></div>
-<div class="chip" id="supAck" style="display:none;background:#dc2626;color:#fff;border-color:#fff;cursor:pointer" onclick="ackSup()">📢 Aviso al supervisor · silenciar</div>
-<div class="chip" style="margin-left:auto;background:rgba(255,255,255,.1);cursor:pointer" onclick="diaAnterior()">◀ día ant.</div>
-<div class="chip" id="cHoyBtn" style="background:#16a34a;border-color:#22c55e;display:none;cursor:pointer" onclick="diaHoy()">Hoy ▶</div>
-<div class="chip" id="mananaBtn" style="background:#6d28d9;border-color:#a78bfa;cursor:pointer" onclick="openManana()">📅 MAÑANA</div>
-<a class="chip" href="reporte.html" style="background:rgba(255,255,255,.1);text-decoration:none;color:#fff">📊 Reporte</a>
-<a class="chip" href="./" style="background:rgba(255,255,255,.1);text-decoration:none;color:#fff">🏠 Inicio</a>
-<div class="chip" style="background:rgba(255,255,255,.1);cursor:pointer" onclick="cargar()">↻ Actualizar</div>
+</div>
+</div>
 </div>
 <div id="shade" onclick="cerrarDet()"></div>
 <div id="sheet"><button class="x" onclick="cerrarDet()">✕</button><span class="k" id="shK"></span><h2 id="shT"></h2><div class="m" id="shM"></div><div id="shCtl"></div></div>
