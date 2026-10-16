@@ -17,6 +17,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .hdr h1{font-size:18px;font-weight:800;letter-spacing:.5px;white-space:nowrap}
 .hdr .sub{font-size:11px;opacity:.9}
 .chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);border-radius:9px;padding:4px 11px;font-weight:800;font-size:12px;white-space:nowrap}
+/* reloj de PRODUCTIVIDAD HOY (como el velocímetro de un auto) — pedido Riki 16/10/2026 */
+.gauge{width:200px;flex:0 0 auto;background:radial-gradient(circle at 50% 85%,#1f2937,#030712 75%);border:2px solid rgba(255,255,255,.45);border-radius:16px;padding:4px 8px 0;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.45),inset 0 0 12px rgba(0,0,0,.6)}
+.gauge:hover{border-color:#fff}
+/* debajo de 60 %: el reloj titila en rojo */
+.gauge.alarma{animation:gAlarma 1s steps(1,end) infinite}
+@keyframes gAlarma{0%{background:radial-gradient(circle at 50% 85%,#b91c1c,#450a0a 75%);border-color:#fecaca;box-shadow:0 0 22px 6px rgba(239,68,68,.85)}50%{background:radial-gradient(circle at 50% 85%,#1f2937,#030712 75%);border-color:#ef4444;box-shadow:0 6px 18px rgba(0,0,0,.45)}}
+.gauge svg{display:block;width:100%;height:auto}
+.gauge .gneedle{transition:transform 1.2s cubic-bezier(.25,1.4,.5,1);transform-origin:100px 100px}
 .chip b{font-size:15px}
 .reloj{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
 .off{background:var(--bad);color:#fff;padding:6px 14px;font-weight:800;font-size:13px;display:none;text-align:center}
@@ -118,6 +126,7 @@ verde en tiempo · naranja ef 80–100% · rojo ef < 80% */
 .hdr .sub{display:none}
 .reloj{font-size:15px}
 .chip{padding:2px 7px;font-size:10px;border-radius:7px}
+.gauge{width:130px;border-radius:11px}
 .chip b{font-size:11px}
 .leg{display:none}
 .alertbar{font-size:11px;padding:4px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
@@ -222,7 +231,7 @@ verde en tiempo · naranja ef 80–100% · rojo ef < 80% */
 <div class="chip" style="display:none">PLAN HOY <b id="cPlan">—</b></div>
 <div class="chip" style="display:none">A ESTA HORA: plan <b id="cPa">—</b> · real <b id="cRa">—</b></div>
 <div class="chip" id="cDesv" style="display:none">DESVÍO <b>—</b></div>
-<div class="chip" id="cProd" style="cursor:pointer" onclick="verProd()" title="Productividad del día (objetivo ÷ real, tope 100 % por tarea) · tocá para ver montaje por montaje">PRODUCTIVIDAD HOY <b>—</b></div>
+<div class="gauge" id="cProd" onclick="verProd()" title="Productividad del día (objetivo ÷ real, tope 100 % por tarea) · tocá para ver montaje por montaje"></div>
 <div class="chip" id="cSup" style="background:rgba(255,255,255,.22)">SUPERVISORES <b>—</b></div>
 <div class="chip" id="cRondas" style="display:none;background:rgba(255,255,255,.22);cursor:pointer" onclick="verRondas()" title="Estado de las rondas · tocá para ver el detalle">RONDAS <b>—</b></div>
 <div class="chip" id="cGap" style="display:none;background:#fff;color:#b91c1c;border-color:#fff">⚠ INACTIVIDAD <b>0</b></div>
@@ -967,7 +976,7 @@ else checkMananaBar();
 setTimeout(function(){ fetchManana(); },3000); // al cargar: trae estado de validación (pinta el botón MAÑANA verde si ya está validado)
 </script>
 
-<div id="prodPanel" style="display:none;position:fixed;top:70px;left:16px;z-index:61;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:12px;padding:14px 16px;width:min(620px,calc(100vw - 32px));max-height:80vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:14px"></div>
+<div id="prodPanel" style="display:none;position:fixed;top:120px;left:16px;z-index:61;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:12px;padding:14px 16px;width:min(620px,calc(100vw - 32px));max-height:80vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:14px"></div>
 <div id="rondasPanel" style="display:none;position:fixed;top:70px;right:16px;z-index:60;background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:12px;padding:14px 16px;max-width:560px;max-height:75vh;overflow:auto;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:13px"></div>
 <script>
 /* ===== Estado de las rondas de supervisores (Riki 15/10/2026) =====
@@ -1010,12 +1019,40 @@ function prodPorSector(D,todos){
   return {tot:prodRes(T), mon:Object.keys(S).map(function(c){ var r=prodRes(S[c]); r.code=c; return r; })};
 }
 function _pCol(p){ return p==null?'#64748b':(p>=80?'#16a34a':(p>=70?'#f97316':'#dc2626')); }
+function _gPt(p,r){ var a=Math.PI*(1-p/100); return (100+r*Math.cos(a)).toFixed(1)+' '+(100-r*Math.sin(a)).toFixed(1); }
+function _gArc(a,b,r){ return 'M '+_gPt(a,r)+' A '+r+' '+r+' 0 0 1 '+_gPt(b,r); }
+function _gInit(c){
+  // zonas: rojo <70 · naranja 70–79 · verde ≥80 (mismos cortes que el resto del tablero)
+  var h='<svg viewBox="0 0 200 128" aria-label="Productividad hoy">'
+    +'<path d="'+_gArc(0,100,80)+'" fill="none" stroke="#111827" stroke-width="16"/>'
+    +'<path d="'+_gArc(0,70,80)+'" fill="none" stroke="#dc2626" stroke-opacity=".38" stroke-width="16"/>'
+    +'<path d="'+_gArc(70,80,80)+'" fill="none" stroke="#f97316" stroke-opacity=".45" stroke-width="16"/>'
+    +'<path d="'+_gArc(80,100,80)+'" fill="none" stroke="#16a34a" stroke-opacity=".45" stroke-width="16"/>'
+    +'<path id="gVal" d="" fill="none" stroke="#16a34a" stroke-width="16" stroke-linecap="butt"/>';
+  for(var t=0;t<=100;t+=10){ var big=(t%50===0); h+='<path d="M '+_gPt(t,big?62:66)+' L '+_gPt(t,71)+'" stroke="#e5e7eb" stroke-width="'+(big?2.4:1.4)+'"/>'; }
+  h+='<text x="'+_gPt(0,52).split(' ')[0]+'" y="104" fill="#9ca3af" font-size="10" font-weight="700" text-anchor="middle">0</text>'
+    +'<text x="'+_gPt(100,52).split(' ')[0]+'" y="104" fill="#9ca3af" font-size="10" font-weight="700" text-anchor="middle">100</text>'
+    +'<g class="gneedle" id="gNeedle" style="transform:rotate(0deg)"><path d="M 100 96 L 30 100 L 100 104 Z" fill="#f8fafc"/></g>'
+    +'<circle cx="100" cy="100" r="8" fill="#e5e7eb" stroke="#030712" stroke-width="2"/>'
+    +'<text id="gNum" x="100" y="86" fill="#fff" font-size="30" font-weight="900" text-anchor="middle" style="paint-order:stroke;stroke:#030712;stroke-width:4px">—</text>'
+    +'<text id="gLbl" x="100" y="123" fill="#e5e7eb" font-size="11" font-weight="900" text-anchor="middle" letter-spacing=".8">PRODUCTIVIDAD HOY ▾</text>'
+    +'</svg>';
+  c.innerHTML=h;
+}
 function pintaProd(D){
   var c=document.getElementById('cProd'); if(!c) return;
   var P=prodPorSector(D,false); window.__PROD=P; window.__PRODF=D.fecha;
   var p=P.tot.p;
-  c.innerHTML='PRODUCTIVIDAD '+(HIST?'DEL DÍA':'HOY')+(FILTRO?(' '+FILTRO):'')+' <b>'+(p==null?'—':p+'%')+'</b> ▾';
-  c.style.background=p==null?'rgba(255,255,255,.15)':(p>=80?'rgba(22,163,74,.75)':(p>=70?'rgba(234,88,12,.8)':'rgba(185,28,28,.85)'));
+  if(!document.getElementById('gNeedle')) _gInit(c);
+  var col=p==null?'#64748b':(p>=80?'#22c55e':(p>=70?'#f97316':'#ef4444'));
+  var v=document.getElementById('gVal');
+  v.setAttribute('d', p>0 ? _gArc(0,Math.min(100,p),80) : '');
+  v.setAttribute('stroke', col);
+  document.getElementById('gNeedle').style.transform='rotate('+(p==null?0:Math.min(100,p)*1.8)+'deg)';
+  var n=document.getElementById('gNum'); n.textContent=(p==null?'—':p+'%'); n.setAttribute('fill', p==null?'#fff':col);
+  document.getElementById('gLbl').textContent='PRODUCTIVIDAD '+(HIST?'DEL DÍA':'HOY')+(FILTRO?(' '+FILTRO):'')+' ▾';
+  c.style.borderColor=col;
+  c.classList.toggle('alarma', p!=null && p<60);
   var pp=document.getElementById('prodPanel'); if(pp && pp.style.display!=='none') verProd(true);
 }
 function verProd(solo){
