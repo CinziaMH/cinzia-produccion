@@ -43,6 +43,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .foco .fs{font-size:11px;color:#cbd5e1;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .foco .fbody{transition:opacity .35s}
 .foco.fade .fbody{opacity:0}
+/* ronda sin ninguna validación 10 min después de su horario: titila (Riki 16/10/2026) */
+.rblink{animation:rBlink .8s steps(1,end) infinite}
+@keyframes rBlink{0%{background:#dc2626;color:#fff;box-shadow:0 0 10px 3px rgba(239,68,68,.9)}50%{background:#fff;color:#b91c1c;box-shadow:none}}
 /* debajo de 60 %: el reloj titila en rojo */
 .gauge.alarma{animation:gAlarma 1s steps(1,end) infinite}
 @keyframes gAlarma{0%{background:radial-gradient(circle at 50% 85%,#b91c1c,#450a0a 75%);border-color:#fecaca;box-shadow:0 0 22px 6px rgba(239,68,68,.85)}50%{background:radial-gradient(circle at 50% 85%,#1f2937,#030712 75%);border-color:#ef4444;box-shadow:0 6px 18px rgba(0,0,0,.45)}}
@@ -481,7 +484,7 @@ function ensureAudio(){ try{ if(!actx) actx=new (window.AudioContext||window.web
 function beep(){ if(!actx||actx.state!=='running') return; try{ var o=actx.createOscillator(),g=actx.createGain(); o.type='square'; o.frequency.value=880; o.connect(g); g.connect(actx.destination); var t=actx.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.3,t+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t+0.45); o.start(t); o.stop(t+0.5);}catch(e){} }
 var supAlarmTimer=null,supSnoozeUntil=0;
 function beepSup(){ if(!actx||actx.state!=='running') return; try{ [[660,0],[440,0.2]].forEach(function(p){ var o=actx.createOscillator(),g=actx.createGain(); o.type='sine'; o.frequency.value=p[0]; o.connect(g); g.connect(actx.destination); var t=actx.currentTime+p[1]; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.4,t+0.03); g.gain.exponentialRampToValueAtTime(0.0001,t+0.18); o.start(t); o.stop(t+0.2); }); }catch(e){} }
-function updateSupAlarm(){ var sr=window.__SR||{}; var any=(sr.rodrigo==='red'||sr.yance==='red'); var snoozed=Date.now()<supSnoozeUntil; var btn=document.getElementById('supAck'); if(any&&!snoozed&&!HIST){ if(!supAlarmTimer){ supAlarmTimer=setInterval(function(){ensureAudio();beepSup();},3000); ensureAudio(); beepSup(); } if(btn) btn.style.display=''; } else { if(supAlarmTimer){clearInterval(supAlarmTimer);supAlarmTimer=null;} if(btn) btn.style.display='none'; } }
+function updateSupAlarm(){ var sr=window.__SR||{}; var any=(sr.rodrigo==='red'||sr.yance==='red'||!!window.__RONDA_ALARMA); var snoozed=Date.now()<supSnoozeUntil; var btn=document.getElementById('supAck'); if(any&&!snoozed&&!HIST){ if(!supAlarmTimer){ supAlarmTimer=setInterval(function(){ensureAudio();beepSup();},3000); ensureAudio(); beepSup(); } if(btn) btn.style.display=''; } else { if(supAlarmTimer){clearInterval(supAlarmTimer);supAlarmTimer=null;} if(btn) btn.style.display='none'; } }
 function ackSup(){ supSnoozeUntil=Date.now()+30*60*1000; if(supAlarmTimer){clearInterval(supAlarmTimer);supAlarmTimer=null;} var b=document.getElementById('supAck'); if(b)b.style.display='none'; }
 function updateAlarm(){
 var chip=document.getElementById('cGap'), bar=document.getElementById('sndbar');
@@ -1023,14 +1026,21 @@ function cargarRondas(){
 }
 function pintarRondas(){
   var el=document.getElementById('cRondas'); if(!el||!RONDAS_D) return;
-  var h='RONDAS ';
+  var h='RONDAS ', alarma=false, _d=new Date(), nowM=_d.getHours()*60+_d.getMinutes();
+  var _hm=function(t){ var q=String(t||'').match(/(\d{1,2}):(\d{2})/); return q?(+q[1])*60+(+q[2]):null; };
   [['R','rodrigo'],['Y','yance']].forEach(function(p){
     var arr=RONDAS_D[p[1]]||[]; if(!arr.length) return;
     h+='<b style="margin-left:6px">'+p[0]+'</b> ';
+    // ronda vigente = la última cuyo horario ya pasó; si a los 10 min no tiene ninguna validación, suena la alarma
+    var vig=null; arr.forEach(function(x){ var m=_hm(x.h); if(m!=null && m<=nowM) vig=x; });
     arr.forEach(function(x){ var st=R_EST[x.estado]||R_EST.pendiente; var n=(x.estado==='parcial'||x.estado==='en_curso')?(' '+x.hechos+'/'+x.total):(x.estado==='completa'?' ✓':(x.estado==='nula'?' ✗':''));
-      h+='<span title="'+_rEsc(x.h+' · '+st[2]+(x.total?(' '+x.hechos+'/'+x.total):'')+(x.minutos!=null?(' · '+x.inicio+'–'+x.fin+' · '+x.minutos+' min'):''))+'" style="display:inline-block;margin-left:3px;padding:1px 6px;border-radius:6px;font-size:11px;font-weight:800;background:'+st[0]+';color:'+st[1]+'">'+x.h+n+'</span>'; });
+      var m=_hm(x.h), sinVal=!(+x.hechos>0) && x.estado!=='completa' && x.estado!=='sin_operarios';
+      var atras=!HIST && m!=null && nowM>=m+10 && sinVal;
+      if(atras && x===vig) alarma=true;
+      h+='<span'+(atras?' class="rblink"':'')+' title="'+_rEsc(x.h+' · '+st[2]+(x.total?(' '+x.hechos+'/'+x.total):'')+(x.minutos!=null?(' · '+x.inicio+'–'+x.fin+' · '+x.minutos+' min'):''))+'" style="display:inline-block;margin-left:3px;padding:1px 6px;border-radius:6px;font-size:11px;font-weight:800;background:'+st[0]+';color:'+st[1]+'">'+x.h+n+'</span>'; });
   });
   el.innerHTML=h; el.style.display='';
+  window.__RONDA_ALARMA=alarma; try{ updateSupAlarm(); }catch(e){}
   if(document.getElementById('rondasPanel').style.display!=='none') verRondas(true);
 }
 /* ===== PRODUCTIVIDAD HOY (encabezado) + panel montaje por montaje, de menor a mayor ===== */
@@ -1164,7 +1174,7 @@ function verRondas(soloRefrescar){
   });
   p.innerHTML=h; p.style.display='block';
 }
-cargarRondas(); setInterval(cargarRondas,180000);
+cargarRondas(); setInterval(cargarRondas,180000); setInterval(function(){ if(RONDAS_D) pintarRondas(); },60000);
 </script>
 </body>
 </html>
