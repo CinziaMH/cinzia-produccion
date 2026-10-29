@@ -210,6 +210,7 @@ function _esBaja(nom, fecha) {
   const k = _fold(nom);
   return BAJAS.some(b => (!fecha || fecha >= b[1]) && b[0].split(' ').every(t => k.indexOf(t) >= 0));
 }
+function _tardeManana(n){ const m = String(n || '').match(/(\d{1,2}):\d{2}\s*$/); return !m || Number(m[1]) < 12; }
 function _hoyIsoB(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function _depurarBajas(j) {
   try {
@@ -218,7 +219,8 @@ function _depurarBajas(j) {
     if (m && m.dias) m.dias.forEach(x => {
       const a0 = (x.ausentes_nombres || []).length;
       x.ausentes_nombres = (x.ausentes_nombres || []).filter(n => !_esBaja(n, x.fecha));
-      x.tardes_nombres = (x.tardes_nombres || []).filter(n => !_esBaja(n, x.fecha));
+      // llegadas tarde: solo cuentan las de la mañana (fichaje antes de las 12:00); las de la tarde no son tardanza
+      x.tardes_nombres = (x.tardes_nombres || []).filter(n => !_esBaja(n, x.fecha) && _tardeManana(n));
       x._bq = a0 - x.ausentes_nombres.length;   // bajas que el servidor todavía cuenta en la nómina de ese día
     });
   } catch (e) { console.warn('depurarBajas', e); }

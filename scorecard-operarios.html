@@ -321,6 +321,7 @@ function calcular(D){
     (x.ausentes_nombres||[]).forEach(function(nm){ var f=persona(nm); if (f && f!=='excluido') acc(f).faltas.push(x.fecha); });
     (x.tardes_nombres||[]).forEach(function(t){
       var p = String(t).split(' '), hh = /^\d{1,2}:\d{2}$/.test(p[p.length-1]) ? p.pop() : '';
+      if (hh && Number(hh.split(':')[0]) >= 12) return;   // fichaje después del mediodía: no es llegada tarde
       var f = persona(p.join(' ')); if (f && f!=='excluido') acc(f).tardes.push({fecha:x.fecha, hora:hh});
     });
   });

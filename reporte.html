@@ -277,7 +277,7 @@ function renderSup(){
 }
 
 function nameOnly(s){return String(s).replace(/\s+\d{1,2}:\d{2}.*$/,'').trim();}
-function rankFrom(dias,field){var m={};(dias||[]).forEach(function(d){(d[field]||[]).forEach(function(nm){var n=nameOnly(nm);if(n)m[n]=(m[n]||0)+1;});});return Object.keys(m).map(function(k){return {n:k,c:m[k]};}).sort(function(a,b){return b.c-a.c;});}
+function rankFrom(dias,field){var m={};(dias||[]).forEach(function(d){(d[field]||[]).forEach(function(nm){if(field==='tardes_nombres'){var hm=String(nm).match(/(\d{1,2}):\d{2}\s*$/);if(hm&&Number(hm[1])>=12)return;}var n=nameOnly(nm);if(n)m[n]=(m[n]||0)+1;});});return Object.keys(m).map(function(k){return {n:k,c:m[k]};}).sort(function(a,b){return b.c-a.c;});}
 
 function renderDash(d){
   if(!d)return;
