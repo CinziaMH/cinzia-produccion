@@ -95,6 +95,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .efcell.final{background:var(--nar);border-color:var(--naro);color:#fff}
 .efcell.final .k,.efcell.final .s{color:#ffd9c2}
 .efcell.final .v{font-size:34px}
+.efcell.gcard{background:radial-gradient(circle at 50% 85%,#1f2937,#030712 75%);border:2px solid #334155;padding:4px 10px 6px;text-align:center}
+.efcell.gcard svg{display:block;width:100%;max-width:230px;height:auto;margin:0 auto}
+.efcell.gcard .s{color:#9ca3af;margin-top:2px}
+.efcell.gcard.alarma{animation:pgAlarma 1s steps(1,end) infinite}
 .bot{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;flex:1;min-height:210px}
 .botcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 15px;overflow:hidden;display:flex;flex-direction:column}
 .botcard h4{font-size:12px;font-weight:800;color:var(--muted);letter-spacing:.6px;margin-bottom:8px}
@@ -320,6 +324,28 @@ function renderMonPanel(rows) {
   return h;
 }
 
+/* velocímetro de PRODUCTIVIDAD HOY — mismo diseño que el hora a hora (Riki 29/10/2026) */
+function velocimetro(p) {
+  p = (p == null || p === '' || isNaN(+p)) ? null : Math.max(0, Math.min(100, Math.round(+p)));
+  const pt = (v, r) => { const a = Math.PI * (1 - v / 100); return (100 + r * Math.cos(a)).toFixed(1) + ' ' + (100 - r * Math.sin(a)).toFixed(1); };
+  const arc = (a, b, r) => 'M ' + pt(a, r) + ' A ' + r + ' ' + r + ' 0 0 1 ' + pt(b, r);
+  const col = p == null ? '#64748b' : (p >= 80 ? '#22c55e' : (p >= 70 ? '#f97316' : '#ef4444'));
+  let h = '<svg viewBox="0 0 200 128" aria-label="Productividad hoy">'
+    + '<path d="' + arc(0, 100, 80) + '" fill="none" stroke="#111827" stroke-width="16"/>'
+    + '<path d="' + arc(0, 70, 80) + '" fill="none" stroke="#dc2626" stroke-opacity=".38" stroke-width="16"/>'
+    + '<path d="' + arc(70, 80, 80) + '" fill="none" stroke="#f97316" stroke-opacity=".45" stroke-width="16"/>'
+    + '<path d="' + arc(80, 100, 80) + '" fill="none" stroke="#16a34a" stroke-opacity=".45" stroke-width="16"/>'
+    + (p > 0 ? '<path d="' + arc(0, p, 80) + '" fill="none" stroke="' + col + '" stroke-width="16"/>' : '');
+  for (let t = 0; t <= 100; t += 10) { const big = (t % 50 === 0); h += '<path d="M ' + pt(t, big ? 62 : 66) + ' L ' + pt(t, 71) + '" stroke="#e5e7eb" stroke-width="' + (big ? 2.4 : 1.4) + '"/>'; }
+  h += '<text x="' + pt(0, 52).split(' ')[0] + '" y="104" fill="#9ca3af" font-size="10" font-weight="700" text-anchor="middle">0</text>'
+    + '<text x="' + pt(100, 52).split(' ')[0] + '" y="104" fill="#9ca3af" font-size="10" font-weight="700" text-anchor="middle">100</text>'
+    + '<g style="transform:rotate(' + (p == null ? 0 : p * 1.8) + 'deg);transform-origin:100px 100px"><path d="M 100 96 L 30 100 L 100 104 Z" fill="#f8fafc"/></g>'
+    + '<circle cx="100" cy="100" r="8" fill="#e5e7eb" stroke="#030712" stroke-width="2"/>'
+    + '<text x="100" y="86" fill="' + col + '" font-size="30" font-weight="900" text-anchor="middle" style="paint-order:stroke;stroke:#030712;stroke-width:4px">' + (p == null ? '—' : p + '%') + '</text>'
+    + '<text x="100" y="123" fill="#e5e7eb" font-size="11" font-weight="900" text-anchor="middle" letter-spacing=".8">PRODUCTIVIDAD HOY</text></svg>';
+  return h;
+}
+
 function renderIndicadores() {
   const ef = D.eficiencia || {};
   const ay = D.ayer || {};
@@ -368,7 +394,7 @@ function renderIndicadores() {
 
   // productividad detalle
   h += '<div class="efgrid">'
-    + '<div class="efcell final"><div class="k">PRODUCTIVIDAD HOY</div><div class="v">' + prodHoy + '%</div><div class="s">objetivo ÷ real · tope 100 % por tarea</div></div>'
+    + '<div class="efcell final gcard' + (prodHoy != null && prodHoy < 60 ? ' alarma' : '') + '">' + velocimetro(prodHoy) + '<div class="s">objetivo ÷ real · tope 100 % por tarea</div></div>'
     + '<div class="efcell"><div class="k">OBJETIVO</div><div class="v">' + (ef.prod_obj_h ?? ef.earned_h ?? 0) + 'h</div><div class="s">tiempo estándar de las tareas</div></div>'
     + '<div class="efcell"><div class="k">REAL</div><div class="v">' + (ef.prod_real_h ?? ef.real_h ?? 0) + 'h</div><div class="s">cronómetro Odoo de esas tareas</div></div>'
     + '<div class="efcell"><div class="k">OPERARIOS</div><div class="v">' + (ef.operarios ?? 0) + '</div><div class="s">con tareas hoy</div></div>'
