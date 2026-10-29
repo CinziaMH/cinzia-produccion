@@ -127,6 +127,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-s
 .cal .d.dom{opacity:.35}
 .cal .d.sin{background:#fafafa;color:#a1a1aa}
 .cal .d.hoy{box-shadow:0 0 0 2px var(--nar)}
+.cal .d.sel{box-shadow:0 0 0 3px #1E3A5F;background:#eff6ff}
+.cal .d .dn .pd{float:right;font-size:11px;font-weight:800;color:var(--bad)}
+.cal .d .dn .encurso{font-size:9px;font-weight:900;color:#fff;background:var(--nar);border-radius:4px;padding:1px 4px;margin-left:3px;vertical-align:middle}
 .cal .d.f{background:#fef2f2;border-color:#fecaca}
 .cal .d .dn{font-size:13px;font-weight:800}
 .cal .d .dv{display:flex;gap:6px;font-size:15px;font-weight:800}
@@ -191,13 +194,40 @@ const $ = id => document.getElementById(id);
 const esc = s => { const d = document.createElement('div'); d.textContent = String(s ?? ''); return d.innerHTML; };
 const efClass = p => p >= 50 ? 'good' : (p >= 25 ? 'warn' : 'bad');
 
+/* ====== BAJAS (Riki 29/10/2026) — no se cuentan más desde la fecha de baja ====== */
+const BAJAS = [
+  ['carrizo fabricio', '2026-10-28'],
+  ['gomez mariano', '2026-10-28'],
+  ['jonatan gordillo', '2026-10-28'],
+  ['gonzales guillermo', '2026-10-29']
+];
+const _fold = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function _esBaja(nom, fecha) {
+  const k = _fold(nom);
+  return BAJAS.some(b => (!fecha || fecha >= b[1]) && b[0].split(' ').every(t => k.indexOf(t) >= 0));
+}
+function _hoyIsoB(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _depurarBajas(j) {
+  try {
+    if (j.ausentes) j.ausentes = j.ausentes.filter(a => !_esBaja(a.nombre, _hoyIsoB()));
+    const m = j.ausentismo_mes;
+    if (m && m.dias) m.dias.forEach(x => {
+      const a0 = (x.ausentes_nombres || []).length;
+      x.ausentes_nombres = (x.ausentes_nombres || []).filter(n => !_esBaja(n, x.fecha));
+      x.tardes_nombres = (x.tardes_nombres || []).filter(n => !_esBaja(n, x.fecha));
+      x._bq = a0 - x.ausentes_nombres.length;   // bajas que el servidor todavía cuenta en la nómina de ese día
+    });
+  } catch (e) { console.warn('depurarBajas', e); }
+  return j;
+}
+
 /* ====== FETCH ====== */
 async function fetchData() {
   try {
     const r = await fetch(DASHBOARD_URL + "&t=" + Date.now(), { cache: "no-store", redirect: "follow" });
     const j = await r.json();
     if (!j.ok) throw new Error(j.error || 'respuesta no ok');
-    D = j;
+    D = _depurarBajas(j);
     localStorage.setItem('pdl_cache', JSON.stringify(j));
     $('staleband').style.display = 'none';
     build();
@@ -205,7 +235,7 @@ async function fetchData() {
     console.warn('fetch falló:', e);
     if (!D) {
       const c = localStorage.getItem('pdl_cache');
-      if (c) { D = JSON.parse(c); build(); }
+      if (c) { D = _depurarBajas(JSON.parse(c)); build(); }
     }
     if (D) $('staleband').style.display = 'block';
     else $('loading').innerHTML = '<div style="font-weight:700;color:var(--bad)">No se pudo conectar al backend.<br>' + esc(String(e)) + '</div>';
@@ -375,6 +405,12 @@ function renderIndicadores() {
 const NO_OPERARIOS = /yance|orona|oroná|quispe/i;
 function _limpia(arr){ return (arr || []).filter(n => !NO_OPERARIOS.test(String(n))); }
 function _hoyIso(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+let ASIS_SEL = null;   // día elegido en el calendario (null = hoy)
+function asisSel(ds) {
+  ASIS_SEL = (ds && ds !== ASIS_SEL) ? ds : null;
+  paused = true; $('pauseBtn').textContent = '▶ Reanudar';
+  showPanel(cur);
+}
 function renderAsistencia() {
   const m = D.ausentismo_mes;
   if (!m || !m.dias) return '<div class="botcard"><h4>ASISTENCIA</h4><div class="lista"><div class="li">Sin datos de asistencia del mes</div></div></div>';
@@ -388,6 +424,14 @@ function renderAsistencia() {
   // ----- hoy (antes de las 08:15 muestra el último día hábil) -----
   let izq, titIzq = 'ASISTENCIA DE HOY';
   let dVer = (dHoy && !antesDeArrancar) ? dHoy : null;
+  if (dHoy && !antesDeArrancar) titIzq = 'ASISTENCIA DE HOY · EN CURSO';
+  if (ASIS_SEL && map[ASIS_SEL]) {
+    dVer = map[ASIS_SEL];
+    const ps = ASIS_SEL.split('-');
+    const DS = ['DOMINGO','LUNES','MARTES','MIÉRCOLES','JUEVES','VIERNES','SÁBADO'][new Date(+ps[0], +ps[1]-1, +ps[2]).getDay()];
+    titIzq = 'ASISTENCIA DEL ' + DS + ' ' + ps[2] + '/' + ps[1] + (ASIS_SEL === hoy ? ' (HOY)' : '')
+      + ' <span onclick="asisSel(null)" style="cursor:pointer;margin-left:8px;padding:2px 8px;border-radius:6px;background:var(--nar);color:#fff;font-size:11px">volver a hoy ✕</span>';
+  }
   if (!dVer) {
     const prev = m.dias.filter(x => x.fecha < hoy).sort((a, b) => a.fecha < b.fecha ? 1 : -1)[0];
     if (prev) { dVer = prev; const pp = prev.fecha.split('-'); titIzq = 'ASISTENCIA DEL ÚLTIMO DÍA · ' + pp[2] + '/' + pp[1] + ' (hoy arranca 08:15)'; }
@@ -396,10 +440,12 @@ function renderAsistencia() {
     izq = '<div class="lista"><div class="li">La jornada de hoy todavía no arrancó — se completa desde las 08:15.</div></div>';
   } else {
     const aus = _limpia(dVer.ausentes_nombres), tar = _limpia(dVer.tardes_nombres);
-    const pres = Math.max(0, roster - aus.length);
+    const rosD = Math.max(0, roster - (dVer._bq || 0));
+    const pres = Math.max(0, rosD - aus.length);
+    const pctD = rosD ? Math.round(aus.length / rosD * 1000) / 10 : 0;
     izq = '<div class="ahero">'
       + '<div class="c p"><div class="n">' + pres + '</div><div class="l">PRESENTES</div></div>'
-      + '<div class="c f"><div class="n">' + aus.length + '</div><div class="l">FALTARON</div></div>'
+      + '<div class="c f"><div class="n">' + aus.length + '</div><div class="l">FALTARON · ' + pctD + '%</div></div>'
       + '<div class="c t"><div class="n">' + tar.length + '</div><div class="l">LLEGARON TARDE</div></div></div>'
       + '<div class="asub">FALTARON</div><div class="achips">'
       + (aus.length ? aus.map(n => '<span class="achip">' + esc(n) + '</span>').join('') : '<span style="color:var(--ok);font-weight:700">✓ Sin faltas</span>') + '</div>'
@@ -414,7 +460,7 @@ function renderAsistencia() {
   const primer = (new Date(Y, Mo-1, 1).getDay() + 6) % 7;
   let cal = ['L','M','M','J','V','S','D'].map(w => '<div class="hd">' + w + '</div>').join('');
   for (let i = 0; i < primer; i++) cal += '<div class="d vac"></div>';
-  let totF = 0, totT = 0, diasCon = 0;
+  let totF = 0, totT = 0, diasCon = 0, totRos = 0;
   for (let dn = 1; dn <= nDias; dn++) {
     const ds = Y + '-' + String(Mo).padStart(2,'0') + '-' + String(dn).padStart(2,'0');
     const dow = (new Date(Y, Mo-1, dn).getDay() + 6) % 7;
@@ -423,21 +469,23 @@ function renderAsistencia() {
     let cls = 'd' + (dow === 6 ? ' dom' : '') + (ds === hoy ? ' hoy' : '');
     if (x) {
       const f = _limpia(x.ausentes_nombres).length, t = _limpia(x.tardes_nombres).length;
-      totF += f; totT += t; diasCon++;
+      const rosD = Math.max(0, roster - (x._bq || 0)); const pd = rosD ? Math.round(f / rosD * 100) : 0;
+      totF += f; totT += t; diasCon++; totRos += rosD;
       const tip = _limpia(x.ausentes_nombres).concat(_limpia(x.tardes_nombres).map(n => 'tarde: ' + n)).join(' · ');
-      cal += '<div class="' + cls + (f ? ' f' : '') + '" title="' + esc(tip) + '"><div class="dn">' + dn + '</div><div class="dv">'
+      cal += '<div class="' + cls + (f ? ' f' : '') + (ds === ASIS_SEL ? ' sel' : '') + '" title="' + esc(tip || 'sin faltas ni llegadas tarde') + '" onclick="asisSel(\'' + ds + '\')" style="cursor:pointer">'
+        + '<div class="dn">' + dn + (ds === hoy ? ' <span class="encurso">EN CURSO</span>' : '') + (f ? '<span class="pd">' + pd + '%</span>' : '') + '</div><div class="dv">'
         + (f ? '<span class="F">' + f + 'F</span>' : '') + (t ? '<span class="T">' + t + 'T</span>' : '') + (!f && !t ? '<span class="ok">✓</span>' : '')
         + '</div></div>';
     } else {
       cal += '<div class="' + cls + ' sin"><div class="dn">' + dn + '</div></div>';
     }
   }
-  const pctF = (diasCon && roster) ? Math.round(totF / (diasCon * roster) * 1000) / 10 : 0;
+  const pctF = totRos ? Math.round(totF / totRos * 1000) / 10 : 0;
 
   return '<div class="asis">'
     + '<div class="botcard"><h4>' + titIzq + '</h4>' + izq + '</div>'
     + '<div class="botcard"><h4>CÓMO VENIMOS · ' + MN.toUpperCase() + ' ' + Y + '</h4><div class="cal">' + cal + '</div>'
-    + '<div class="caltot"><b>' + totF + '</b> faltas · <b>' + totT + '</b> llegadas tarde · ' + diasCon + ' días · ausentismo <b>' + pctF + '%</b> · F = faltas · T = llegadas tarde</div></div>'
+    + '<div class="caltot"><b>' + totF + '</b> faltas · <b>' + totT + '</b> llegadas tarde · ' + diasCon + ' días · ausentismo <b>' + pctF + '%</b> · F = faltas · T = llegadas tarde · tocá un día para ver quiénes</div></div>'
     + '</div>';
 }
 
