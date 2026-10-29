@@ -231,6 +231,8 @@ function build() {
   panels.push(() => renderIndicadores());
   panels.push(() => renderAsistencia());
 
+  // ?panel=asistencia → abrir directo en el panel de asistencia y en pausa (acceso desde hora a hora)
+  if (!build._ini) { build._ini = true; if (/[?&]panel=asistencia/.test(location.search)) { cur = panels.length - 1; paused = true; $('pauseBtn').textContent = '▶ Reanudar'; } }
   renderDots();
   if (cur >= panels.length) cur = 0;
   showPanel(cur);
