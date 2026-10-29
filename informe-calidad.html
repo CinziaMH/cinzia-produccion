@@ -68,7 +68,7 @@ select.est{border:1px solid var(--line);border-radius:8px;padding:3px 7px;font-w
   <h1>📋 INFORME MENSUAL DE CALIDAD</h1>
   <div class="sub">DYFSA · Producción de motorhomes · datos vivos de Odoo + registros de calidad</div>
   <div class="ctl noprint">
-    <input type="month" id="mes">
+    <select id="mes" style="border:none;border-radius:999px;padding:8px 12px;font-weight:800;font-size:12.5px;color:#2C2C2C"></select>
     <button class="hbtn" id="btnGen" onclick="cargar()">⚙ Generar informe</button>
     <button class="hbtn" onclick="window.print()">🖨 Imprimir / PDF</button>
   </div>
@@ -179,9 +179,19 @@ function toggleFila(id){var e=document.getElementById(id);if(e)e.style.display=(
 function sevDot(s){var c=s==='rojo'?'var(--rojo)':(s==='azul'?'var(--azul)':(s==='verde'?'var(--verde)':'#9ca3af'));
   return '<span style="display:inline-block;width:9px;height:9px;border-radius:3px;background:'+c+';margin-right:5px"></span>'}
 // ------------------------------- carga -------------------------------
+function mesActual(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)}
+function hoyDM(){var d=new Date();return ('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2)}
 function init(){
-  var d=new Date();d.setMonth(d.getMonth()-1);
-  document.getElementById('mes').value=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);
+  // Lista de meses: el mes en curso primero (parcial, hasta hoy) y luego los 23 anteriores cerrados
+  var sel=document.getElementById('mes'), d=new Date(), h='';
+  d.setDate(1);
+  for(var i=0;i<24;i++){
+    var v=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);
+    var t=MESES_N[d.getMonth()]+' '+d.getFullYear()+(i===0?' · parcial al '+hoyDM():'');
+    h+='<option value="'+v+'">'+t+'</option>';
+    d.setMonth(d.getMonth()-1);
+  }
+  sel.innerHTML=h; sel.value=mesActual();
 }
 function cargar(){
   var mes=document.getElementById('mes').value;
@@ -205,7 +215,13 @@ function render(){
   var h='';
 
   // ===== 1 · héroe Voz del Cliente + KPIs =====
-  h+='<h2><span class="n">1</span>Resumen ejecutivo · '+esc(mNom)+'</h2>';
+  var parcial=(mes===mesActual());
+  if(parcial){
+    h+='<div style="background:#fff7ed;border:2px dashed #E85D2C;border-radius:14px;padding:12px 16px;margin:14px 0 4px;font-size:13px;color:#7c2d12;line-height:1.5">'
+      +'<b>⏳ INFORME PARCIAL · '+esc(mNom)+' al '+hoyDM()+'</b> — el mes todavía no cerró. Los números son reales de Odoo y de los registros, pero cuentan solo hasta hoy: '
+      +'las comparaciones contra el mes anterior (que está completo) y el último punto de los gráficos anuales van a quedar más bajos de lo que va a cerrar el mes.</div>';
+  }
+  h+='<h2><span class="n">1</span>Resumen ejecutivo · '+esc(mNom)+(parcial?' <span style="color:#E85D2C">(parcial al '+hoyDM()+')</span>':'')+'</h2>';
   var topCli=(D.recurrentes||[]).filter(function(r){return r.cliente>0}).slice(0,3)
     .map(function(r){return '<b>'+r.cliente+'</b> '+esc(r.modo.toLowerCase())}).join(' · ');
   h+='<div style="background:#fff;border:2px solid #fecaca;border-left:8px solid var(--rojo);border-radius:18px;padding:18px 22px;box-shadow:0 6px 18px rgba(220,38,38,.08);margin-bottom:12px;display:flex;gap:22px;align-items:center;flex-wrap:wrap">';
