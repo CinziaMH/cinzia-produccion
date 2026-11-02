@@ -69,7 +69,7 @@ function sectorDe(o){
   if(String(o.sector||'').toUpperCase()==='OTROS') return 'QC';
   return o.sector;
 }
-var EXCLUIR_OPERARIO=['mayer','yance','lopez agustin'];
+var EXCLUIR_OPERARIO=['mayer','yance','lopez agustin',/* bajas (Riki 02/11/2026) */'gordillo','gonzales guillermo','gonzalez guillermo','carrizo','gomez mariano','ramos'];
 function _foldNom(s){return String(s||'').toLowerCase().replace(/[áàä]/g,'a').replace(/[éèë]/g,'e').replace(/[íìï]/g,'i').replace(/[óòö]/g,'o').replace(/[úùü]/g,'u').replace(/ñ/g,'n').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
 function excluido(nom){
   var k=_foldNom(nom);

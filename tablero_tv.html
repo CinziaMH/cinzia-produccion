@@ -165,6 +165,8 @@ function renderIndicadores(){
   /* PRODUCTIVIDAD (única métrica, Riki 16/10/2026): objetivo ÷ real, tope 100 % por tarea. ayer/mes vienen en eficiencia_* (alias). */
   var efH = num((ef.productividad_pct != null ? ef.productividad_pct : D.eficiencia_hoy_pct),'—'), efA = num(ay.eficiencia_pct,'—');
   var hospH = num(D.hospital_count,0), hospA = (ay.hospital_personas||[]).length;
+  var _BAJAS_TV=[['gordillo'],['gonzales','guillermo'],['gonzalez','guillermo'],['carrizo'],['gomez','mariano'],['ramos']];function _esBajaTV(n){var k=String(n||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');return _BAJAS_TV.some(function(b){return b.every(function(t){return k.indexOf(t)>=0;});});}
+  D.ausentes=(D.ausentes||[]).filter(function(a){return !_esBajaTV(a.nombre);});
   var ausH = (D.ausentes||[]).length, ausA = num(ay.ausentes_count,0);
 
   var hospMos = [];
